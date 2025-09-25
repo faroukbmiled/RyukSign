@@ -1,7 +1,7 @@
 # RyukSign
 
 ### Added:
-- Background downloading with notifications.  
+- Background downloading with progress notifications, featuring task queueing and resumable downloads on app refresh (this was defo a challenge).
 - Added a button for quickly adding popular repositories.  
 - Various tweaks to default settings, signing, and more.  
 - Faster and smoother search with debouncing and background processing, especially for large repositories.  
