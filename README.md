@@ -4,6 +4,7 @@ Improved Feather
 
 ### Added:
 - Background downloading with progress notifications, featuring task queueing and resumable downloads on app refresh (this was a challenge).
+- Background importing and installing
 - Live Activity support for downloads (download info, progress, paused state...).  
 - Added a collapsible header for downloads (also manages downloads)
 - Faster and smoother search with debouncing and background processing, especially for large repositories.
