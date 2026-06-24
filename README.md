@@ -67,17 +67,6 @@ without a cable or a desktop tool.
   opens to. Settings always stays reachable.
 - Consistent icons across the signing Advanced screen and assorted layout cleanups.
 
-## Reliability and performance
-
-- The Sources tab no longer freezes for a moment when first opened on large repositories; the heavy
-  list work now runs off the main thread.
-- Loading placeholders no longer appear in the wrong place while a source is loading or empty.
-- Shared IPAs open reliably across devices, not only on the device the file was created on.
-- File transfers from Windows over WebDAV no longer create a duplicate empty file or import under a
-  random name.
-- Background audio used to keep work alive is shared correctly, so downloads and file transfer no
-  longer cut each other off.
-
 ## Notes
 
 - Supports iOS 16 and later.
