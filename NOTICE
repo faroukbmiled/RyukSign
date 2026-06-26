@@ -1,0 +1,53 @@
+RyukSign
+========
+
+RyukSign is a derivative work of Feather, created and maintained by
+claration (https://github.com/claration/Feather), and is distributed under the
+GNU General Public License v3.0 (see the LICENSE file).
+
+This NOTICE records the modifications RyukSign makes to the original Feather
+source, in the spirit of GPLv3 §5(a) (prominent notice of changed files).
+
+Original work
+-------------
+  Feather — Copyright (C) claration and Feather contributors.
+  Upstream: https://github.com/claration/Feather
+  License:  GPL-3.0
+
+Modifications by RyukSign (2025–2026)
+-------------------------------------
+RyukSign began from Feather and adds substantial new functionality while
+preserving the upstream signing core. Files carrying the original
+"Created by samara" header that have been modified by the RyukSign project,
+and the new files added by it, are part of these changes. The principal
+additions and changes are:
+
+  - Tweak Manager: import/organize/inject .dylib, .deb, .framework, .bundle,
+    and .appex tweaks (RyukSign/Backend/Observable/TweakManager.swift,
+    RyukSign/Utilities/Handlers/Tweak*.swift, RyukSign/Views/Tweaks/*).
+  - Web Manager / File Transfer server over HTTP and WebDAV
+    (RyukSign/Backend/Server/*, RyukSign/Backend/Observable/WebManager.swift,
+    RyukSign/Views/Settings/Web Manager/*).
+  - Enhanced download manager with Live Activities and a download overlay
+    (RyukSign/Backend/Observable/DownloadManager.swift, RyukSign/Views/Download/*).
+  - RyukSign branding, curated repositories, and premium-source support
+    (RyukSign/Utilities/RyukSignAPI.swift, RyukSign/Views/Sources/*).
+  - App update checker with per-app ignored/skipped updates
+    (RyukSign/Backend/Observable/AppUpdateChecker.swift,
+    RyukSign/Backend/Observable/SkippedUpdatesManager.swift,
+    RyukSign/Views/Settings/Updates/*).
+  - Configurable tab bar, toast notification system, file logging, and
+    assorted UX additions (RyukSign/Views/Common/*, RyukSign/Utilities/FileLogger.swift,
+    RyukSign/Backend/Observable/TabBarPreferences.swift).
+  - Decompression and source-list performance fixes over upstream
+    (RyukSign/Utilities/ARDecompression/Decompression.swift,
+    RyukSign/Views/Sources/Apps/UIKit/SourceAppsTableRepresentableView.swift).
+
+For the exact set of changes, compare this repository against the upstream
+Feather repository, or consult the project commit history.
+
+Third-party components
+----------------------
+RyukSign bundles or depends on third-party software under their own licenses,
+all compatible with GPL-3.0 (MIT / Apache-2.0 / BSD-3). See the in-app
+"Source & License" screen, license_plist.yml, and LICENSE_ELLEKIT.

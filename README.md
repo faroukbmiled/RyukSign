@@ -1,72 +1,102 @@
 # RyukSign
 
-RyukSign is a fork of [Feather](https://github.com/khcrysalis/Feather) that adds a tweak
-manager, on-device file transfer, a reworked download system, and a number of quality-of-life
-and reliability improvements. Everything below is on top of what Feather already provides.
+[![GitHub Release](https://img.shields.io/github/v/release/faroukbmiled/RyukSign?include_prereleases)](https://github.com/faroukbmiled/RyukSign/releases)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/faroukbmiled/RyukSign/total)](https://github.com/faroukbmiled/RyukSign/releases)
+[![GitHub License](https://img.shields.io/github/license/faroukbmiled/RyukSign?color=%23C96FAD)](https://github.com/faroukbmiled/RyukSign/blob/main/LICENSE)
 
-## Tweak management
+RyukSign is an on-device app signer and installer for iOS, derived from [Feather](https://github.com/claration/Feather). It installs and manages applications using certificate pairs and various installation techniques, entirely on-device using built-in features. RyukSign extends Feather with a Tweak Manager, a built-in File Transfer server, an enhanced download manager, and curated repository support.
 
-A dedicated Tweaks tab for building a reusable library instead of picking files for every signing
-session.
+> **RyukSign is a fork of [Feather](https://github.com/claration/Feather) by [claration](https://github.com/claration).** All upstream work and attribution is preserved; see [Acknowledgements](#acknowledgements) and [Credits](#credits).
 
-- Import `.dylib` and `.deb` tweaks, give them names, and keep multiple versions of each with one
-  marked active.
-- Auto-inject rules: inject a tweak into every app you sign, or only into apps whose bundle
-  identifier matches a rule you set.
-- Per-tweak injection settings: choose the injection path and folder, and pick exactly which app
-  extensions a tweak is injected into, listed from the app you are actually signing.
-- Auto-injected tweaks are pre-filled in the signing screen and remain fully editable for that
-  session, with a badge showing how many are active.
-- Tweaks were moved out of the cramped "Modify" menu into their own entry under Advanced.
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="Images/Image-dark.png"><source media="(prefers-color-scheme: light)" srcset="Images/Image-light.png"><img alt="RyukSign" src="Images/Image-light.png"></picture></p>
 
-## File transfer
+## Features
 
-An optional on-device server for moving IPAs and tweaks onto the device over the local network,
-without a cable or a desktop tool.
+Inherited from Feather:
 
-- Upload from any browser through a drag-and-drop page that also lists and manages files on the
-  device.
-- Mount the device as a WebDAV drive in Finder or the iOS Files app and copy files in directly.
-- Optional password protection for both the web page and the WebDAV mount.
-- Uploaded files are routed automatically: IPAs go to the Library, tweaks go to the Tweak Manager.
-- A keep-alive option keeps the server reachable while the app is in the background, with a clear
-  note about the added battery usage.
+- User-friendly, clean UI.
+- Sign and install applications using a `.p12` / `.mobileprovision` pair (via Zsign).
+- Supports [AltStore](https://faq.altstore.io/distribute-your-apps/make-a-source#apps) repositories.
+- View detailed information about apps and certificates.
+- Configurable signing options (appearance, Files-app support, compatibility patching, Liquid Glass).
+- No tracking or analytics.
+- Open source and free.
 
-## Downloads
+Added by RyukSign:
 
-- Background downloading with a task queue, resumable downloads across app refreshes, and progress
-  notifications.
-- Background loading, importing, and installing of repositories.
-- Live Activity support showing download details, progress, and paused state.
-- A collapsible downloads header that also manages active downloads, plus a floating download
-  button that opens a detailed overlay. Switch between the two in download settings.
+- **Tweak Manager** — import, organize, and inject `.dylib`, `.deb`, `.framework`, `.bundle`, and `.appex` tweaks. Multi-file tweaks, per-file configuration, a file-info/dependency inspector, and ElleKit/CydiaSubstrate detection.
+- **Live Activities & Dynamic Island** — watch download progress live from the Lock Screen and Dynamic Island, plus an in-app download overlay.
+- **Enhanced download manager** — fast background downloads that keep running while you use other apps.
+- **File Transfer server** — upload IPAs and tweaks over HTTP (drag-and-drop browser page) or WebDAV (mount in Finder / the Files app), with optional password protection.
+- **App update checker** — flags installed apps that have a newer version available in your sources, with per-app ignore/skip.
+- **Curated repositories** and a fully configurable tab bar.
 
-## Sources and updates
+## How does it work?
 
-- Faster, smoother search with debouncing and background processing, built for large repositories.
-- Tracking of installed apps and available updates; tapping an installed app jumps to the Library
-  tab with that app highlighted.
-- An Updates view in the Sources section, shown either as a filter or as its own tab depending on
-  your preference.
-- An update count on the Sources tab.
-- App Store links for apps that are available there, in both the Library and Sources tabs.
-- A shortcut for quickly adding popular repositories.
+How Feather works is a bit complicated, with multiple ways to install, app management, tweaks, etc. The important pieces:
 
-## Certificates
+To start, we need a validly signed IPA, achieved with Zsign using a provided IPA plus a `.p12` and `.mobileprovision` pair.
 
-- Automatic import of certificates bundled with the app on first launch. RyukSign looks under
-  `signing-assets/<folder_name>/` for `cert.p12`, `cert.mobileprovision`, and `cert.txt`, where the
-  folder name becomes the certificate's display name.
+#### Install (Server)
 
-## Interface and experience
+- Use a locally hosted server for the IPA files used for installation (and assets such as icons).
+  - On iOS 18, a few entitlements are needed: `Associated Domains`, `Custom Network Protocol`, `MDM Managed Associated Domains`, `Network Extensions`.
+- Include valid HTTPS SSL certificates (we use [*.backloop.dev](https://backloop.dev/)).
+- Then `itms-services://?action=download-manifest&url=<PLIST_URL>` initiates the install via `UIApplication.open`.
 
-- Animated, swipe-to-dismiss notifications used for confirmations such as imports, copies, and
-  signing results, with matching haptics and an option to keep a message on screen until dismissed.
-  These replace several blocking pop-ups.
-- A configurable tab bar: reorder tabs, hide the ones you do not use, and choose which tab the app
-  opens to. Settings always stays reachable.
-- Consistent icons across the signing Advanced screen and assorted layout cleanups.
+Due to iOS 18 entitlement changes, an alternative is needed: either install fully locally via the local server (above), or use an external HTTPS server as a middle-man for `PLIST_URL` while keeping the files local — for the latter, a plain insecure local server plus [plistserver](https://github.com/nekohaxx/plistserver) for the `PLIST_URL`, and a Safari webview redirect to the `itms-services://` URL.
 
-## Notes
+#### Install (Pairing)
 
-- Supports iOS 16 and later.
+- Establish a heartbeat with a TCP provider, requiring a [pairing file](https://github.com/jkcoxson/idevice_pair) and a VPN.
+- Connect to the socket routed to `10.7.0.1`, establish an `AFC` connection, create `/PublicStaging/`, upload the IPA, and install it directly — similar to `ideviceinstaller`, but fully on-device.
+
+This path needs both a VPN and a lockdownd pairing file (so a computer for initial setup); otherwise use the server install method.
+
+## Download
+
+Visit [RyukSign releases](https://github.com/faroukbmiled/RyukSign/releases) and get the latest `.ipa`.
+
+## Building from source
+
+RyukSign uses Xcode 16 (synchronized groups, `objectVersion 77`) and Swift Package Manager plus git submodules. See [CONTRIBUTING.md](./CONTRIBUTING.md). In short:
+
+```bash
+git clone --recursive https://github.com/faroukbmiled/RyukSign.git
+cd RyukSign
+make deps          # fetches the backloop.dev SSL pack used by the local install server
+open RyukSign.xcworkspace
+```
+
+Signing identity is not committed in a usable form — set your own team / enable automatic signing in Xcode, or build the unsigned CLI path via `make`.
+
+## Contributing
+
+Read the [contribution requirements](./CONTRIBUTING.md) for more information.
+
+## Acknowledgements
+
+- [claration](https://github.com/claration) — author of [Feather](https://github.com/claration/Feather), the project RyukSign is derived from.
+- [idevice](https://github.com/jkcoxson/idevice) — backend used for communication with `installd`.
+- [*.backloop.dev](https://backloop.dev/) — localhost with a public-CA-signed SSL certificate.
+- [Vapor](https://github.com/vapor/vapor) — server-side Swift HTTP web framework.
+- [Zsign](https://github.com/zhlynn/zsign) — on-device signing, reimplemented for iOS.
+- [ElleKit](https://github.com/tealbathingsuit/ellekit) — tweak injection.
+- [LiveContainer](https://github.com/LiveContainer/LiveContainer) — fixes / help.
+- [Nuke](https://github.com/kean/Nuke) — image caching.
+- [Asspp](https://github.com/Lakr233/Asspp) — HTTP server setup reference.
+- [plistserver](https://github.com/nekohaxx/plistserver) — hosted on https://api.palera.in.
+
+## License
+
+This project is licensed under the **GPL-3.0** license — see [LICENSE](./LICENSE) for the full text. As a derivative of Feather (also GPL-3.0), RyukSign preserves that license. The complete corresponding source for every distributed binary is this repository: <https://github.com/faroukbmiled/RyukSign>.
+
+By contributing, you agree to license your code under GPL-3.0 (including agreeing to license exceptions), ensuring your work remains freely accessible and open.
+
+## Disclaimer
+
+RyukSign is maintained here, on GitHub, and releases are distributed here, on GitHub. Avoid any other sites hosting this software — they are often malicious and exist to mislead users.
+
+## Credits
+
+- [Feather](https://github.com/claration/Feather) — the upstream project RyukSign is based on.

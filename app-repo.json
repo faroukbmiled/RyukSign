@@ -1,0 +1,42 @@
+{
+  "name": "RyukSign",
+  "subtitle": "On-device iOS app signer and installer.",
+  "description": "RyukSign is an on-device app signer and installer for iOS, derived from Feather. It extends Feather with a Tweak Manager, a built-in File Transfer / Web Manager server, an enhanced download manager, an app update checker, and curated repository support.",
+  "iconURL": "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/icon.png",
+  "headerURL": "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/icon.png",
+  "website": "https://github.com/faroukbmiled/RyukSign",
+  "tintColor": "C96FAD",
+  "sourceURL": "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/app-repo.json",
+  "apps": [
+    {
+      "name": "RyukSign",
+      "bundleIdentifier": "ryuk2.anoxclan.com",
+      "developerName": "faroukbmiled",
+      "subtitle": "On-device iOS app signer and installer.",
+      "localizedDescription": "RyukSign is an on-device app signer and installer for iOS, derived from Feather (by claration). Sign and install apps with a .p12 / .mobileprovision pair, manage tweaks (.dylib/.deb/.framework/.bundle/.appex), transfer files over HTTP/WebDAV, and track app updates — entirely on-device.",
+      "iconURL": "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/icon.png",
+      "tintColor": "C96FAD",
+      "category": "utilities",
+      "version": "2.9.5",
+      "versionDate": "2026-06-26",
+      "versionDescription": "See the GitHub release notes.",
+      "downloadURL": "https://github.com/faroukbmiled/RyukSign/releases/latest/download/RyukSign.ipa",
+      "size": 16895486,
+      "screenshotURLs": [],
+      "versions": [
+        {
+          "version": "2.9.5",
+          "date": "2026-06-26",
+          "localizedDescription": "See the GitHub release notes.",
+          "downloadURL": "https://github.com/faroukbmiled/RyukSign/releases/latest/download/RyukSign.ipa",
+          "size": 16895486
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RyukSign · Web Manager</title>
+<style>
+  :root {
+    --accent: #848ef9;
+    --bg1: #1b1c2e; --bg2: #0d0d15;
+    --text: #f2f2f7; --muted: #a9a9c0; --head: #c9c9da;
+    --card: rgba(255,255,255,0.06); --cardbr: rgba(255,255,255,0.10);
+    --item: rgba(255,255,255,0.05); --field: rgba(255,255,255,0.06); --fieldbr: rgba(255,255,255,0.12);
+    --pop: #14141f;
+  }
+  html[data-theme="light"] {
+    --bg1: #eef0f8; --bg2: #dfe3f0;
+    --text: #1a1a22; --muted: #5b5b6e; --head: #44485a;
+    --card: rgba(255,255,255,0.75); --cardbr: rgba(0,0,0,0.08);
+    --item: rgba(0,0,0,0.04); --field: rgba(0,0,0,0.04); --fieldbr: rgba(0,0,0,0.12);
+    --pop: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+    background: linear-gradient(160deg, var(--bg1), var(--bg2)); color: var(--text); padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 620px; background: var(--card);
+    border: 1px solid var(--cardbr); border-radius: 22px; padding: 24px;
+    backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,0.25); margin-top: 4vh;
+  }
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  h1 { font-size: 21px; margin: 0; }
+  h1 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+  .theme { border: 1px solid var(--fieldbr); background: var(--field); color: var(--muted); border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+
+  .tabs { display: flex; gap: 5px; background: rgba(0,0,0,0.18); border-radius: 14px; padding: 4px; margin-bottom: 20px; }
+  .tab { flex: 1; border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; padding: 9px 6px; border-radius: 10px; cursor: pointer; transition: 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .tab.active { background: rgba(132,142,249,0.22); color: var(--text); }
+  .count { font-size: 11px; font-weight: 700; background: rgba(132,142,249,0.25); border-radius: 20px; padding: 1px 6px; min-width: 18px; }
+
+  .panel { display: none; } .panel.active { display: block; }
+
+  p.sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+  #drop { border: 2px dashed rgba(132,142,249,0.55); border-radius: 16px; padding: 38px 20px; text-align: center; cursor: pointer; transition: 0.2s; background: rgba(132,142,249,0.06); }
+  #drop.hover { background: rgba(132,142,249,0.18); border-color: var(--accent); }
+  #drop .big { font-size: 16px; font-weight: 600; }
+  #drop .small { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  input[type=file] { display: none; }
+
+  h2 { font-size: 12px; margin: 22px 0 10px; color: var(--head); text-transform: uppercase; letter-spacing: 0.5px; }
+  .list { display: flex; flex-direction: column; gap: 9px; }
+  .item { background: var(--item); border-radius: 12px; padding: 11px 13px; font-size: 13px; }
+  .item .row { display: flex; align-items: center; gap: 11px; }
+  .item .grow { flex: 1; min-width: 0; }
+  .item .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .meta { color: var(--muted); font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .avatar { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; background: rgba(132,142,249,0.20); color: var(--accent); }
+  .actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .bar { height: 6px; border-radius: 3px; background: rgba(132,142,249,0.18); margin-top: 8px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+  .bar.indet > span { width: 40%; animation: slide 1s infinite ease-in-out; }
+  @keyframes slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+  .ok { color: #5fd08a; } .err { color: #ff6b6b; }
+  .tag { font-size: 10px; font-weight: 600; color: var(--accent); background: rgba(132,142,249,0.16); border-radius: 5px; padding: 1px 6px; }
+  .tag.warn { color: #d98a00; background: rgba(255,180,84,0.16); }
+  .tag.green { color: #2e9e63; background: rgba(95,208,138,0.16); }
+  a.btn, button.btn { border: none; background: rgba(132,142,249,0.18); color: var(--accent); border-radius: 8px; padding: 6px 11px; font-size: 12px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+  button.del { background: rgba(255,107,107,0.16); color: #e05656; }
+  button.btn:disabled { opacity: 0.5; cursor: default; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 2px; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .toolbar input.search { flex: 1; min-width: 140px; background: var(--field); border: 1px solid var(--fieldbr); color: var(--text); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+  select.sel { background: var(--field); border: 1px solid var(--fieldbr); color: var(--text); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+  select.sel option { background: var(--pop); color: var(--text); }
+  .chips { display: flex; gap: 5px; margin-bottom: 12px; }
+  .chip { border: none; background: var(--field); color: var(--muted); border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+  .chip.active { background: rgba(132,142,249,0.22); color: var(--text); }
+  .optline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  form.add { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  form.add .field { display: flex; flex-direction: column; gap: 4px; }
+  form.add .lab { font-size: 12px; color: var(--muted); }
+  form.add .lab .req { color: #e05656; }
+  form.add input[type=text], form.add input[type=password] { background: var(--field); border: 1px solid var(--fieldbr); color: var(--text); border-radius: 10px; padding: 9px 12px; font-size: 14px; }
+  form.add .pick { background: rgba(132,142,249,0.10); border: 1px dashed rgba(132,142,249,0.45); border-radius: 10px; padding: 11px 12px; font-size: 13px; cursor: pointer; color: var(--accent); }
+  form.add .pick.set { border-style: solid; border-color: rgba(95,208,138,0.5); color: #2e9e63; }
+  button.submit { border: none; background: var(--accent); color: #0d0d15; font-weight: 600; border-radius: 10px; padding: 11px; font-size: 14px; cursor: pointer; }
+  button.submit:disabled { opacity: 0.45; cursor: default; }
+  .note { font-size: 12px; min-height: 16px; }
+  .hint { font-size: 12px; color: var(--muted); margin: -2px 0 4px; }
+
+  #dl { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(420px, calc(100vw - 40px)); background: var(--pop); border: 1px solid var(--cardbr); border-radius: 14px; padding: 12px 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); transition: opacity 0.2s, transform 0.2s; }
+  #dl.hidden { opacity: 0; transform: translateX(-50%) translateY(10px); pointer-events: none; }
+  #dl .dlrow { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+  #dl .dlname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dl .dlpct { color: var(--muted); flex-shrink: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <h1>Web Manager <small>· RyukSign</small></h1>
+      <button class="theme" id="themeBtn">Theme: Auto</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="transfer">Transfer</button>
+      <button class="tab" data-tab="apps">Apps <span class="count" id="appsCount">0</span></button>
+      <button class="tab" data-tab="tweaks">Tweaks <span class="count" id="tweaksCount">0</span></button>
+      <button class="tab" data-tab="certs">Certificates <span class="count" id="certsCount">0</span></button>
+    </div>
+
+    <section class="panel active" id="panel-transfer">
+      <p class="sub">Drop IPAs to add them to your Library, or tweaks (.dylib / .deb) to add them to the Tweak Manager. To send a framework, zip it and drop the .zip.</p>
+      <div id="drop"><div class="big">Tap or drop files here</div><div class="small">.ipa · .tipa · .dylib · .deb · .zip</div></div>
+      <input id="file" type="file" multiple>
+      <div class="list" id="progress"></div>
+      <h2>Inbox</h2>
+      <div class="list" id="files"><div class="empty">Loading…</div></div>
+    </section>
+
+    <section class="panel" id="panel-apps">
+      <div class="toolbar">
+        <input class="search" id="appSearch" type="text" placeholder="Search apps…">
+        <select class="sel" id="appSort">
+          <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
+          <option value="name">Name (A–Z)</option><option value="name_desc">Name (Z–A)</option>
+          <option value="size">Largest first</option>
+        </select>
+      </div>
+      <div class="chips" id="appFilters">
+        <button class="chip active" data-filter="all">All</button>
+        <button class="chip" data-filter="signed">Signed</button>
+        <button class="chip" data-filter="imported">Imported</button>
+      </div>
+      <div class="optline"><span>Download compression</span><select class="sel" id="compress" title="Compression used when downloading an app"></select></div>
+      <div class="list" id="apps"><div class="empty">Loading…</div></div>
+    </section>
+
+    <section class="panel" id="panel-tweaks">
+      <div class="toolbar">
+        <input class="search" id="tweakSearch" type="text" placeholder="Search tweaks…">
+        <select class="sel" id="tweakSort">
+          <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
+          <option value="name">Name (A–Z)</option><option value="name_desc">Name (Z–A)</option>
+          <option value="size">Largest first</option>
+        </select>
+      </div>
+      <p class="hint">Add tweaks from the Transfer tab (drop a .dylib / .deb / .zip).</p>
+      <div class="list" id="tweaks"><div class="empty">Loading…</div></div>
+    </section>
+
+    <section class="panel" id="panel-certs">
+      <p class="sub">A certificate needs all three: a <b>.p12</b>, its <b>.mobileprovision</b>, and the password.</p>
+      <form class="add" id="certForm">
+        <div class="field"><span class="lab">.p12 file <span class="req">*</span></span><label class="pick" id="p12Pick">Choose .p12<input id="p12File" type="file" accept=".p12"></label></div>
+        <div class="field"><span class="lab">.mobileprovision file <span class="req">*</span></span><label class="pick" id="provPick">Choose .mobileprovision<input id="provFile" type="file" accept=".mobileprovision"></label></div>
+        <div class="field"><span class="lab">Password <span class="req">*</span></span><input id="certPass" type="password" autocomplete="off" placeholder="p12 password"></div>
+        <div class="field"><span class="lab">Nickname (optional)</span><input id="certNick" type="text" autocomplete="off" placeholder="My certificate"></div>
+        <button class="submit" id="certSubmit" type="submit" disabled>Add certificate</button>
+        <div class="note" id="certNote"></div>
+      </form>
+      <div class="list" id="certs"><div class="empty">Loading…</div></div>
+    </section>
+  </div>
+
+  <div id="dl" class="hidden">
+    <div class="dlrow"><span class="dlname" id="dlName"></span><span class="dlpct" id="dlPct"></span></div>
+    <div class="bar" id="dlBarWrap"><span id="dlBar"></span></div>
+  </div>
+<script>
+  const $ = id => document.getElementById(id);
+  const esc = s => (s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const initial = s => (s || '?').trim().charAt(0).toUpperCase();
+  function human(b) {
+    if (!b) return '—';
+    if (b < 1024) return b + ' B';
+    const u = ['KB','MB','GB']; let i = -1;
+    do { b /= 1024; i++; } while (b >= 1024 && i < u.length - 1);
+    return b.toFixed(1) + ' ' + u[i];
+  }
+  function sortList(list, mode) {
+    const by = { name: (a,b)=>a.name.localeCompare(b.name), name_desc: (a,b)=>b.name.localeCompare(a.name), newest:(a,b)=>b.ts-a.ts, oldest:(a,b)=>a.ts-b.ts, size:(a,b)=>(b.size||0)-(a.size||0) }[mode] || ((a,b)=>b.ts-a.ts);
+    return [...list].sort(by);
+  }
+
+  // Theme
+  const themeBtn = $('themeBtn'), modes = ['auto','light','dark'], labels = {auto:'Auto',light:'Light',dark:'Dark'};
+  function applyTheme(m) {
+    if (m === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', m);
+    themeBtn.textContent = 'Theme: ' + labels[m];
+  }
+  let theme = localStorage.getItem('wm-theme') || 'auto';
+  applyTheme(theme);
+  themeBtn.onclick = () => { theme = modes[(modes.indexOf(theme)+1)%modes.length]; localStorage.setItem('wm-theme', theme); applyTheme(theme); };
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active'); $('panel-' + t.dataset.tab).classList.add('active');
+  });
+
+  // Download with progress (apps / certs / tweaks / inbox)
+  let dlTimer = null;
+  function showDL(name, status) {
+    clearTimeout(dlTimer);
+    $('dlName').textContent = name; $('dlPct').textContent = status; $('dlPct').className = 'dlpct';
+    $('dlBarWrap').classList.add('indet'); $('dlBar').style.width = '';
+    $('dl').classList.remove('hidden');
+  }
+  function progressDL(received, total) {
+    if (total > 0) {
+      $('dlBarWrap').classList.remove('indet');
+      $('dlBar').style.width = Math.round(received/total*100) + '%';
+      $('dlPct').textContent = human(received) + ' / ' + human(total);
+    } else { $('dlPct').textContent = human(received); }
+  }
+  function endDL(msg, isErr) {
+    $('dlBarWrap').classList.remove('indet');
+    $('dlPct').textContent = msg; $('dlPct').className = 'dlpct ' + (isErr ? 'err' : 'ok');
+    dlTimer = setTimeout(() => { $('dl').classList.add('hidden'); }, isErr ? 3500 : 1200);
+  }
+  async function download(url, name) {
+    showDL(name, 'Preparing…');
+    try {
+      const res = await fetch(url);
+      if (!res.ok) { endDL('Failed', true); return; }
+      const total = +res.headers.get('Content-Length') || 0;
+      const reader = res.body.getReader();
+      const chunks = []; let received = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); received += value.length; progressDL(received, total);
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(chunks)); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      endDL('Saved');
+    } catch { endDL('Failed', true); }
+  }
+
+  // Transfer
+  const drop = $('drop'), input = $('file'), progress = $('progress');
+  drop.addEventListener('click', () => input.click());
+  ['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('hover'); }));
+  ['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('hover'); }));
+  drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) upload(ev.dataTransfer.files); });
+  input.addEventListener('change', () => { if (input.files.length) upload(input.files); });
+  function tagFor(name) {
+    const n = name.toLowerCase();
+    if (n.endsWith('.ipa') || n.endsWith('.tipa')) return 'Library';
+    if (n.endsWith('.dylib') || n.endsWith('.deb') || n.endsWith('.zip') || n.endsWith('.framework') || n.endsWith('.bundle')) return 'Tweak';
+    return 'Inbox';
+  }
+  // Uploads import asynchronously server-side, so refresh a few times to catch big IPAs.
+  function refreshAfterImport() { [600, 2000, 5000].forEach(d => setTimeout(() => { refreshFiles(); refreshApps(); refreshTweaks(); }, d)); }
+  function upload(files) {
+    [...files].forEach(file => {
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<div class="row"><div class="grow"><div class="name">${esc(file.name)} <span class="tag">${tagFor(file.name)}</span></div></div><span class="pct">0%</span></div><div class="bar"><span></span></div>`;
+      progress.prepend(row);
+      const bar = row.querySelector('.bar > span'), pct = row.querySelector('.pct');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/upload/' + encodeURIComponent(file.name));
+      xhr.upload.onprogress = e => { if (e.lengthComputable) { const p = Math.round(e.loaded/e.total*100); bar.style.width = p+'%'; pct.textContent = p+'%'; } };
+      xhr.onload = () => { if (xhr.status === 200) { pct.textContent = 'Done'; pct.className = 'pct ok'; bar.style.width = '100%'; refreshAfterImport(); } else { pct.textContent = 'Failed'; pct.className = 'pct err'; } };
+      xhr.onerror = () => { pct.textContent = 'Failed'; pct.className = 'pct err'; };
+      xhr.send(file);
+    });
+  }
+  function refreshFiles() {
+    fetch('/api/files').then(r => r.json()).then(list => {
+      const el = $('files');
+      if (!list.length) { el.innerHTML = '<div class="empty">No files in the inbox.</div>'; return; }
+      el.innerHTML = '';
+      list.forEach(f => {
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.innerHTML = `<div class="row"><div class="grow"><div class="name">${esc(f.name)}</div><div class="meta">${human(f.size)} · ${tagFor(f.name)}</div></div><div class="actions"><button class="btn dl">Download</button><button class="btn del">Delete</button></div></div>`;
+        row.querySelector('.dl').onclick = () => download('/download/' + encodeURIComponent(f.name), f.name);
+        row.querySelector('.del').onclick = () => fetch('/api/files/' + encodeURIComponent(f.name), { method: 'DELETE' }).then(refreshFiles);
+        el.appendChild(row);
+      });
+    }).catch(() => { $('files').innerHTML = '<div class="empty">Could not load files.</div>'; });
+  }
+
+  // Apps
+  let allApps = [], appFilter = 'all';
+  fetch('/api/compression').then(r => r.json()).then(opts => { $('compress').innerHTML = opts.map(o => `<option value="${o.value}">${esc(o.label)}</option>`).join(''); }).catch(() => {});
+  $('appSearch').addEventListener('input', renderApps);
+  $('appSort').addEventListener('change', renderApps);
+  $('appFilters').querySelectorAll('.chip').forEach(c => c.onclick = () => {
+    $('appFilters').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active'); appFilter = c.dataset.filter; renderApps();
+  });
+  function refreshApps() {
+    fetch('/api/apps').then(r => r.json()).then(list => { allApps = list; $('appsCount').textContent = list.length; renderApps(); }).catch(() => { $('apps').innerHTML = '<div class="empty">Could not load apps.</div>'; });
+  }
+  function renderApps() {
+    const q = $('appSearch').value.toLowerCase();
+    let list = allApps.filter(a => (appFilter === 'all' || (appFilter === 'signed') === a.signed) && (!q || (a.name + ' ' + a.identifier).toLowerCase().includes(q)));
+    list = sortList(list, $('appSort').value);
+    const el = $('apps');
+    if (!list.length) { el.innerHTML = '<div class="empty">No apps match.</div>'; return; }
+    el.innerHTML = '';
+    list.forEach(a => {
+      const tag = a.signed ? '<span class="tag green">Signed</span>' : '<span class="tag">Imported</span>';
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<div class="row"><div class="avatar">${esc(initial(a.name))}</div><div class="grow"><div class="name">${esc(a.name)} ${tag}</div><div class="meta">${esc(a.version)} · ${esc(a.identifier)}</div><div class="meta">${human(a.size)} · Added ${esc(a.added)}</div></div><div class="actions"><button class="btn dl">Download</button><button class="btn del">Delete</button></div></div>`;
+      row.querySelector('.dl').onclick = () => download('/api/apps/' + encodeURIComponent(a.uuid) + '/download?compression=' + encodeURIComponent($('compress').value || '2'), a.name + '.ipa');
+      row.querySelector('.del').onclick = () => { if (confirm('Delete “' + a.name + '”?')) fetch('/api/apps/' + encodeURIComponent(a.uuid), { method: 'DELETE' }).then(refreshApps); };
+      el.appendChild(row);
+    });
+  }
+
+  // Tweaks
+  let allTweaks = [];
+  $('tweakSearch').addEventListener('input', renderTweaks);
+  $('tweakSort').addEventListener('change', renderTweaks);
+  function refreshTweaks() {
+    fetch('/api/tweaks').then(r => r.json()).then(list => { allTweaks = list; $('tweaksCount').textContent = list.length; renderTweaks(); }).catch(() => { $('tweaks').innerHTML = '<div class="empty">Could not load tweaks.</div>'; });
+  }
+  function renderTweaks() {
+    const q = $('tweakSearch').value.toLowerCase();
+    let list = allTweaks.filter(t => !q || t.name.toLowerCase().includes(q));
+    list = sortList(list, $('tweakSort').value);
+    const el = $('tweaks');
+    if (!list.length) { el.innerHTML = '<div class="empty">No tweaks.</div>'; return; }
+    el.innerHTML = '';
+    list.forEach(t => {
+      const files = t.files === 1 ? '1 file' : t.files + ' files';
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<div class="row"><div class="avatar">${esc(initial(t.name))}</div><div class="grow"><div class="name">${esc(t.name)}</div><div class="meta">${files} · ${human(t.size)} · Added ${esc(t.added)}</div></div><div class="actions"><button class="btn dl">Download</button><button class="btn del">Delete</button></div></div>`;
+      row.querySelector('.dl').onclick = () => download('/api/tweaks/' + encodeURIComponent(t.id) + '/download', t.name + '.zip');
+      row.querySelector('.del').onclick = () => { if (confirm('Delete tweak “' + t.name + '”?')) fetch('/api/tweaks/' + encodeURIComponent(t.id), { method: 'DELETE' }).then(refreshTweaks); };
+      el.appendChild(row);
+    });
+  }
+
+  // Certificates
+  function refreshCerts() {
+    fetch('/api/certs').then(r => r.json()).then(list => {
+      $('certsCount').textContent = list.length;
+      const el = $('certs');
+      if (!list.length) { el.innerHTML = '<div class="empty">No certificates imported.</div>'; return; }
+      el.innerHTML = '';
+      sortList(list, 'newest').forEach(c => {
+        const badges = [c.isDefault ? '<span class="tag">Default</span>' : '', c.revoked ? '<span class="tag warn">Revoked</span>' : ''].join(' ');
+        const row = document.createElement('div');
+        row.className = 'item';
+        row.innerHTML = `<div class="row"><div class="avatar">${esc(initial(c.name))}</div><div class="grow"><div class="name">${esc(c.name)} ${badges}</div><div class="meta">Expires ${esc(c.expiration)} · Added ${esc(c.added)}</div></div><div class="actions"><button class="btn dl">Download</button><button class="btn del">Delete</button></div></div>`;
+        row.querySelector('.dl').onclick = () => download('/api/certs/' + encodeURIComponent(c.uuid) + '/download', c.name + '.zip');
+        row.querySelector('.del').onclick = () => { if (confirm('Delete certificate “' + c.name + '”?')) fetch('/api/certs/' + encodeURIComponent(c.uuid), { method: 'DELETE' }).then(refreshCerts); };
+        el.appendChild(row);
+      });
+    }).catch(() => { $('certs').innerHTML = '<div class="empty">Could not load certificates.</div>'; });
+  }
+
+  const p12File = $('p12File'), provFile = $('provFile'), certPass = $('certPass'), certNote = $('certNote');
+  function pickLabel(input, pick, base) { const f = input.files[0]; pick.firstChild.textContent = f ? f.name : base; pick.classList.toggle('set', !!f); validateCert(); }
+  p12File.addEventListener('change', () => pickLabel(p12File, $('p12Pick'), 'Choose .p12'));
+  provFile.addEventListener('change', () => pickLabel(provFile, $('provPick'), 'Choose .mobileprovision'));
+  certPass.addEventListener('input', validateCert);
+  function validateCert() { $('certSubmit').disabled = !(p12File.files[0] && provFile.files[0] && certPass.value); }
+  $('certForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const fd = new FormData();
+    fd.append('p12', p12File.files[0]); fd.append('provision', provFile.files[0]);
+    fd.append('password', certPass.value); fd.append('nickname', $('certNick').value);
+    const btn = $('certSubmit'); btn.disabled = true; certNote.className = 'note'; certNote.textContent = 'Importing…';
+    fetch('/api/certs', { method: 'POST', body: fd }).then(async r => {
+      if (r.ok) {
+        certNote.textContent = 'Certificate added.'; certNote.className = 'note ok'; ev.target.reset();
+        $('p12Pick').firstChild.textContent = 'Choose .p12'; $('p12Pick').classList.remove('set');
+        $('provPick').firstChild.textContent = 'Choose .mobileprovision'; $('provPick').classList.remove('set');
+        refreshCerts();
+      } else { certNote.textContent = (await r.text()) || 'Import failed.'; certNote.className = 'note err'; }
+    }).catch(() => { certNote.textContent = 'Import failed.'; certNote.className = 'note err'; }).finally(validateCert);
+  });
+
+  refreshFiles(); refreshApps(); refreshTweaks(); refreshCerts();
+</script>
+</body>
+</html>
