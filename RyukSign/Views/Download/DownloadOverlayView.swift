@@ -18,6 +18,7 @@ struct DownloadOverlaySheetContent: View {
     @State private var totalDownloadSize: Int64 = 0
     @State private var currentSpeed: Int64 = 0
     @State private var cancellables = Set<AnyCancellable>()
+    private let updateThrottle: TimeInterval = 0.3
     @AppStorage("Feather.downloadOverlayTheme") private var overlayTheme: String = "default"
     @Environment(\.colorScheme) private var colorScheme
 
@@ -279,7 +280,7 @@ struct DownloadOverlaySheetContent: View {
                 download.$progress,
                 download.$unpackageProgress
             )
-            .receive(on: DispatchQueue.main)
+            .throttle(for: .seconds(updateThrottle), scheduler: RunLoop.main, latest: true)
             .sink { _, _ in
                 updateOverallProgress()
             }
@@ -289,7 +290,7 @@ struct DownloadOverlaySheetContent: View {
                 download.$bytesDownloaded,
                 download.$totalBytes
             )
-            .receive(on: DispatchQueue.main)
+            .throttle(for: .seconds(updateThrottle), scheduler: RunLoop.main, latest: true)
             .sink { _, _ in
                 updateTotalSizes()
             }
@@ -300,7 +301,7 @@ struct DownloadOverlaySheetContent: View {
                 download.$progress,
                 download.$isActive
             )
-            .receive(on: DispatchQueue.main)
+            .throttle(for: .seconds(updateThrottle), scheduler: RunLoop.main, latest: true)
             .sink { _, _, _ in
                 updatePauseState()
             }

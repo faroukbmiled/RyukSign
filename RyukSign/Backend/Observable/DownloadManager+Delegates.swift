@@ -71,32 +71,31 @@ extension DownloadManager: URLSessionDownloadDelegate {
 			download.progress = Double(totalBytesWritten) / Double(download.totalBytes)
 		}
 
-		// iOS wakes the app to deliver these callbacks — piggyback the Live Activity update.
+		// Fires per network chunk; gate the bg-task assertions and filter on the update cadence.
+		guard Date().timeIntervalSince(self.lastUpdateTime) >= self.updateThrottle else { return }
+
 		let activeDownloads = self.downloads.filter { $0.progress > 0 && $0.progress < 1.0 && !$0.isPaused }
-		if !activeDownloads.isEmpty {
-			if self.isAppInBackground {
-				let taskID = UIApplication.shared.beginBackgroundTask {}
+		guard !activeDownloads.isEmpty else { return }
 
-				if self.downloadActivity != nil {
-					self.updateLiveActivity(activeDownloads: activeDownloads)
-				} else {
-					self.startLiveActivityIfNeeded()
-				}
+		if self.isAppInBackground {
+			let taskID = UIApplication.shared.beginBackgroundTask {}
 
-				DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-					if taskID != .invalid {
-						UIApplication.shared.endBackgroundTask(taskID)
-					}
-				}
+			if self.downloadActivity != nil {
+				self.updateLiveActivity(activeDownloads: activeDownloads)
 			} else {
-				let now = Date()
-				if now.timeIntervalSince(self.lastUpdateTime) >= self.updateThrottle {
-					if self.downloadActivity != nil {
-						self.updateLiveActivity(activeDownloads: activeDownloads)
-					} else {
-						self.startLiveActivityIfNeeded()
-					}
+				self.startLiveActivityIfNeeded()
+			}
+
+			DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+				if taskID != .invalid {
+					UIApplication.shared.endBackgroundTask(taskID)
 				}
+			}
+		} else {
+			if self.downloadActivity != nil {
+				self.updateLiveActivity(activeDownloads: activeDownloads)
+			} else {
+				self.startLiveActivityIfNeeded()
 			}
 		}
 	}
