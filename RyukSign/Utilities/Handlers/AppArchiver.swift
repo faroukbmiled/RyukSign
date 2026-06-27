@@ -19,7 +19,7 @@ enum AppArchiver {
 		let fm = FileManager.default
 		let zipURL = ipaURL.deletingPathExtension().appendingPathExtension("zip")
 		try? fm.removeItem(at: zipURL)
-		try Zip.zipFiles(paths: [payload], zipFilePath: zipURL, password: nil, compression: compression, progress: progress)
+		try ArchiveBackend.current.engine.zip(directory: payload, to: zipURL, compression: compression, progress: progress)
 		try? fm.removeItem(at: ipaURL)
 		try fm.moveItem(at: zipURL, to: ipaURL)
 	}

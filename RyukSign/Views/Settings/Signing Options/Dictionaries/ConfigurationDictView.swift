@@ -8,11 +8,24 @@
 import SwiftUI
 import NimbleViews
 
+enum DictKeyKind {
+	case identifier
+	case displayName
+
+	func value(for app: AppInfoPresentable) -> String? {
+		switch self {
+		case .identifier: app.identifier
+		case .displayName: app.name
+		}
+	}
+}
+
 // MARK: - View
 struct ConfigurationDictView: View {
 	@State private var _isAddingPresenting = false
 	
 	var title: String
+	var keyKind: DictKeyKind
 	@Binding var dataDict: [String: String]
 	
 	// MARK: Body
@@ -36,7 +49,7 @@ struct ConfigurationDictView: View {
 			}
 		}
 		.navigationDestination(isPresented: $_isAddingPresenting) {
-			ConfigurationDictAddView(dataDict: $dataDict)
+			ConfigurationDictAddView(keyKind: keyKind, dataDict: $dataDict)
 		}
 	}
 }

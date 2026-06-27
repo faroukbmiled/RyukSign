@@ -400,72 +400,16 @@ struct TweakIPAExtractView: View {
 // MARK: - Library app picker (for extraction)
 
 struct TweakAppExtractPickerView: View {
-	@Environment(\.dismiss) private var dismiss
-
-	@FetchRequest(
-		sortDescriptors: [NSSortDescriptor(keyPath: \Signed.date, ascending: false)],
-		animation: .smooth
-	) private var signed: FetchedResults<Signed>
-
-	@FetchRequest(
-		sortDescriptors: [NSSortDescriptor(keyPath: \Imported.date, ascending: false)],
-		animation: .smooth
-	) private var imported: FetchedResults<Imported>
-
 	@State private var _scanned: ScannedApp?
-	@State private var _query = ""
 
 	private struct ScannedApp: Identifiable { let id = UUID(); let candidates: [TweakCandidate] }
 
-	private func _matches(_ app: AppInfoPresentable) -> Bool {
-		let q = _query.trimmingCharacters(in: .whitespaces)
-		guard !q.isEmpty else { return true }
-		return (app.name ?? "").localizedCaseInsensitiveContains(q)
-			|| (app.identifier ?? "").localizedCaseInsensitiveContains(q)
-	}
-
-	private var _filteredSigned: [Signed] { signed.filter(_matches) }
-	private var _filteredImported: [Imported] { imported.filter(_matches) }
-
 	var body: some View {
-		NBNavigationView(.localized("Choose App")) {
-			NBList(.localized("Choose App")) {
-				if !_filteredSigned.isEmpty {
-					NBSection(.localized("Signed")) { ForEach(_filteredSigned) { _row(for: $0) } }
-				}
-				if !_filteredImported.isEmpty {
-					NBSection(.localized("Imported")) { ForEach(_filteredImported) { _row(for: $0) } }
-				}
-				if _filteredSigned.isEmpty && _filteredImported.isEmpty {
-					Text(verbatim: (signed.isEmpty && imported.isEmpty)
-						? .localized("No apps in your Library yet.")
-						: .localized("No matches."))
-						.font(.footnote)
-						.foregroundColor(.disabled())
-				}
-			}
-			.searchable(text: $_query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: Text(.localized("Search apps")))
-			.toolbar { NBToolbarButton(role: .close) }
+		AppLibraryPicker(showsChevron: true, dismissOnSelect: false) { app in
+			_scan(app)
 		}
 		.sheet(item: $_scanned) { scan in
 			TweakExtractionView(candidates: scan.candidates, cleanupURL: nil)
-		}
-	}
-
-	@ViewBuilder
-	private func _row(for app: AppInfoPresentable) -> some View {
-		Button {
-			_scan(app)
-		} label: {
-			HStack(spacing: 12) {
-				FRAppIconView(app: app, size: 38)
-				VStack(alignment: .leading, spacing: 2) {
-					Text(app.name ?? .localized("Unknown")).foregroundStyle(.primary).lineLimit(1)
-					Text(app.identifier ?? "").font(.caption).foregroundStyle(Color.primary.opacity(0.6)).lineLimit(1)
-				}
-				Spacer()
-				Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tint)
-			}
 		}
 	}
 

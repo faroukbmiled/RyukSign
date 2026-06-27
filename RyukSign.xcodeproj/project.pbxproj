@@ -25,6 +25,7 @@
 		3A2F0EF62E96DA5D009DE4CE /* RyukSignWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3A2F0EE52E96DA5A009DE4CE /* RyukSignWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3A2F0F0D2E976B67009DE4CE /* IDevice in Frameworks */ = {isa = PBXBuildFile; productRef = 3A2F0F0C2E976B67009DE4CE /* IDevice */; };
 		3A2F0F0F2E976B67009DE4CE /* IDeviceSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 3A2F0F0E2E976B67009DE4CE /* IDeviceSwift */; };
+		FADE000100000000000F0001 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = FADE000100000000000F0002 /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -148,6 +149,7 @@
 				33693A082DC8BF5B00730215 /* AltSourceKit in Frameworks */,
 				3A2F0F0D2E976B67009DE4CE /* IDevice in Frameworks */,
 				3371F7322DA9ECDD00281AC6 /* Zip in Frameworks */,
+				FADE000100000000000F0001 /* ZIPFoundation in Frameworks */,
 				330F69032DC03DF500D8C35D /* NimbleViews in Frameworks */,
 				3305BBAC2DB8944200660D45 /* Vapor in Frameworks */,
 				3346F83B2DC6C6D100C7D508 /* NukeUI in Frameworks */,
@@ -188,7 +190,7 @@
 		3379C1B02DA869A1004372DA = {
 			isa = PBXGroup;
 			children = (
-					3379C1BB2DA869A1004372DA /* RyukSign */,
+				3379C1BB2DA869A1004372DA /* RyukSign */,
 				AABA5D1A2DB3C87800BFCD2C /* RyukSignTests */,
 				3A2F0EC22E96DA0B009DE4CE /* RyukSignWidgetExtension */,
 				3A2F0EE82E96DA5A009DE4CE /* RyukSignWidgetExtension */,
@@ -232,6 +234,7 @@
 			name = RyukSign;
 			packageProductDependencies = (
 				3371F7312DA9ECDD00281AC6 /* Zip */,
+				FADE000100000000000F0002 /* ZIPFoundation */,
 				33CF13382DB5ACFB0021D4C5 /* SWCompression */,
 				3305BBAB2DB8944200660D45 /* Vapor */,
 				330F68FB2DBF7C8600D8C35D /* NimbleExtensions */,
@@ -340,6 +343,7 @@
 			packageReferences = (
 				3371F5152DA91FDC00281AC6 /* XCLocalSwiftPackageReference "Zsign" */,
 				3371F6F52DA9EBA500281AC6 /* XCRemoteSwiftPackageReference "Zip" */,
+				FADE000100000000000F0003 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				33CF13372DB5ACFB0021D4C5 /* XCRemoteSwiftPackageReference "SWCompression" */,
 				3305BBAA2DB8944200660D45 /* XCRemoteSwiftPackageReference "vapor" */,
 				330F68FF2DC03DF400D8C35D /* XCLocalSwiftPackageReference "NimbleKit" */,
@@ -608,7 +612,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.5;
+				MARKETING_VERSION = 2.9.6;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -676,7 +680,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.5;
+				MARKETING_VERSION = 2.9.6;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -808,7 +812,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.5;
+				MARKETING_VERSION = 2.9.6;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -956,7 +960,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.5;
+				MARKETING_VERSION = 2.9.6;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1325,6 +1329,14 @@
 				minimumVersion = 4.8.6;
 			};
 		};
+		FADE000100000000000F0003 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1392,6 +1404,11 @@
 		3A2F0F0E2E976B67009DE4CE /* IDeviceSwift */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = IDeviceSwift;
+		};
+		FADE000100000000000F0002 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FADE000100000000000F0003 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

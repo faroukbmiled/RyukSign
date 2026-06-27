@@ -33,7 +33,7 @@ struct SettingsView: View {
         return _certificates[_storedSelectedCert]
     }
 
-    private let _donationsUrl = "https://github.com/sponsors/claration"
+    private let _donationsUrl = "https://buymeacoffee.com/axryuk"
     private let _githubUrl = "https://github.com/faroukbmiled/RyukSign"
     
     // MARK: Body
@@ -93,6 +93,9 @@ struct SettingsView: View {
                     }
                     NavigationLink(destination: WebManagerView()) {
                         Label(.localized("Web Manager"), systemImage: "externaldrive.badge.wifi")
+                    }
+                    NavigationLink(destination: LogsHistoryView()) {
+                        Label(.localized("Activity Logs"), systemImage: "text.alignleft")
                     }
                 } footer: {
                     Text(.localized("Configure the apps way of installing, its zip compression levels, and custom modifications to apps."))

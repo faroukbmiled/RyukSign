@@ -20,6 +20,10 @@ struct DocumentExporterView: UIViewControllerRepresentable {
 
 	func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
 		let picker = UIDocumentPickerViewController(forExporting: urls, asCopy: asCopy)
+		// nil lets the picker reopen wherever the user last saved; otherwise pin to Documents.
+		picker.directoryURL = UserDefaults.standard.bool(forKey: "RyukSign.useLastExportLocation")
+			? nil
+			: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
 		picker.delegate = context.coordinator
 		return picker
 	}

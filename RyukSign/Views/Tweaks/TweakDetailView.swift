@@ -75,7 +75,8 @@ struct TweakDetailView: View {
 			.ignoresSafeArea()
 		}
 		.sheet(isPresented: $_isPickingFromLibrary) {
-			TweakBundlePickerView { identifier in
+			AppLibraryPicker { app in
+				guard let identifier = app.identifier, !identifier.isEmpty else { return }
 				manager.mutate(tweakId) {
 					if !$0.autoInjectBundleIds.contains(identifier) {
 						$0.autoInjectBundleIds.append(identifier)

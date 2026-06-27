@@ -22,6 +22,10 @@ enum FileLogger {
 			.appendingPathComponent("ryuksign.log")
 	}
 
+	private static var _rotatedFileURL: URL {
+		logFileURL.deletingPathExtension().appendingPathExtension("1.log")
+	}
+
 	static func log(_ message: String, category: String = "general") {
 		Logger.misc.info("[\(category, privacy: .public)] \(message)")
 		let line = "\(_timestamp()) [\(category)] \(message)\n"
@@ -52,8 +56,17 @@ enum FileLogger {
 		(try? String(contentsOf: logFileURL, encoding: .utf8)) ?? ""
 	}
 
+	/// Full history including the rotated file, oldest first.
+	static func readAll() -> String {
+		let rotated = (try? String(contentsOf: _rotatedFileURL, encoding: .utf8)) ?? ""
+		return rotated + read()
+	}
+
 	static func clear() {
-		_queue.async { try? _fm.removeItem(at: logFileURL) }
+		_queue.async {
+			try? _fm.removeItem(at: logFileURL)
+			try? _fm.removeItem(at: _rotatedFileURL)
+		}
 	}
 
 	// MARK: Internal

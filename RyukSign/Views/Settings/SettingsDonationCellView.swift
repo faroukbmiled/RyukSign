@@ -7,80 +7,44 @@
 #if !NIGHTLY && !DEBUG
 import SwiftUI
 import NimbleViews
+import NimbleExtensions
+
 struct SettingsDonationCellView: View {
 	var site: String
-	
+
 	var body: some View {
 		Section {
 			VStack(spacing: 14) {
-				_title()
-				
-				_benefit(
-					.localized("Modded by Ryuk"),
-					.localized("This version of Feather has been modified by Ryuk."),
-					systemName: "bolt.circle.fill"
-				)
-				_benefit(
-					.localized("Special Thanks"),
-					.localized("Massive appreciation to Yuri and MrError for testing the app."),
-					systemName: "star.circle.fill"
-				)
-				
-				Button() {
-					RyukSignAPI.openTelegram()
-				} label: {
-					_sheetButton(.localized("Contact Ryuk"))
+				Image(systemName: "heart.fill")
+					.font(.system(size: 54))
+					.foregroundStyle(.pink)
+					.padding(.top, 12)
+
+				VStack(spacing: 4) {
+					Text("RyukSign")
+						.font(.title3.bold())
+					Text(.localized("A modified version of Feather, by Ryuk."))
+						.font(.subheadline)
+						.foregroundStyle(.secondary)
+						.multilineTextAlignment(.center)
 				}
-				.frame(height: 45)
+
+				Button {
+					UIApplication.open(site)
+				} label: {
+					Text(.localized("Donate to Ryuk"))
+						.font(.subheadline.weight(.semibold))
+						.foregroundStyle(.white)
+						.padding(.horizontal, 28)
+						.frame(height: 42)
+						.background(Color.accentColor, in: Capsule())
+				}
+				.buttonStyle(.plain)
+				.padding(.top, 4)
 			}
-			.padding(.vertical, 12)
-			.buttonStyle(.plain)
+			.frame(maxWidth: .infinity)
+			.padding(.vertical, 8)
 		}
-	}
-	
-	@ViewBuilder
-	private func _title() -> some View {
-		VStack(alignment: .center, spacing: 12) {
-			Image(systemName: "crown.fill")
-				.font(.system(size: 38, weight: .bold))
-				.foregroundStyle(.orange)
-			
-			Text("RyukSign")
-				.font(.title)
-				.bold()
-		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-	}
-	
-	@ViewBuilder
-	private func _benefit(
-		_ title: String,
-		_ desc: String,
-		systemName: String
-	) -> some View {
-		HStack(alignment: .center, spacing: 14) {
-			Image(systemName: systemName)
-				.font(.system(size: 32))
-				.foregroundStyle(.tint)
-				.frame(width: 39, alignment: .center)
-			
-			NBTitleWithSubtitleView(
-				title: title,
-				subtitle: desc
-			)
-		}
-	}
-	
-	@ViewBuilder
-	private func _sheetButton(_ title: String) -> some View {
-		Text(title)
-			.frame(maxWidth: .infinity, maxHeight: .infinity)
-			.background(Color.accentColor)
-			.foregroundColor(.white)
-			.clipShape(
-				RoundedRectangle(cornerRadius: 12, style: .continuous)
-			)
-			.bold()
 	}
 }
 #endif

@@ -21,9 +21,12 @@ struct SigningView: View {
 	@State private var _isFilePickerPresenting = false
 	@State private var _isImagePickerPresenting = false
 	@State private var _isSigning = false
+	@State private var _isLogPresenting = false
+	@State private var _postSignAction: (() -> Void)? = nil
 	@State private var _selectedPhoto: PhotosPickerItem? = nil
 	@State var appIcon: UIImage?
 	@State private var _displayedDescription: String?
+	@AppStorage("RyukSign.autoShowSigningLogs") private var _autoShowLogs: Bool = false
 
 	// MARK: Fetch
 	@FetchRequest(
@@ -35,6 +38,20 @@ struct SigningView: View {
 	private func _selectedCert() -> CertificatePair? {
 		guard certificates.indices.contains(_temporaryCertificate) else { return nil }
 		return certificates[_temporaryCertificate]
+	}
+
+	private func _provisioningIdentifier() -> String? {
+		guard
+			let cert = _selectedCert(),
+			let decoded = Storage.shared.getProvisionFileDecoded(for: cert),
+			let appId = decoded.Entitlements?["application-identifier"]?.value as? String
+		else {
+			return nil
+		}
+
+		let bundleId = appId.drop { $0 != "." }.dropFirst()
+		guard !bundleId.isEmpty, !bundleId.contains("*") else { return nil }
+		return String(bundleId)
 	}
 	
 	var app: AppInfoPresentable
@@ -59,6 +76,8 @@ struct SigningView: View {
 					.frame(height: 30)
 					.listRowBackground(EmptyView())
 			}
+			.disabled(_isSigning)
+			.animation(.smooth, value: _isSigning)
 			.overlay {
 				VStack(spacing: 0) {
 					Spacer()
@@ -67,9 +86,13 @@ struct SigningView: View {
 						.rotationEffect(.degrees(180))
 						.overlay {
 							Button {
-								_start()
+								if _isSigning {
+									_isLogPresenting = true
+								} else {
+									_start()
+								}
 							} label: {
-								NBSheetButton(title: .localized("Start Signing"), style: .prominent)
+								NBSheetButton(title: .localized(_isSigning ? "Show Logs" : "Start Signing"), style: .prominent)
 									.padding()
 							}
 							.buttonStyle(.plain)
@@ -114,7 +137,7 @@ struct SigningView: View {
 			.photosPicker(isPresented: $_isImagePickerPresenting, selection: $_selectedPhoto)
 			.onChange(of: _selectedPhoto) { newValue in
 				guard let newValue else { return }
-				
+
 				Task {
 					if let data = try? await newValue.loadTransferable(type: Data.self),
 					   let image = UIImage(data: data)?.resizeToSquare() {
@@ -122,8 +145,14 @@ struct SigningView: View {
 					}
 				}
 			}
-			.disabled(_isSigning)
-			.animation(.smooth, value: _isSigning)
+			.sheet(isPresented: $_isLogPresenting, onDismiss: {
+				_postSignAction?()
+				_postSignAction = nil
+			}) {
+				SigningLogView()
+					.presentationDetents([.medium, .large])
+					.presentationDragIndicator(.visible)
+			}
 		}
 		.onAppear {
 			_displayedDescription = app.appDescription
@@ -206,7 +235,8 @@ extension SigningView {
 				SigningPropertiesView(
 					title: .localized("Identifier"),
 					initialValue: _temporaryOptions.appIdentifier ?? (app.identifier ?? ""),
-					bindingValue: $_temporaryOptions.appIdentifier
+					bindingValue: $_temporaryOptions.appIdentifier,
+					suggestion: _provisioningIdentifier()
 				)
 			}
 			_infoCell(.localized("Version"), desc: _temporaryOptions.appVersion ?? app.version) {
@@ -360,6 +390,7 @@ extension SigningView {
 
 		NBHaptic.tap()
 		_isSigning = true
+		if _autoShowLogs { _isLogPresenting = true }
 
 		FR.signPackageFile(
 			app,
@@ -372,20 +403,32 @@ extension SigningView {
 				_isSigning = false
 				Toast.error(error.localizedDescription, duration: .sticky)
 			} else {
+				_isSigning = false
 				Toast.success(.localized("Signed successfully"), systemImage: "checkmark.seal.fill")
-				if
-					_temporaryOptions.post_deleteAppAfterSigned,
-					!app.isSigned
-				{
-					Storage.shared.deleteApp(for: app)
-				}
-				
-				if _temporaryOptions.post_installAppAfterSigned {
-					DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-						NotificationCenter.default.post(name: Notification.Name("Feather.installApp"), object: nil)
+
+				let finish = {
+					if
+						_temporaryOptions.post_deleteAppAfterSigned,
+						!app.isSigned
+					{
+						Storage.shared.deleteApp(for: app)
 					}
+
+					if _temporaryOptions.post_installAppAfterSigned {
+						DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+							NotificationCenter.default.post(name: Notification.Name("Feather.installApp"), object: nil)
+						}
+					}
+
+					dismiss()
 				}
-				dismiss()
+
+				// If the user is watching logs, hold the finish until they close the console.
+				if _isLogPresenting {
+					_postSignAction = finish
+				} else {
+					finish()
+				}
 			}
 		}
 	}

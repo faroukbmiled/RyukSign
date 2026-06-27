@@ -145,6 +145,14 @@ struct InstallPreviewView: View {
 		}
 
 		Task.detached {
+			let keepAlive = BackgroundTaskManager(
+				taskName: "Install",
+				expirationTitle: .localized("Installation continuing"),
+				expirationBody: .localized("The installation will continue when you reopen the app")
+			)
+			await MainActor.run { keepAlive.start() }
+			defer { Task { @MainActor in keepAlive.stop() } }
+
 			do {
 				let handler = await ArchiveHandler(app: app, viewModel: viewModel)
 				try await handler.move()

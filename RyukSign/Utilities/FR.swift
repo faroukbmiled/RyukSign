@@ -47,19 +47,33 @@ enum FR {
 		completion: @escaping (Error?) -> Void
 	) {
 		Task.detached {
+			let log = SigningLog.shared
+			log.reset()
+			log.info(.localized("Preparing to sign %@", arguments: app.name ?? .localized("app")))
+
+			let keepAlive = BackgroundTaskManager(
+				taskName: "Signing",
+				expirationTitle: .localized("Signing continuing"),
+				expirationBody: .localized("The signing will continue when you reopen the app")
+			)
+			await MainActor.run { keepAlive.start() }
+			defer { Task { @MainActor in keepAlive.stop() } }
+
 			let handler = SigningHandler(app: app, options: options)
 			handler.appCertificate = certificate
 			handler.appIcon = icon
-			
+
 			do {
 				try await handler.copy()
 				try await handler.modify()
 				try? await handler.clean()
+				log.success(.localized("Signed successfully"))
 				await MainActor.run {
 					completion(nil)
 				}
 			} catch {
 				try? await handler.clean()
+				log.error(error.localizedDescription)
 				await MainActor.run {
 					completion(error)
 				}

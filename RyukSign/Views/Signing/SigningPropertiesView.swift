@@ -19,14 +19,28 @@ struct SigningPropertiesView: View {
 	}
 	
 	var title: String
-	var initialValue: String 
+	var initialValue: String
 	@Binding var bindingValue: String?
-	
+	var suggestion: String? = nil
+
 	// MARK: Body
 	var body: some View {
 		NBList(title) {
-			TextField(initialValue, text: $text)
-				.textInputAutocapitalization(.none)
+			Section {
+				TextField(initialValue, text: $text)
+					.textInputAutocapitalization(.none)
+			}
+			if let suggestion, suggestion != text {
+				Section {
+					Button {
+						text = suggestion
+					} label: {
+						Label(.localized("Match Certificate Identifier"), systemImage: "checkmark.seal")
+					}
+				} footer: {
+					Text(verbatim: .localized("Use %@ from your selected provisioning profile.", arguments: suggestion))
+				}
+			}
 		}
 		.dismissableKeyboard()
 		.toolbar {

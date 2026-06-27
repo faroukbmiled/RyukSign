@@ -11,6 +11,7 @@ import NimbleViews
 // MARK: - View
 struct ConfigurationView: View {
 	@StateObject private var _optionsManager = OptionsManager.shared
+	@AppStorage("RyukSign.autoShowSigningLogs") private var _autoShowLogs: Bool = false
 	@State var isRandomAlertPresenting = false
 	@State var randomString = ""
 	
@@ -20,6 +21,7 @@ struct ConfigurationView: View {
             Section {
                 NavigationLink(destination: ConfigurationDictView(
                     title: .localized("Display Names"),
+                        keyKind: .displayName,
                         dataDict: $_optionsManager.options.displayNames
                     )
                 ) {
@@ -27,6 +29,7 @@ struct ConfigurationView: View {
                 }
                 NavigationLink(destination: ConfigurationDictView(
                         title: .localized("Identifiers"),
+                        keyKind: .identifier,
                         dataDict: $_optionsManager.options.identifiers
                     )
                 ) {
@@ -34,6 +37,11 @@ struct ConfigurationView: View {
                 }
             }footer: {
                 Text(.localized("This allows you to set rules for automatically replacing the Bundle ID/Display Name when signing an app."))
+            }
+            Section {
+                Toggle(.localized("Show Logs While Signing"), systemImage: "text.alignleft", isOn: $_autoShowLogs)
+            } footer: {
+                Text(.localized("Automatically open a live log console when signing starts. You can also open it from the Show Logs button while a sign is running."))
             }
             SigningOptionsView(options: $_optionsManager.options)
 		}

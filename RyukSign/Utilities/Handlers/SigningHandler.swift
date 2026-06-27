@@ -52,6 +52,7 @@ final class SigningHandler: NSObject {
 
 		try _fileManager.copyItem(at: appUrl, to: movedAppURL)
 		_movedAppPath = movedAppURL
+		SigningLog.shared.info(.localized("Copied app bundle"))
 
 		// Capture the original bundle id BEFORE any modifications (PPQ protection, etc.).
 		if let bundle = Bundle(url: movedAppURL) {
@@ -103,11 +104,15 @@ final class SigningHandler: NSObject {
 			try await _locateMachosAndChangeToSDK26(for: movedAppPath)
 		}
 		
+		SigningLog.shared.info(.localized("Applying modifications"))
+
 		let hasTweakSpecs = !(_options.tweakInjections ?? []).filter { $0.enabled }.isEmpty
 		if _options.experiment_replaceSubstrateWithEllekit {
+			SigningLog.shared.info(.localized("Injecting tweaks"))
 			try await _inject(for: movedAppPath, with: _options)
 		} else {
 			if !_options.injectionFiles.isEmpty || hasTweakSpecs {
+				SigningLog.shared.info(.localized("Injecting tweaks"))
 				try await _inject(for: movedAppPath, with: _options)
 			}
 		}
@@ -120,11 +125,13 @@ final class SigningHandler: NSObject {
 		
 		if
 			_options.signingOption == .default,
-			appCertificate != nil
+			let cert = appCertificate
 		{
+			let certName = cert.nickname ?? Storage.shared.getProvisionFileDecoded(for: cert)?.Name ?? .localized("certificate")
+			SigningLog.shared.info(.localized("Signing with %@", arguments: certName))
 			try await handler.sign()
 		} else if _options.signingOption == .onlyModify {
-			//
+			SigningLog.shared.info(.localized("Modifying without signing"))
 		} else {
 			throw SigningFileHandlerError.missingCertifcate
 		}
