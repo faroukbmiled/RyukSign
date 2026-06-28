@@ -22,6 +22,9 @@ struct SigningLogView: View {
 							_row(line).id(line.id)
 						}
 					}
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.padding(12)
+					.background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
 					.padding()
 				}
 				.onChange(of: _log.lines.count) { _ in
@@ -53,33 +56,8 @@ struct SigningLogView: View {
 		}
 	}
 
-	@ViewBuilder
 	private func _row(_ line: SigningLogLine) -> some View {
-		HStack(alignment: .top, spacing: 8) {
-			Image(systemName: _symbol(line.level))
-				.font(.caption)
-				.foregroundStyle(_tint(line.level))
-				.frame(width: 16)
-			Text(line.message)
-				.font(.system(.footnote, design: .monospaced))
-				.textSelection(.enabled)
-				.frame(maxWidth: .infinity, alignment: .leading)
-		}
-	}
-
-	private func _symbol(_ level: SigningLogLine.Level) -> String {
-		switch level {
-		case .info: "circle.fill"
-		case .success: "checkmark.circle.fill"
-		case .error: "xmark.octagon.fill"
-		}
-	}
-
-	private func _tint(_ level: SigningLogLine.Level) -> Color {
-		switch level {
-		case .info: .secondary
-		case .success: .green
-		case .error: .red
-		}
+		let c = LogParser.classify(line.message, level: line.level)
+		return LogRowView(entry: LogEntry(id: line.id, date: line.date, category: nil, message: c.text, kind: c.kind))
 	}
 }

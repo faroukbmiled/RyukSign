@@ -40,7 +40,8 @@ final class SigningLog: ObservableObject {
 		return lines.map { "\(formatter.string(from: $0.date))  \($0.message)" }.joined(separator: "\n")
 	}
 
-	private func _append(_ level: SigningLogLine.Level, _ message: String) {
+	private func _append(_ level: SigningLogLine.Level, _ rawMessage: String) {
+		let message = LogParser.sanitize(rawMessage)
 		if level == .error {
 			FileLogger.error(message, category: "sign")
 		} else {

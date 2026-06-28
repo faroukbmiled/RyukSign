@@ -14,7 +14,9 @@ struct ArchiveView: View {
 	@AppStorage("Feather.compressionLevel") private var _compressionLevel: Int = ZipCompression.DefaultCompression.rawValue
 	@AppStorage("Feather.useShareSheetForArchiving") private var _useShareSheet: Bool = false
 	@AppStorage(ArchiveBackend.storageKey) private var _backend: Int = ArchiveBackend.zip.rawValue
-	@AppStorage("RyukSign.useLastExportLocation") private var _useLastLocation: Bool = false
+	@AppStorage("RyukSign.useLastExportLocation") private var _useLastExportLocation: Bool = false
+	@AppStorage(DefaultFolderPickerView.folderNameKey) private var _importFolderName: String = ""
+	@State private var _isPickingImportFolder = false
 
 	// MARK: Body
     var body: some View {
@@ -41,10 +43,36 @@ struct ArchiveView: View {
 			}
 
 			Section {
-				Toggle(.localized("Remember Last Export Location"), systemImage: "clock.arrow.circlepath", isOn: $_useLastLocation)
+				Toggle(.localized("Remember Last Export Location"), systemImage: "clock.arrow.circlepath", isOn: $_useLastExportLocation)
 			} footer: {
 				Text(.localized("Reopen the Save to Files picker at the last folder you used instead of always starting at the RyukSign documents folder."))
 			}
+
+			Section {
+				Button {
+					_isPickingImportFolder = true
+				} label: {
+					HStack {
+						Label(.localized("Default Import Folder"), systemImage: "folder")
+						Spacer()
+						Text(_importFolderName.isEmpty ? .localized("Not Set") : _importFolderName)
+							.foregroundStyle(.secondary)
+							.lineLimit(1)
+					}
+				}
+				if !_importFolderName.isEmpty {
+					Button(.localized("Clear Default Folder"), systemImage: "xmark.circle", role: .destructive) {
+						UserDefaults.standard.removeObject(forKey: FileImporterRepresentableView.defaultFolderBookmarkKey)
+						_importFolderName = ""
+					}
+				}
+			} footer: {
+				Text(.localized("Choose a folder to always open when importing files."))
+			}
+		}
+		.sheet(isPresented: $_isPickingImportFolder) {
+			DefaultFolderPickerView { _ in _isPickingImportFolder = false }
+				.ignoresSafeArea()
 		}
     }
 }

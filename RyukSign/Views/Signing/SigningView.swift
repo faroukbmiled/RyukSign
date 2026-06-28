@@ -93,6 +93,15 @@ struct SigningView: View {
 								}
 							} label: {
 								NBSheetButton(title: .localized(_isSigning ? "Show Logs" : "Start Signing"), style: .prominent)
+									.overlay(alignment: .trailing) {
+										if _isSigning {
+											ProgressView()
+												.progressViewStyle(.circular)
+												.tint(.white)
+												.padding(.trailing, 28)
+												.allowsHitTesting(false)
+										}
+									}
 									.padding()
 							}
 							.buttonStyle(.plain)

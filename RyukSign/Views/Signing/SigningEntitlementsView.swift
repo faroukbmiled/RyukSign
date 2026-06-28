@@ -37,7 +37,7 @@ struct SigningEntitlementsView: View {
 				allowedContentTypes:  [.xmlPropertyList, .plist, .entitlements],
 				onDocumentsPicked: { urls in
 					guard let selectedFileURL = urls.first else { return }
-					
+
 					FileManager.default.moveAndStore(selectedFileURL, with: "FeatherEntitlement") { url in
 						bindingValue = url
 					}
