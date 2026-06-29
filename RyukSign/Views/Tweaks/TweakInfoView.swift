@@ -45,6 +45,8 @@ struct TweakInfoView: View {
 	// The app being signed, when known — lets us check dependency satisfaction. Nil in the library.
 	var appURL: URL? = nil
 	var onApplyRecommendation: ((Options.InjectPath, Options.InjectFolder) -> Void)? = nil
+	// Current persisted injection config, so we can show "already applied" across reopens.
+	var currentConfig: TweakInjectConfig? = nil
 
 	@StateObject private var _loader = TweakAnalysisLoader()
 	@State private var _applied = false
@@ -123,6 +125,9 @@ struct TweakInfoView: View {
 
 		if let onApply = onApplyRecommendation, a.hasRecommendation,
 		   let path = a.recommendedPath, let folder = a.recommendedFolder {
+			let applied = _applied || (currentConfig?.useCustom == true
+				&& currentConfig?.injectPath == path
+				&& currentConfig?.injectFolder == folder)
 			NBSection(.localized("Recommended")) {
 				Button {
 					onApply(path, folder)
@@ -130,13 +135,13 @@ struct TweakInfoView: View {
 					Toast.success(.localized("Applied recommended settings"), systemImage: "wand.and.stars")
 				} label: {
 					Label(
-						_applied
+						applied
 							? .localized("Applied ✓")
 							: String.localized("Use Recommended (%@ · %@)", arguments: path.rawValue, folder.rawValue == "/" ? "root" : "Frameworks"),
-						systemImage: _applied ? "checkmark.circle.fill" : "wand.and.stars"
+						systemImage: applied ? "checkmark.circle.fill" : "wand.and.stars"
 					)
 				}
-				.disabled(_applied)
+				.disabled(applied)
 			} footer: {
 				Text(.localized("Sets this file's injection path and folder to the values that usually work for this kind of tweak."))
 			}

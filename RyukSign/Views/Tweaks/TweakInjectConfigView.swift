@@ -74,7 +74,8 @@ struct TweakInjectConfigView: View {
 							file.config.wrappedValue.useCustom = true
 							file.config.wrappedValue.injectPath = path
 							file.config.wrappedValue.injectFolder = folder
-						} : nil
+						} : nil,
+						currentConfig: file.config.wrappedValue
 					)
 				} label: {
 					Label(.localized("File Info & Dependencies"), systemImage: "info.circle")

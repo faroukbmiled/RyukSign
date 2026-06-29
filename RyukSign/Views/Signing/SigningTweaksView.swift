@@ -237,6 +237,18 @@ private struct SigningLibraryTweakPicker: View {
 			|| (tweak.notes ?? "").localizedCaseInsensitiveContains(q)
 	}
 
+	private var _isSearching: Bool { !_query.trimmingCharacters(in: .whitespaces).isEmpty }
+
+	private func _inFolder(_ id: UUID?) -> [ManagedTweak] {
+		_available.filter { $0.folderId == id }
+	}
+
+	private var _folders: [TweakFolder] {
+		manager.folders
+			.filter { !_inFolder($0.id).isEmpty }
+			.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+	}
+
 	private var _allIds: Set<UUID> { Set(_available.map { $0.id }) }
 
 	var body: some View {
@@ -250,17 +262,7 @@ private struct SigningLibraryTweakPicker: View {
 					)
 				} else {
 					NBList(.localized("Add From Library")) {
-						NBSection(.localized("Tweaks"), secondary: _available.isEmpty ? nil : "\(_available.count)") {
-							if _available.isEmpty {
-								Text(verbatim: .localized("No matches."))
-									.font(.footnote)
-									.foregroundColor(.disabled())
-							} else {
-								ForEach(_available) { tweak in
-									_row(tweak)
-								}
-							}
-						}
+						_pickerContent
 					}
 					.searchable(text: $_query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: Text(.localized("Search tweaks")))
 				}
@@ -289,6 +291,39 @@ private struct SigningLibraryTweakPicker: View {
 							.font(.footnote)
 							.foregroundStyle(Color.primary.opacity(0.6))
 					}
+				}
+			}
+		}
+	}
+
+	@ViewBuilder
+	private var _pickerContent: some View {
+		if _isSearching {
+			NBSection(.localized("Results"), secondary: "\(_available.count)") {
+				if _available.isEmpty {
+					Text(verbatim: .localized("No matches."))
+						.font(.footnote)
+						.foregroundColor(.disabled())
+				} else {
+					ForEach(_available) { _row($0) }
+				}
+			}
+		} else {
+			ForEach(_folders) { folder in
+				let tweaks = _inFolder(folder.id)
+				NBSection(folder.name, secondary: "\(tweaks.count)") {
+					ForEach(tweaks) { _row($0) }
+				}
+			}
+
+			let loose = _inFolder(nil)
+			NBSection(.localized("Tweaks"), secondary: loose.isEmpty ? nil : "\(loose.count)") {
+				if loose.isEmpty {
+					Text(verbatim: .localized("Nothing here. Tweaks you add land here unless filed in a folder."))
+						.font(.footnote)
+						.foregroundColor(.disabled())
+				} else {
+					ForEach(loose) { _row($0) }
 				}
 			}
 		}

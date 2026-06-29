@@ -263,7 +263,8 @@ extension TweakDetailView {
 							config.injectFolder = folder
 							$0.config = config
 						}
-					} : nil
+					} : nil,
+					currentConfig: component.config ?? tweak.config
 				)
 			} label: {
 				Label(.localized("File Info & Dependencies"), systemImage: "info.circle")
