@@ -71,10 +71,10 @@ extension DownloadManager: URLSessionDownloadDelegate {
 			download.progress = Double(totalBytesWritten) / Double(download.totalBytes)
 		}
 
-		// iOS wakes the app to deliver these callbacks — piggyback the Live Activity update.
 		let activeDownloads = self.downloads.filter { $0.progress > 0 && $0.progress < 1.0 && !$0.isPaused }
 		if !activeDownloads.isEmpty {
 			if self.isAppInBackground {
+				// Fresh runtime assertion per chunk keeps the download and Live Activity alive in the background.
 				let taskID = UIApplication.shared.beginBackgroundTask {}
 
 				if self.downloadActivity != nil {

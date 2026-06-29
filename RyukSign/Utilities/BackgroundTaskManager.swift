@@ -10,39 +10,31 @@ import UIKit
 import AVFoundation
 import UserNotifications
 
-/// Extended background execution: loops silent audio to keep the app alive.
 final class BackgroundTaskManager {
 
-	// MARK: - Shared audio-session refcount
-	// AVAudioSession is process-wide; with several managers running, only the LAST to
-	// stop may deactivate it, else stopping one kills background audio for the others.
+	// AVAudioSession is process-wide; refcount it so one manager stopping can't cut audio for the rest.
 	private static let _sessionLock = NSLock()
 	private static var _sessionUsers = 0
 
-	private static func _retainSession() {
+	private static func retainSession() {
 		_sessionLock.lock(); defer { _sessionLock.unlock() }
 		_sessionUsers += 1
 	}
 
-	/// Returns true when this was the last user (caller should deactivate the session).
-	private static func _releaseSession() -> Bool {
+	private static func releaseSession() -> Bool {
 		_sessionLock.lock(); defer { _sessionLock.unlock() }
 		_sessionUsers = max(0, _sessionUsers - 1)
 		return _sessionUsers == 0
 	}
 
-	// MARK: - Properties
-
 	private var audioPlayer: AVAudioPlayer?
 	private var backgroundTaskID: UIBackgroundTaskIdentifier?
-	private var asyncTask: Task<Void, Error>?
+	private var cycleTask: Task<Void, Error>?
 	private var isRunning = false
 
 	private let taskName: String
 	private let expirationNotificationTitle: String
 	private let expirationNotificationBody: String
-
-	// MARK: - Initialization
 
 	init(
 		taskName: String,
@@ -54,19 +46,14 @@ final class BackgroundTaskManager {
 		self.expirationNotificationBody = expirationBody
 	}
 
-	// MARK: - Public Methods
-
-	/// Cycles audio playback to extend background execution indefinitely.
 	func start() {
-		guard !isRunning else {
-			return
-		}
+		guard !isRunning else { return }
 		isRunning = true
 
 		do {
 			try AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
 			try AVAudioSession.sharedInstance().setActive(true)
-			Self._retainSession()
+			Self.retainSession()
 		} catch {
 			isRunning = false
 			return
@@ -86,52 +73,34 @@ final class BackgroundTaskManager {
 		guard isRunning else { return }
 		isRunning = false
 
-		NotificationCenter.default.removeObserver(
-			self,
-			name: AVAudioSession.interruptionNotification,
-			object: nil
-		)
+		NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
 
-		asyncTask?.cancel()
+		cycleTask?.cancel()
 		stopBackgroundTask()
 		stopAudio()
 		audioPlayer = nil
 
-		// Only deactivate the shared session if no other manager is still using it.
-		if Self._releaseSession() {
+		if Self.releaseSession() {
 			try? AVAudioSession.sharedInstance().setActive(false)
 		}
 	}
 
-	// MARK: - Private Methods
-
 	@objc private func handleAudioInterruption(_ notification: Notification) {
-		guard let userInfo = notification.userInfo,
-			  let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
-			  let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
-			return
-		}
+		guard
+			let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+			AVAudioSession.InterruptionType(rawValue: raw) == .began
+		else { return }
 
-		if type == .began {
-			if !playAudio() {
-				stop()
-			}
-		}
+		if !playAudio() { stop() }
 	}
 
-	// Play audio, swap the background task, then restart on a 10s cycle.
+	// Re-arming the background-task assertion each cycle holds background time indefinitely.
 	private func startBackgroundCycle() {
-		asyncTask = Task {
-			let audioStarted = await MainActor.run {
-				playAudio()
-			}
-			guard audioStarted else {
-				return
-			}
+		cycleTask = Task {
+			let audioStarted = await MainActor.run { playAudio() }
+			guard audioStarted else { return }
 
-			await MainActor.run {
-				stopBackgroundTask()
-			}
+			await MainActor.run { stopBackgroundTask() }
 
 			backgroundTaskID = await UIApplication.shared.beginBackgroundTask { [weak self] in
 				guard let self = self else { return }
@@ -139,9 +108,7 @@ final class BackgroundTaskManager {
 				self.startBackgroundCycle()
 			}
 
-			await MainActor.run {
-				stopAudio()
-			}
+			await MainActor.run { stopAudio() }
 
 			try Task.checkCancellation()
 
@@ -198,8 +165,6 @@ final class BackgroundTaskManager {
 
 		UNUserNotificationCenter.current().add(request)
 	}
-
-	// MARK: - Deinit
 
 	deinit {
 		stop()
