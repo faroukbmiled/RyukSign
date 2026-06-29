@@ -6,79 +6,36 @@
 //
 
 import Foundation
+import UIKit
 import AVFoundation
 import UserNotifications
 
+/// Extended background execution: loops silent audio to keep the app alive.
 final class BackgroundTaskManager {
 
-	// MARK: - Shared silence engine
-	// Refcounted: the session is process-wide, so stopping one manager must not cut audio for others.
-	private static let _lock = NSLock()
-	private static var _users = 0
-	private static let _engine = AVAudioEngine()
-	private static var _silenceNode: AVAudioSourceNode?
-	private static var _interruptionObserver: NSObjectProtocol?
+	// MARK: - Shared audio-session refcount
+	// AVAudioSession is process-wide; with several managers running, only the LAST to
+	// stop may deactivate it, else stopping one kills background audio for the others.
+	private static let _sessionLock = NSLock()
+	private static var _sessionUsers = 0
 
-	private static func retain() -> Bool {
-		_lock.lock(); defer { _lock.unlock() }
-		_users += 1
-		guard _users == 1 else { return true }
-
-		do {
-			let session = AVAudioSession.sharedInstance()
-			try session.setCategory(.playback, options: .mixWithOthers)
-			try session.setActive(true)
-
-			let node = AVAudioSourceNode { _, _, _, audioBufferList -> OSStatus in
-				let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-				for buffer in buffers {
-					memset(buffer.mData, 0, Int(buffer.mDataByteSize))
-				}
-				return noErr
-			}
-			_silenceNode = node
-			_engine.attach(node)
-			_engine.connect(node, to: _engine.mainMixerNode, format: nil)
-			try _engine.start()
-
-			_interruptionObserver = NotificationCenter.default.addObserver(
-				forName: AVAudioSession.interruptionNotification,
-				object: session,
-				queue: .main
-			) { note in
-				guard
-					let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-					AVAudioSession.InterruptionType(rawValue: raw) == .ended
-				else { return }
-				try? session.setActive(true)
-				try? _engine.start()
-			}
-			return true
-		} catch {
-			_users = 0
-			return false
-		}
+	private static func _retainSession() {
+		_sessionLock.lock(); defer { _sessionLock.unlock() }
+		_sessionUsers += 1
 	}
 
-	private static func release() {
-		_lock.lock(); defer { _lock.unlock() }
-		_users = max(0, _users - 1)
-		guard _users == 0 else { return }
-
-		if let observer = _interruptionObserver {
-			NotificationCenter.default.removeObserver(observer)
-			_interruptionObserver = nil
-		}
-		_engine.stop()
-		if let node = _silenceNode {
-			_engine.detach(node)
-			_silenceNode = nil
-		}
-		try? AVAudioSession.sharedInstance().setActive(false)
+	/// Returns true when this was the last user (caller should deactivate the session).
+	private static func _releaseSession() -> Bool {
+		_sessionLock.lock(); defer { _sessionLock.unlock() }
+		_sessionUsers = max(0, _sessionUsers - 1)
+		return _sessionUsers == 0
 	}
 
 	// MARK: - Properties
 
+	private var audioPlayer: AVAudioPlayer?
+	private var backgroundTaskID: UIBackgroundTaskIdentifier?
+	private var asyncTask: Task<Void, Error>?
 	private var isRunning = false
 
 	private let taskName: String
@@ -99,24 +56,133 @@ final class BackgroundTaskManager {
 
 	// MARK: - Public Methods
 
+	/// Cycles audio playback to extend background execution indefinitely.
 	func start() {
-		guard !isRunning else { return }
+		guard !isRunning else {
+			return
+		}
 		isRunning = true
 
-		// Can't hold background time (Low Power Mode, audio disabled) — tell the user.
-		if !Self.retain() {
+		do {
+			try AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
+			try AVAudioSession.sharedInstance().setActive(true)
+			Self._retainSession()
+		} catch {
 			isRunning = false
-			sendExpirationNotification()
+			return
 		}
+
+		NotificationCenter.default.addObserver(
+			self,
+			selector: #selector(handleAudioInterruption),
+			name: AVAudioSession.interruptionNotification,
+			object: AVAudioSession.sharedInstance()
+		)
+
+		startBackgroundCycle()
 	}
 
 	func stop() {
 		guard isRunning else { return }
 		isRunning = false
-		Self.release()
+
+		NotificationCenter.default.removeObserver(
+			self,
+			name: AVAudioSession.interruptionNotification,
+			object: nil
+		)
+
+		asyncTask?.cancel()
+		stopBackgroundTask()
+		stopAudio()
+		audioPlayer = nil
+
+		// Only deactivate the shared session if no other manager is still using it.
+		if Self._releaseSession() {
+			try? AVAudioSession.sharedInstance().setActive(false)
+		}
 	}
 
 	// MARK: - Private Methods
+
+	@objc private func handleAudioInterruption(_ notification: Notification) {
+		guard let userInfo = notification.userInfo,
+			  let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+			  let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+			return
+		}
+
+		if type == .began {
+			if !playAudio() {
+				stop()
+			}
+		}
+	}
+
+	// Play audio, swap the background task, then restart on a 10s cycle.
+	private func startBackgroundCycle() {
+		asyncTask = Task {
+			let audioStarted = await MainActor.run {
+				playAudio()
+			}
+			guard audioStarted else {
+				return
+			}
+
+			await MainActor.run {
+				stopBackgroundTask()
+			}
+
+			backgroundTaskID = await UIApplication.shared.beginBackgroundTask { [weak self] in
+				guard let self = self else { return }
+				self.sendExpirationNotification()
+				self.startBackgroundCycle()
+			}
+
+			await MainActor.run {
+				stopAudio()
+			}
+
+			try Task.checkCancellation()
+
+			guard let taskID = backgroundTaskID, taskID != .invalid else {
+				startBackgroundCycle()
+				return
+			}
+
+			try await Task.sleep(for: .seconds(10))
+			startBackgroundCycle()
+		}
+	}
+
+	private func stopBackgroundTask() {
+		if let taskID = backgroundTaskID {
+			UIApplication.shared.endBackgroundTask(taskID)
+			backgroundTaskID = nil
+		}
+	}
+
+	@discardableResult
+	private func playAudio() -> Bool {
+		do {
+			if audioPlayer == nil {
+				guard let soundURL = Bundle.main.url(forResource: "sound", withExtension: "m4a") else {
+					return false
+				}
+				audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+				audioPlayer?.volume = 0.01
+				audioPlayer?.numberOfLoops = -1
+			}
+			audioPlayer?.play()
+			return true
+		} catch {
+			return false
+		}
+	}
+
+	private func stopAudio() {
+		audioPlayer?.stop()
+	}
 
 	private func sendExpirationNotification() {
 		let content = UNMutableNotificationContent()
