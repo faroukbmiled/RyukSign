@@ -33,6 +33,12 @@ struct SigningLogView: View {
 						proxy.scrollTo(last.id, anchor: .bottom)
 					}
 				}
+				.onAppear {
+					guard let last = _log.lines.last else { return }
+					DispatchQueue.main.async {
+						proxy.scrollTo(last.id, anchor: .bottom)
+					}
+				}
 			}
 			.overlay {
 				if _log.lines.isEmpty {
