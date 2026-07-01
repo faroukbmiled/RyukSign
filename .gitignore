@@ -75,6 +75,7 @@ release.sh
 cert.json
 release_notes.txt
 pending_notes.txt
+DEV.md
 
 # Signing material / secrets (belt-and-suspenders)
 *.pem

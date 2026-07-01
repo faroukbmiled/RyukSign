@@ -172,7 +172,7 @@ struct DownloadButtonView: View {
 						Button {
 							tabSelection.navigateToLibraryWithHighlight(uuid: installedApp.uuid)
 						} label: {
-							Text(.localized("Installed"))
+							Text(.localized(installedApp.type == .imported ? "Imported" : "Signed"))
 								.lineLimit(1)
 								.font(.headline.bold())
 								.foregroundStyle(.secondary)

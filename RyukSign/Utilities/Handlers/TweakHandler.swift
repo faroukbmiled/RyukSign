@@ -57,7 +57,7 @@ class TweakHandler {
 		// 	just return if it exists, should work fine
 		if _fileManager.fileExists(atPath: frameworksPath.path) {
 			if _options.experiment_replaceSubstrateWithEllekit {
-				Logger.misc.info("Attempting to replace Substrate with ElleKit")
+				SigningLog.shared.info(.localized("Replacing Substrate with ElleKit"))
 				try _fileManager.removeFileIfNeeded(at: frameworksPath)
 				try await addEllekit()
 			} else {
@@ -95,6 +95,9 @@ class TweakHandler {
 				path: _options.injectPath,
 				folder: _options.injectFolder
 			)
+			for name in names {
+				SigningLog.shared.info(.localized("Injected %@", arguments: name))
+			}
 		}
 
 		// Managed specs: each file carries its own config + targeting, processed
@@ -104,6 +107,7 @@ class TweakHandler {
 				do {
 					try await _processSpecFile(file, spec: spec, baseTmpDir: baseTmpDir)
 				} catch {
+					SigningLog.shared.error(.localized("Failed to inject %@", arguments: file.fileName))
 					FileLogger.error("Tweak \"\(spec.displayName)\" file \(file.fileName) failed: \(error.localizedDescription)", category: "inject")
 				}
 			}
@@ -124,13 +128,13 @@ class TweakHandler {
 		// App extensions are placed in PlugIns/ and signed with the app, not injected.
 		if file.fileType == .appex || stagedFile.pathExtension.lowercased() == "appex" {
 			try _handleAppex(at: stagedFile)
-			FileLogger.log("Placed extension \(file.fileName) from \"\(spec.displayName)\"", category: "inject")
+			SigningLog.shared.info(.localized("Placed extension %@", arguments: file.fileName))
 			return
 		}
 
 		let names = try await _runJob(urls: [stagedFile], baseTmpDir: baseTmpDir, path: path, folder: folder)
 		_injectIntoTargets(dylibNames: names, targeting: file.config.targeting, path: path, folder: folder)
-		FileLogger.log("Injected \(file.fileName) from \"\(spec.displayName)\" (\(names.count) dylib(s))", category: "inject")
+		SigningLog.shared.info(.localized("Injected %@", arguments: file.fileName))
 	}
 
 	// MARK: - App extensions (.appex)

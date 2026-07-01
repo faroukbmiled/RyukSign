@@ -12,6 +12,8 @@ import NimbleViews
 struct SigningLogView: View {
 	@ObservedObject private var _log = SigningLog.shared
 
+	private let _bottomAnchor = "ryuksign.log.bottom"
+
 	// MARK: Body
 	var body: some View {
 		NBNavigationView(.localized("Signing Logs"), displayMode: .inline) {
@@ -21,6 +23,7 @@ struct SigningLogView: View {
 						ForEach(_log.lines) { line in
 							_row(line).id(line.id)
 						}
+						Color.clear.frame(height: 1).id(_bottomAnchor)
 					}
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.padding(12)
@@ -28,15 +31,13 @@ struct SigningLogView: View {
 					.padding()
 				}
 				.onChange(of: _log.lines.count) { _ in
-					guard let last = _log.lines.last else { return }
-					withAnimation(.easeOut(duration: 0.2)) {
-						proxy.scrollTo(last.id, anchor: .bottom)
-					}
+					_scrollToBottom(proxy, animated: true)
 				}
 				.onAppear {
-					guard let last = _log.lines.last else { return }
-					DispatchQueue.main.async {
-						proxy.scrollTo(last.id, anchor: .bottom)
+					// Re-scroll after the sheet's present animation settles
+					_scrollToBottom(proxy, animated: false)
+					DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+						_scrollToBottom(proxy, animated: false)
 					}
 				}
 			}
@@ -59,6 +60,15 @@ struct SigningLogView: View {
 					Toast.success(.localized("Copied"))
 				}
 			}
+		}
+	}
+
+	private func _scrollToBottom(_ proxy: ScrollViewProxy, animated: Bool) {
+		guard !_log.lines.isEmpty else { return }
+		if animated {
+			withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(_bottomAnchor, anchor: .bottom) }
+		} else {
+			proxy.scrollTo(_bottomAnchor, anchor: .bottom)
 		}
 	}
 

@@ -102,6 +102,8 @@ struct Options: Codable, Equatable {
 	var changeLanguageFilesForCustomDisplayName: Bool
 	/// If tweaks should be injected into all app extensions (PlugIns and Extensions)
 	var injectIntoExtensions: Bool
+	/// Gives each signed app a keychain group derived from its bundle id so apps can't read each other's entries
+	var keychainIsolation: Bool
 	/// Resolved managed-tweak injections for this sign; per-sign working copy only. Optional so old saved options decode.
 	var tweakInjections: [TweakInjectionSpec]? = nil
 
@@ -148,6 +150,7 @@ struct Options: Codable, Equatable {
 		removeProvisioning: true,
 		changeLanguageFilesForCustomDisplayName: false,
 		injectIntoExtensions: false,
+		keychainIsolation: false,
 
 		// MARK: Experiments
 		

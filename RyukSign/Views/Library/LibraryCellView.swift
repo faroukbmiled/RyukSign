@@ -13,6 +13,7 @@ import NimbleViews
 struct LibraryCellView: View {
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.editMode) private var editMode
+	@ObservedObject private var skippedUpdates = SkippedUpdatesManager.shared
 
 	var certInfo: Date.ExpirationInfo? {
 		Storage.shared.getCertificate(from: app)?.expiration?.expirationInfo()
@@ -157,6 +158,16 @@ extension LibraryCellView {
 						}
 					}
 				}
+			}
+		}
+
+		if let bundleId = app.originalIdentifier ?? app.identifier, !bundleId.isEmpty {
+			let isIgnored = skippedUpdates.isIgnored(bundleId)
+			Button(
+				.localized(isIgnored ? "Resume Updates" : "Ignore Updates"),
+				systemImage: isIgnored ? "bell" : "bell.slash"
+			) {
+				SkippedUpdatesManager.shared.toggle(bundleId)
 			}
 		}
 	}

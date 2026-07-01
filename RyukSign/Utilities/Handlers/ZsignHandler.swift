@@ -31,9 +31,11 @@ final class ZsignHandler {
 			return
 		}
 		
+		SigningLog.shared.info(.localized("Removing injected dylibs"))
+
 		let bundle = Bundle(url: _appUrl)
 		let execPath = _appUrl.appendingPathComponent(bundle?.exec ?? "").relativePath
-		
+
 		if !Zsign.removeDylibs(appExecutable: execPath, using: _options.disInjectionFiles) {
 			throw SigningFileHandlerError.disinjectFailed
 		}

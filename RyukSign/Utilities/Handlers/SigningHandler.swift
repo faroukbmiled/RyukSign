@@ -76,35 +76,44 @@ final class SigningHandler: NSObject {
 			throw SigningFileHandlerError.infoPlistNotFound
 		}
 		
+		SigningLog.shared.info(.localized("Applying modifications"))
+
 		if
 			let identifier = _options.appIdentifier,
 			let oldIdentifier = infoDictionary["CFBundleIdentifier"] as? String
 		{
+			SigningLog.shared.info(.localized("Changing bundle identifier to %@", arguments: identifier))
 			try await _modifyPluginIdentifiers(old: oldIdentifier, new: identifier, for: movedAppPath)
 		}
-		
+
 		try await _modifyDict(using: infoDictionary, with: _options, to: movedAppPath)
-		
+
+		if let version = _options.appVersion {
+			SigningLog.shared.info(.localized("Setting version to %@", arguments: version))
+		}
+
 		if let icon = appIcon {
+			SigningLog.shared.info(.localized("Replacing app icon"))
 			try await _modifyDict(using: infoDictionary, for: icon, to: movedAppPath)
 		}
-		
+
 		if let name = _options.appName {
+			SigningLog.shared.info(.localized("Renaming app to %@", arguments: name))
 			try await _modifyLocalesForName(name, for: movedAppPath)
 		}
-		
+
 		if !_options.removeFiles.isEmpty {
+			SigningLog.shared.info(.localized("Removing bundled files"))
 			try await _removeFiles(for: movedAppPath, from: _options.removeFiles)
 		}
-		
+
 		try await _removePresetFiles(for: movedAppPath)
 		try await _removeWatchIfNeeded(for: movedAppPath)
-		
+
 		if _options.experiment_supportLiquidGlass {
+			SigningLog.shared.info(.localized("Patching for Liquid Glass"))
 			try await _locateMachosAndChangeToSDK26(for: movedAppPath)
 		}
-		
-		SigningLog.shared.info(.localized("Applying modifications"))
 
 		let hasTweakSpecs = !(_options.tweakInjections ?? []).filter { $0.enabled }.isEmpty
 		if _options.experiment_replaceSubstrateWithEllekit {
@@ -119,7 +128,11 @@ final class SigningHandler: NSObject {
 		
 		// iOS "26" (19) needs special treatment
 		try await _locateMachosAndFixupArm64eSlice(for: movedAppPath)
-		
+
+		if _options.keychainIsolation {
+			try await _isolateKeychainGroups(for: movedAppPath)
+		}
+
 		let handler = ZsignHandler(appUrl: movedAppPath, options: _options, cert: appCertificate)
 		try await handler.disinject()
 		
@@ -198,6 +211,91 @@ final class SigningHandler: NSObject {
 }
 
 extension SigningHandler {
+	private func _isolateKeychainGroups(for app: URL) async throws {
+		guard
+			let bundleId = _options.appIdentifier ?? _app.identifier, !bundleId.isEmpty,
+			let entitlements = _baseEntitlements(),
+			let teamId = _teamIdentifier(from: entitlements)
+		else {
+			return
+		}
+
+		var groups = entitlements["keychain-access-groups"] as? [String] ?? []
+		if let executable = Bundle(url: app)?.executableURL {
+			groups += MachOEntitlements.keychainAccessGroups(forExecutableAt: executable)
+		}
+
+		let isolated = _isolatedGroups(groups, teamId: teamId, bundleId: bundleId)
+		guard !isolated.isEmpty else { return }
+
+		entitlements["keychain-access-groups"] = isolated
+
+		let entitlementsURL = _uniqueWorkDir.appendingPathComponent("entitlements.plist")
+		let data = try PropertyListSerialization.data(fromPropertyList: entitlements, format: .xml, options: 0)
+		try data.write(to: entitlementsURL)
+		_options.appEntitlementsFile = entitlementsURL
+
+		SigningLog.shared.info(.localized("Isolating keychain to %@", arguments: isolated.joined(separator: ", ")))
+	}
+
+	private func _baseEntitlements() -> NSMutableDictionary? {
+		if let file = _options.appEntitlementsFile, let dict = NSMutableDictionary(contentsOf: file) {
+			return dict
+		}
+		guard
+			let cert = appCertificate,
+			let entitlements = Storage.shared.getProvisionFileDecoded(for: cert)?.Entitlements
+		else {
+			return nil
+		}
+		return NSMutableDictionary(dictionary: entitlements.mapValues { $0.value })
+	}
+
+	private func _teamIdentifier(from entitlements: NSDictionary) -> String? {
+		if
+			let appId = entitlements["application-identifier"] as? String,
+			let team = appId.split(separator: ".").first.map(String.init),
+			_isTeamIdentifier(team)
+		{
+			return team
+		}
+		for group in entitlements["keychain-access-groups"] as? [String] ?? [] {
+			if let team = group.split(separator: ".").first.map(String.init), _isTeamIdentifier(team) {
+				return team
+			}
+		}
+		return nil
+	}
+
+	// Re-prefix every group with our team so the profile's wildcard authorizes them, give the app a
+	// unique default group, and drop Apple-managed groups (e.g. com.apple.token) the cert can't claim.
+	private func _isolatedGroups(_ groups: [String], teamId: String, bundleId: String) -> [String] {
+		var result: [String] = []
+		var seen = Set<String>()
+
+		func append(_ group: String) {
+			if seen.insert(group).inserted { result.append(group) }
+		}
+
+		append("\(teamId).\(bundleId)")
+
+		for group in groups {
+			let expanded = group.replacingOccurrences(of: "*", with: bundleId)
+			guard let dot = expanded.firstIndex(of: ".") else { continue }
+			guard _isTeamIdentifier(String(expanded[..<dot])) else { continue }
+
+			let suffix = String(expanded[expanded.index(after: dot)...])
+			guard !suffix.isEmpty else { continue }
+			append("\(teamId).\(suffix)")
+		}
+
+		return result
+	}
+
+	private func _isTeamIdentifier(_ value: String) -> Bool {
+		value.count == 10 && value.allSatisfy { $0.isUppercase && $0.isLetter || $0.isNumber }
+	}
+
 	private func _modifyDict(using infoDictionary: NSMutableDictionary, with options: Options, to app: URL) async throws {
 		if options.fileSharing { infoDictionary.setObject(true, forKey: "UISupportsDocumentBrowser" as NSCopying) }
 		if options.itunesFileSharing { infoDictionary.setObject(true, forKey: "UIFileSharingEnabled" as NSCopying) }
