@@ -102,8 +102,11 @@ struct SettingsView: View {
                 }
                 
                 _directories()
-                
+
                 Section {
+                    NavigationLink(destination: BackupView()) {
+                        Label(.localized("Backup & Restore"), systemImage: "arrow.triangle.2.circlepath")
+                    }
                     NavigationLink(destination: ResetView()) {
                         Label(.localized("Reset"), systemImage: "trash")
                     }

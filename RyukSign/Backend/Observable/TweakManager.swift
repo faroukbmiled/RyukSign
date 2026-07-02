@@ -44,13 +44,8 @@ final class TweakManager: ObservableObject {
 	// MARK: Persistence
 
 	private func _load() {
-		guard
-			let data = try? Data(contentsOf: _manifestURL),
-			let decoded = try? JSONDecoder().decode([ManagedTweak].self, from: data)
-		else {
-			return
-		}
-		self.tweaks = decoded
+		guard let data = try? Data(contentsOf: _manifestURL) else { return }
+		self.tweaks = TweakManager.decodeLenientArray(ManagedTweak.self, from: data)
 	}
 
 	private func _save() {
@@ -67,13 +62,8 @@ final class TweakManager: ObservableObject {
 	}
 
 	private func _loadFolders() {
-		guard
-			let data = try? Data(contentsOf: _foldersURL),
-			let decoded = try? JSONDecoder().decode([TweakFolder].self, from: data)
-		else {
-			return
-		}
-		self.folders = decoded
+		guard let data = try? Data(contentsOf: _foldersURL) else { return }
+		self.folders = TweakManager.decodeLenientArray(TweakFolder.self, from: data)
 	}
 
 	private func _saveFolders() {
@@ -282,6 +272,34 @@ final class TweakManager: ObservableObject {
 		}
 		tweaks.removeAll { ids.contains($0.id) }
 		_save()
+	}
+
+	/// Adds only tweaks/folders whose id isn't already present; existing ones are untouched.
+	func mergeFromBackup(tweaksDir: URL) {
+		if let data = try? Data(contentsOf: tweaksDir.appendingPathComponent("library.json")) {
+			let incoming = TweakManager.decodeLenientArray(ManagedTweak.self, from: data)
+			let existing = Set(tweaks.map { $0.id })
+			for tweak in incoming where !existing.contains(tweak.id) {
+				let src = tweaksDir.appendingPathComponent(tweak.id.uuidString)
+				let dst = _fm.tweaksLibrary(tweak.id.uuidString)
+				if !_fm.fileExists(atPath: dst.path), _fm.fileExists(atPath: src.path) {
+					try? _fm.createDirectoryIfNeeded(at: _fm.tweaksLibrary)
+					try? _fm.copyItem(at: src, to: dst)
+				}
+				guard _fm.fileExists(atPath: dst.path) else { continue }
+				tweaks.append(tweak)
+			}
+			_save()
+		}
+
+		if let data = try? Data(contentsOf: tweaksDir.appendingPathComponent("folders.json")) {
+			let incoming = TweakManager.decodeLenientArray(TweakFolder.self, from: data)
+			let existing = Set(folders.map { $0.id })
+			for folder in incoming where !existing.contains(folder.id) {
+				folders.append(folder)
+			}
+			_saveFolders()
+		}
 	}
 
 	/// Wipes the entire tweak library — all tweaks, folders, and files on disk.
@@ -494,5 +512,23 @@ final class TweakManager: ObservableObject {
 			Logger.misc.error("TweakManager folder export failed: \(error.localizedDescription)")
 			return nil
 		}
+	}
+}
+
+// MARK: - Lenient array decoding
+
+private struct _FailableElement<T: Decodable>: Decodable {
+	let value: T?
+	init(from decoder: Decoder) throws {
+		value = try? T(from: decoder)
+	}
+}
+
+extension TweakManager {
+	/// Drops only the entries that fail to decode instead of losing the whole file.
+	static func decodeLenientArray<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
+		if let all = try? JSONDecoder().decode([T].self, from: data) { return all }
+		guard let elements = try? JSONDecoder().decode([_FailableElement<T>].self, from: data) else { return [] }
+		return elements.compactMap { $0.value }
 	}
 }

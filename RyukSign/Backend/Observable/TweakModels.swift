@@ -168,17 +168,20 @@ struct TweakVersion: Codable, Identifiable, Equatable {
 
 	init(from decoder: Decoder) throws {
 		let c = try decoder.container(keyedBy: CodingKeys.self)
-		self.id = try c.decode(UUID.self, forKey: .id)
-		self.label = try c.decode(String.self, forKey: .label)
-		self.dateAdded = try c.decode(Date.self, forKey: .dateAdded)
+		self.id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+		self.label = try c.decodeIfPresent(String.self, forKey: .label) ?? ""
+		self.dateAdded = try c.decodeIfPresent(Date.self, forKey: .dateAdded) ?? Date()
 
 		if let comps = try c.decodeIfPresent([TweakComponent].self, forKey: .components) {
 			self.components = comps
-		} else {
-			let fileName = try c.decode(String.self, forKey: .fileName)
-			let fileType = try c.decode(TweakFileType.self, forKey: .fileType)
+		} else if
+			let fileName = try c.decodeIfPresent(String.self, forKey: .fileName),
+			let fileType = try c.decodeIfPresent(TweakFileType.self, forKey: .fileType)
+		{
 			let fileSize = try c.decodeIfPresent(Int64.self, forKey: .fileSize) ?? 0
 			self.components = [TweakComponent(fileName: fileName, fileType: fileType, fileSize: fileSize)]
+		} else {
+			self.components = []
 		}
 	}
 
@@ -309,8 +312,8 @@ struct TweakInjectionSpec: Codable, Equatable, Identifiable {
 
 	init(from decoder: Decoder) throws {
 		let c = try decoder.container(keyedBy: CodingKeys.self)
-		self.id = try c.decode(UUID.self, forKey: .id)
-		self.displayName = try c.decode(String.self, forKey: .displayName)
+		self.id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+		self.displayName = try c.decodeIfPresent(String.self, forKey: .displayName) ?? ""
 		self.enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
 		self.isManaged = try c.decodeIfPresent(Bool.self, forKey: .isManaged) ?? true
 
@@ -342,4 +345,67 @@ struct TweakInjectionSpec: Codable, Equatable, Identifiable {
 	}
 
 	var enabledFiles: [TweakInjectionFile] { files.filter { $0.enabled } }
+}
+
+// MARK: - Tolerant decoding
+// A field missing from older saved data defaults on its own instead of dropping the record.
+
+extension TweakFolder {
+	init(from decoder: Decoder) throws {
+		let c = try decoder.container(keyedBy: CodingKeys.self)
+		id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+		name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+		dateAdded = try c.decodeIfPresent(Date.self, forKey: .dateAdded) ?? Date()
+	}
+}
+
+extension TweakInjectConfig {
+	init(from decoder: Decoder) throws {
+		let c = try decoder.container(keyedBy: CodingKeys.self)
+		useCustom = try c.decodeIfPresent(Bool.self, forKey: .useCustom) ?? false
+		injectPath = try c.decodeIfPresent(Options.InjectPath.self, forKey: .injectPath)
+		injectFolder = try c.decodeIfPresent(Options.InjectFolder.self, forKey: .injectFolder)
+		targeting = try c.decodeIfPresent(ExtensionTargeting.self, forKey: .targeting) ?? .mainOnly
+	}
+}
+
+extension TweakComponent {
+	init(from decoder: Decoder) throws {
+		let c = try decoder.container(keyedBy: CodingKeys.self)
+		id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+		fileName = try c.decodeIfPresent(String.self, forKey: .fileName) ?? ""
+		fileType = try c.decodeIfPresent(TweakFileType.self, forKey: .fileType) ?? .other
+		fileSize = try c.decodeIfPresent(Int64.self, forKey: .fileSize) ?? 0
+		isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+		config = try c.decodeIfPresent(TweakInjectConfig.self, forKey: .config)
+	}
+}
+
+extension TweakInjectionFile {
+	init(from decoder: Decoder) throws {
+		let c = try decoder.container(keyedBy: CodingKeys.self)
+		id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+		fileURL = try c.decode(URL.self, forKey: .fileURL)
+		fileName = try c.decodeIfPresent(String.self, forKey: .fileName) ?? fileURL.lastPathComponent
+		fileType = try c.decodeIfPresent(TweakFileType.self, forKey: .fileType) ?? TweakFileType(fileExtension: fileURL.pathExtension)
+		enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+		config = try c.decodeIfPresent(TweakInjectConfig.self, forKey: .config) ?? .default
+	}
+}
+
+extension ManagedTweak {
+	init(from decoder: Decoder) throws {
+		let c = try decoder.container(keyedBy: CodingKeys.self)
+		id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+		name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+		notes = try c.decodeIfPresent(String.self, forKey: .notes)
+		dateAdded = try c.decodeIfPresent(Date.self, forKey: .dateAdded) ?? Date()
+		isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+		versions = try c.decodeIfPresent([TweakVersion].self, forKey: .versions) ?? []
+		selectedVersionId = try c.decodeIfPresent(UUID.self, forKey: .selectedVersionId)
+		injectByDefault = try c.decodeIfPresent(Bool.self, forKey: .injectByDefault) ?? false
+		autoInjectBundleIds = try c.decodeIfPresent([String].self, forKey: .autoInjectBundleIds) ?? []
+		config = try c.decodeIfPresent(TweakInjectConfig.self, forKey: .config) ?? .default
+		folderId = try c.decodeIfPresent(UUID.self, forKey: .folderId)
+	}
 }

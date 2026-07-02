@@ -227,6 +227,49 @@ struct Options: Codable, Equatable {
 	}
 }
 
+// MARK: - Tolerant decoding
+// A field missing from older saved data defaults on its own instead of failing the whole decode.
+extension Options {
+	init(from decoder: Decoder) throws {
+		let c = try decoder.container(keyedBy: CodingKeys.self)
+		let d = Options.defaultOptions
+
+		appName = try c.decodeIfPresent(String.self, forKey: .appName)
+		appVersion = try c.decodeIfPresent(String.self, forKey: .appVersion)
+		appIdentifier = try c.decodeIfPresent(String.self, forKey: .appIdentifier)
+		appEntitlementsFile = try c.decodeIfPresent(URL.self, forKey: .appEntitlementsFile)
+		appAppearance = try c.decodeIfPresent(AppAppearance.self, forKey: .appAppearance) ?? d.appAppearance
+		minimumAppRequirement = try c.decodeIfPresent(MinimumAppRequirement.self, forKey: .minimumAppRequirement) ?? d.minimumAppRequirement
+		signingOption = try c.decodeIfPresent(SigningOption.self, forKey: .signingOption) ?? d.signingOption
+		injectPath = try c.decodeIfPresent(InjectPath.self, forKey: .injectPath) ?? d.injectPath
+		injectFolder = try c.decodeIfPresent(InjectFolder.self, forKey: .injectFolder) ?? d.injectFolder
+		ppqString = try c.decodeIfPresent(String.self, forKey: .ppqString) ?? d.ppqString
+		ppqProtection = try c.decodeIfPresent(Bool.self, forKey: .ppqProtection) ?? d.ppqProtection
+		dynamicProtection = try c.decodeIfPresent(Bool.self, forKey: .dynamicProtection) ?? d.dynamicProtection
+		identifiers = try c.decodeIfPresent([String: String].self, forKey: .identifiers) ?? d.identifiers
+		displayNames = try c.decodeIfPresent([String: String].self, forKey: .displayNames) ?? d.displayNames
+		injectionFiles = try c.decodeIfPresent([URL].self, forKey: .injectionFiles) ?? d.injectionFiles
+		disInjectionFiles = try c.decodeIfPresent([String].self, forKey: .disInjectionFiles) ?? d.disInjectionFiles
+		removeFiles = try c.decodeIfPresent([String].self, forKey: .removeFiles) ?? d.removeFiles
+		fileSharing = try c.decodeIfPresent(Bool.self, forKey: .fileSharing) ?? d.fileSharing
+		itunesFileSharing = try c.decodeIfPresent(Bool.self, forKey: .itunesFileSharing) ?? d.itunesFileSharing
+		proMotion = try c.decodeIfPresent(Bool.self, forKey: .proMotion) ?? d.proMotion
+		gameMode = try c.decodeIfPresent(Bool.self, forKey: .gameMode) ?? d.gameMode
+		ipadFullscreen = try c.decodeIfPresent(Bool.self, forKey: .ipadFullscreen) ?? d.ipadFullscreen
+		removeURLScheme = try c.decodeIfPresent(Bool.self, forKey: .removeURLScheme) ?? d.removeURLScheme
+		removeProvisioning = try c.decodeIfPresent(Bool.self, forKey: .removeProvisioning) ?? d.removeProvisioning
+		changeLanguageFilesForCustomDisplayName = try c.decodeIfPresent(Bool.self, forKey: .changeLanguageFilesForCustomDisplayName) ?? d.changeLanguageFilesForCustomDisplayName
+		injectIntoExtensions = try c.decodeIfPresent(Bool.self, forKey: .injectIntoExtensions) ?? d.injectIntoExtensions
+		keychainIsolation = try c.decodeIfPresent(Bool.self, forKey: .keychainIsolation) ?? d.keychainIsolation
+		// try? so a stale per-sign blob drops instead of resetting the whole struct.
+		tweakInjections = try? c.decode([TweakInjectionSpec].self, forKey: .tweakInjections)
+		experiment_supportLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_supportLiquidGlass) ?? d.experiment_supportLiquidGlass
+		experiment_replaceSubstrateWithEllekit = try c.decodeIfPresent(Bool.self, forKey: .experiment_replaceSubstrateWithEllekit) ?? d.experiment_replaceSubstrateWithEllekit
+		post_installAppAfterSigned = try c.decodeIfPresent(Bool.self, forKey: .post_installAppAfterSigned) ?? d.post_installAppAfterSigned
+		post_deleteAppAfterSigned = try c.decodeIfPresent(Bool.self, forKey: .post_deleteAppAfterSigned) ?? d.post_deleteAppAfterSigned
+	}
+}
+
 // MARK: - LocalizedDescribable
 
 protocol LocalizedDescribable {

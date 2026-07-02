@@ -27,6 +27,20 @@ final class TabBarPreferences: ObservableObject {
 		var order: [String]
 		var hidden: [String]
 		var defaultLaunch: String
+
+		init(order: [String], hidden: [String], defaultLaunch: String) {
+			self.order = order
+			self.hidden = hidden
+			self.defaultLaunch = defaultLaunch
+		}
+
+		// Tolerant so a future non-optional field can't fail the whole decode and reset the bar.
+		init(from decoder: Decoder) throws {
+			let c = try decoder.container(keyedBy: CodingKeys.self)
+			order = try c.decodeIfPresent([String].self, forKey: .order) ?? []
+			hidden = try c.decodeIfPresent([String].self, forKey: .hidden) ?? []
+			defaultLaunch = try c.decodeIfPresent(String.self, forKey: .defaultLaunch) ?? TabEnum.library.rawValue
+		}
 	}
 
 	private init() {
