@@ -15,6 +15,7 @@ import IDeviceSwift
 struct SettingsView: View {
     @AppStorage("feather.selectedCert") private var _storedSelectedCert: Int = 0
     @State private var _currentIcon: String? = UIApplication.shared.alternateIconName
+    @ObservedObject private var _selfUpdate = SelfUpdateManager.shared
 
     // MARK: Fetch
     @FetchRequest(
@@ -59,6 +60,15 @@ struct SettingsView: View {
 					NavigationLink(destination: DownloadsSettingsView()) {
 						Label(.localized("Downloads"), systemImage: "arrow.down.circle")
 					}
+					NavigationLink(destination: UpdatesSettingsView()) {
+						HStack {
+							Label(.localized("Updates"), systemImage: "arrow.triangle.2.circlepath")
+							if _selfUpdate.available != nil {
+								Spacer()
+								Circle().fill(Color.accentColor).frame(width: 8, height: 8)
+							}
+						}
+					}
                 }
                 
                 NBSection(.localized("Certificates")) {
@@ -89,7 +99,7 @@ struct SettingsView: View {
                         Label(.localized("Archive & Compression"), systemImage: "archivebox")
                     }
                     NavigationLink(destination: InstallationView()) {
-                        Label(.localized("Installation"), systemImage: "arrow.down.circle")
+                        Label(.localized("Installation"), systemImage: "arrow.down.app")
                     }
                     NavigationLink(destination: WebManagerView()) {
                         Label(.localized("Web Manager"), systemImage: "externaldrive.badge.wifi")

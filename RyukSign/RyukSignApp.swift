@@ -20,6 +20,7 @@ struct RyukSignApp: App {
 
     @StateObject var downloadManager = DownloadManager.shared
     @StateObject private var tabSelection = TabSelectionObserver.shared
+    @StateObject private var selfUpdate = SelfUpdateManager.shared
     let storage = Storage.shared
 
     private var activeManualDownloads: [Download] {
@@ -110,6 +111,14 @@ struct RyukSignApp: App {
                     Task { @MainActor in
                         SourcesViewModel.shared.resetLoadingState()
                     }
+                }
+            }
+            .task {
+                await selfUpdate.checkOnLaunch()
+            }
+            .sheet(isPresented: $selfUpdate.presentUpdatePrompt) {
+                if let release = selfUpdate.available {
+                    SelfUpdateSheet(release: release)
                 }
             }
         }

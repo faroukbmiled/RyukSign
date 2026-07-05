@@ -36,13 +36,14 @@ struct SourcesAddView: View {
 
 	@State var recommendedSourcesData: [(url: URL, data: ASRepository)] = []
 	let recommendedSources: [URL] = [
+		"https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/app-repo.json",
 		"https://raw.githubusercontent.com/claration/Feather/refs/heads/main/app-repo.json",
 		"https://raw.githubusercontent.com/Aidoku/Aidoku/altstore/apps.json",
 		"https://github.com/chachillie/Flycast-iOS/raw/main/flycast-ios.json",
 		"https://xitrix.github.io/iTorrent/AltStore.json",
 		"https://altstore.oatmealdome.me/",
 		"https://raw.githubusercontent.com/LiveContainer/LiveContainer/refs/heads/main/apps.json",
-		"https://pokemmo.com/altstore/",
+		"https://pokemmo.com/altstore",
 		"https://provenance-emu.com/apps.json",
 		"https://community-apps.sidestore.io/sidecommunity.json",
 		"https://alt.getutm.app",

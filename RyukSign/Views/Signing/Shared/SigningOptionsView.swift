@@ -64,6 +64,31 @@ struct SigningOptionsView: View {
 			)
 		}
 		
+		if (temporaryOptions == nil) {
+			NBSection(.localized("Tweaks")) {
+				Self.picker(
+					.localized("Injection Path"),
+					systemImage: "doc.badge.gearshape",
+					selection: $options.injectPath,
+					values: Options.InjectPath.allCases
+				)
+
+				Self.picker(
+					.localized("Injection Folder"),
+					systemImage: "folder.badge.gearshape",
+					selection: $options.injectFolder,
+					values: Options.InjectFolder.allCases
+				)
+
+				_toggle(
+					.localized("Inject into Extensions"),
+					systemImage: "syringe",
+					isOn: $options.injectIntoExtensions,
+					temporaryValue: temporaryOptions?.injectIntoExtensions
+				)
+			}
+		}
+
 		NBSection(.localized("App Features")) {
 			_toggle(
 				.localized("File Sharing"),

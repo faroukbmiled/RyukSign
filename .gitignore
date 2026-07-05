@@ -77,6 +77,8 @@ release_notes.txt
 pending_notes.txt
 DEV.md
 
+RyukSign/Resources/SelfUpdateConfig.plist
+
 # Signing material / secrets (belt-and-suspenders)
 *.pem
 *.cer
