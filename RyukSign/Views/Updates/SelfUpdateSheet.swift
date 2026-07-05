@@ -7,6 +7,7 @@
 
 import SwiftUI
 import NimbleViews
+import UIKit
 
 struct SelfUpdateSheet: View {
 	let release: SelfUpdateRelease
@@ -198,13 +199,15 @@ struct SelfUpdateSheet: View {
 
 			if offersReminders {
 				HStack(spacing: 10) {
-					Button(.localized("Remind Me Later")) { dismiss() }
-						.frame(maxWidth: .infinity)
-					Button(.localized("Ignore This Version"), role: .destructive) {
+					Button { dismiss() } label: {
+						Text(.localized("Remind Me Later")).frame(maxWidth: .infinity)
+					}
+					Button(role: .destructive) {
 						_manager.ignore(release.version)
 						dismiss()
+					} label: {
+						Text(.localized("Ignore This Version")).frame(maxWidth: .infinity)
 					}
-					.frame(maxWidth: .infinity)
 				}
 				.buttonStyle(.bordered)
 				.controlSize(.large)
@@ -226,16 +229,28 @@ struct SelfUpdateSheet: View {
 				.font(.footnote)
 				.foregroundStyle(.secondary)
 				.frame(maxWidth: .infinity, alignment: .leading)
+			if _manager.method == .idevice {
+				Button {
+					UIApplication.open("localdevvpn://enable?scheme=feather")
+				} label: {
+					Label(.localized("Connect to LocalDevVPN"), systemImage: "link")
+						.frame(maxWidth: .infinity)
+				}
+				.buttonStyle(.borderedProminent)
+				.controlSize(.large)
+			}
 			HStack(spacing: 10) {
-				Button(.localized("Close")) {
+				Button {
 					_manager.phase = .idle
 					dismiss()
+				} label: {
+					Text(.localized("Close")).frame(maxWidth: .infinity)
 				}
-				.frame(maxWidth: .infinity)
-				Button(.localized("Try Again")) {
+				Button {
 					_manager.beginUpdate(to: release)
+				} label: {
+					Text(.localized("Try Again")).frame(maxWidth: .infinity)
 				}
-				.frame(maxWidth: .infinity)
 			}
 			.buttonStyle(.bordered)
 			.controlSize(.large)

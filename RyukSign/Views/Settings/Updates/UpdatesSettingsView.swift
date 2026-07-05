@@ -7,6 +7,7 @@
 
 import SwiftUI
 import NimbleViews
+import UIKit
 
 struct UpdatesSettingsView: View {
 	@ObservedObject private var _manager = SelfUpdateManager.shared
@@ -103,12 +104,29 @@ struct UpdatesSettingsView: View {
 				}
 			}
 
-			if !_manager.canSelfInstall {
+			if _method == 1 {
 				Section {
-					Label(_method == 0
-						  ? .localized("The updater server isn't available in this build.")
-						  : .localized("IDevice updates need a pairing file. Set it up in Installation settings, or switch to Server."),
-						  systemImage: "exclamationmark.triangle.fill")
+					Button {
+						UIApplication.open("localdevvpn://enable?scheme=feather")
+					} label: {
+						Label(.localized("Connect to LocalDevVPN"), systemImage: "link")
+					}
+					Button {
+						UIApplication.open("https://apps.apple.com/us/app/localdevvpn/id6755608044")
+					} label: {
+						Label(.localized("Download LocalDevVPN"), systemImage: "arrow.down.app")
+					}
+					if !_manager.hasPairing {
+						Label(.localized("IDevice updates need a pairing file. Set it up in Installation settings, or switch to Server."), systemImage: "exclamationmark.triangle.fill")
+							.font(.footnote)
+							.foregroundStyle(.secondary)
+					}
+				} footer: {
+					Text(.localized("IDevice updates need the loopback VPN connected. Enable LocalDevVPN, then update."))
+				}
+			} else if !_manager.isServerConfigured {
+				Section {
+					Label(.localized("The updater server isn't available in this build."), systemImage: "exclamationmark.triangle.fill")
 						.font(.footnote)
 						.foregroundStyle(.secondary)
 				}

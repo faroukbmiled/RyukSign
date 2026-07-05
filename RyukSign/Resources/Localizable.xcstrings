@@ -23139,6 +23139,89 @@
         }
       }
     },
+    "IDevice updates need the loopback VPN connected. Enable LocalDevVPN, then update." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتطلب تحديثات IDevice تفعيل شبكة VPN المحلية. فعّل LocalDevVPN ثم حدّث."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizace přes IDevice vyžadují připojenou smyčkovou VPN. Zapněte LocalDevVPN a poté aktualizujte."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IDevice-Updates benötigen die verbundene Loopback-VPN. Aktiviere LocalDevVPN und aktualisiere dann."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IDevice updates need the loopback VPN connected. Enable LocalDevVPN, then update."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las actualizaciones por IDevice necesitan la VPN de bucle invertido conectada. Activa LocalDevVPN y luego actualiza."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les mises à jour IDevice nécessitent le VPN loopback connecté. Activez LocalDevVPN, puis mettez à jour."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pembaruan IDevice memerlukan VPN loopback yang terhubung. Aktifkan LocalDevVPN, lalu perbarui."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli aggiornamenti IDevice richiedono la VPN di loopback connessa. Attiva LocalDevVPN, quindi aggiorna."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizacje IDevice wymagają połączonej pętli zwrotnej VPN. Włącz LocalDevVPN, a następnie zaktualizuj."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для обновлений через IDevice нужен подключённый петлевой VPN. Включите LocalDevVPN, затем обновите."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IDevice güncellemeleri, bağlı geri döngü VPN'i gerektirir. LocalDevVPN'i etkinleştirin, ardından güncelleyin."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật IDevice cần VPN loopback được kết nối. Bật LocalDevVPN, sau đó cập nhật."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IDevice 更新需要已连接的回环 VPN。请启用 LocalDevVPN，然后更新。"
+          }
+        }
+      }
+    },
     "IDevice: the update is signed on-device and installed over a pairing file." : {
       "extractionState" : "stale",
       "localizations" : {

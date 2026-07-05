@@ -295,10 +295,24 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 		} catch let error as URLError where error.code == .cancelled {
 			phase = .idle
 		} catch {
-			Logger.misc.error("Self-update failed: \(error.localizedDescription)")
-			FileLogger.error("Failed: version=\(release.version) — \(error.localizedDescription)", category: "update")
-			phase = .failed(error.localizedDescription)
+			let reason = Self.describe(error)
+			Logger.misc.error("Self-update failed: \(reason)")
+			FileLogger.error("Failed: version=\(release.version) — \(reason)", category: "update")
+			phase = .failed(reason)
 		}
+	}
+
+	/// IDeviceSwift errors hide their text behind no LocalizedError, so reflect out the real message.
+	static func describe(_ error: Error) -> String {
+		var message: String?
+		var code: Int?
+		for child in Mirror(reflecting: error).children {
+			if child.label == "_message", let value = child.value as? String, !value.isEmpty { message = value }
+			if child.label == "_code", let value = child.value as? Int32 { code = Int(value) }
+		}
+		guard let message else { return error.localizedDescription }
+		if let code, code != 0, code != -7001 { return "\(message) (\(code))" }
+		return message
 	}
 
 	@MainActor
@@ -358,6 +372,10 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 						  userInfo: [NSLocalizedDescriptionKey: String.localized("Import failed.")])
 		}
 
+		// A self-update must not leave its temp import/signed entries in the Library, whatever the outcome.
+		var scratch: [AppInfoPresentable] = [imported]
+		defer { scratch.forEach { Storage.shared.deleteApp(for: $0) } }
+
 		phase = .signing
 		var options = OptionsManager.shared.options
 		options.appIdentifier = Bundle.main.bundleIdentifier
@@ -372,12 +390,17 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 			throw NSError(domain: "SelfUpdate", code: -3,
 						  userInfo: [NSLocalizedDescriptionKey: String.localized("Signing failed.")])
 		}
+		scratch.append(signed)
 
 		phase = .installing
 		let viewModel = InstallerStatusViewModel(isIdevice: true)
 		let handler = ArchiveHandler(app: signed, viewModel: viewModel)
 		try await handler.move()
 		let package = try await handler.archive()
+
+		scratch.forEach { Storage.shared.deleteApp(for: $0) }
+		scratch.removeAll()
+
 		let proxy = InstallationProxy(viewModel: viewModel)
 		try await proxy.install(at: package, suspend: true)
 	}
