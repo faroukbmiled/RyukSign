@@ -17,14 +17,14 @@ struct SigningOptionsView: View {
 	var body: some View {
 		if (temporaryOptions == nil) {
 			NBSection(.localized("Protection")) {
-				_toggle(
+				Self.picker(
 					.localized("PPQ Protection"),
 					systemImage: "shield",
-					isOn: $options.ppqProtection,
-					temporaryValue: temporaryOptions?.ppqProtection
+					selection: $options.ppqProtection,
+					values: Options.PPQProtection.allCases
 				)
 			} footer: {
-				Text(.localized("Enabling any protection will append a random string to the bundleidentifiers of the apps you sign, this is to ensure your Apple ID does not get flagged by Apple. However, when using a signing service you can ignore this."))
+				Text(.localized("Default keeps the original bundle identifier unchanged. Ryuk transforms it (ryuk prefix, keyword replacement, PPQ suffix) to help prevent your Apple ID from being flagged by Apple. When using a signing service you can ignore this."))
 			}
 		}
 
