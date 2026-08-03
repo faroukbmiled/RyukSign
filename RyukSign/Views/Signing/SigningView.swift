@@ -168,10 +168,8 @@ struct SigningView: View {
 
 			// ppq protection
 			if
-				_optionsManager.options.ppqProtection,
-				let identifier = app.identifier,
-				let cert = _selectedCert(),
-				cert.ppQCheck
+				_optionsManager.options.ppqProtection == .ryuk,
+				let identifier = app.identifier
 			{
 				var modifiedId = identifier
 					.replacingOccurrences(of: "google", with: "ryu", options: .caseInsensitive)

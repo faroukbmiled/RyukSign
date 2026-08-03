@@ -70,8 +70,8 @@ struct Options: Codable, Equatable {
 	var injectFolder: InjectFolder
 	/// Random string appended to the app identifier
 	var ppqString: String
-	/// Basic protection against PPQ
-	var ppqProtection: Bool
+	/// Protection mode against PPQ
+	var ppqProtection: PPQProtection
 	/// (Better) protection against PPQ
 	var dynamicProtection: Bool
 	/// App identifiers list which matches and replaces
@@ -119,7 +119,7 @@ struct Options: Codable, Equatable {
 	var post_installAppAfterSigned: Bool
 	/// This will delete your imported application after signing, to save on using unneeded space.
 	var post_deleteAppAfterSigned: Bool
-	
+
 	// MARK: - Defaults
 	static let defaultOptions = Options(
 		
@@ -134,7 +134,7 @@ struct Options: Codable, Equatable {
 		injectPath: .executable_path,
 		injectFolder: .frameworks,
 		ppqString: "AN0X1",
-		ppqProtection: true,
+		ppqProtection: .ryuk,
 		dynamicProtection: false,
 		identifiers: [:],
 		displayNames: [:],
@@ -220,6 +220,20 @@ struct Options: Codable, Equatable {
 		case root = "/"
 		case frameworks = "/Frameworks/"
 	}
+
+	enum PPQProtection: String, Codable, CaseIterable, LocalizedDescribable {
+		/// Keep the original bundle identifier (no transformation)
+		case `default`
+		/// Ryuk method: prefix with "ryuk", replace known keywords, append ppqString
+		case ryuk = "Ryuk"
+
+		var localizedDescription: String {
+			switch self {
+			case .default: .localized("Original")
+			case .ryuk: "Ryuk"
+			}
+		}
+	}
 	
 	/// Default random value for `ppqString`
 	static func randomString() -> String {
@@ -244,7 +258,7 @@ extension Options {
 		injectPath = try c.decodeIfPresent(InjectPath.self, forKey: .injectPath) ?? d.injectPath
 		injectFolder = try c.decodeIfPresent(InjectFolder.self, forKey: .injectFolder) ?? d.injectFolder
 		ppqString = try c.decodeIfPresent(String.self, forKey: .ppqString) ?? d.ppqString
-		ppqProtection = try c.decodeIfPresent(Bool.self, forKey: .ppqProtection) ?? d.ppqProtection
+		ppqProtection = (try? c.decode(PPQProtection.self, forKey: .ppqProtection)) ?? d.ppqProtection
 		dynamicProtection = try c.decodeIfPresent(Bool.self, forKey: .dynamicProtection) ?? d.dynamicProtection
 		identifiers = try c.decodeIfPresent([String: String].self, forKey: .identifiers) ?? d.identifiers
 		displayNames = try c.decodeIfPresent([String: String].self, forKey: .displayNames) ?? d.displayNames
