@@ -189,15 +189,18 @@
 		<string>localdevvpn</string>
 		<string>tg</string>
 	</array>
-	<key>NSAllowsArbitraryLoads</key>
-	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_http._tcp</string>
 		<string>_webdav._tcp</string>
 	</array>
-	<key>NSExceptionDomains</key>
-	<array/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RyukSign uses your local network to transfer IPAs and tweaks to this device over the Web Manager server.</string>
 	<key>NSUserNotificationUsageDescription</key>

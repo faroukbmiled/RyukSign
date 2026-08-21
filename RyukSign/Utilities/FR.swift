@@ -153,7 +153,7 @@ enum FR {
 			case .success(let pack):
 				do {
 					try FileManager.forceWrite(content: pack.key, to: "server.pem")
-					try FileManager.forceWrite(content: pack.cert, to: "server.crt")
+					try FileManager.forceWrite(content: [pack.cert, pack.ca].joined(separator: "\n"), to: "server.crt")
 					try FileManager.forceWrite(content: pack.info.domains.commonName, to: "commonName.txt")
 					generator.notificationOccurred(.success)
 					completion(true)

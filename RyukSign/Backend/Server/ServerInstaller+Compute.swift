@@ -38,20 +38,16 @@ extension ServerInstaller {
 		return comps.url!
 	}
 	
-	var externalServerLink: String {
-		let baseUrl = "https://api.palera.in/genPlist?bundleid=\(app.identifier!)&name=\(app.name!)&version=\(app.version!)&fetchurl=\(self.payloadEndpoint.absoluteString)"
-		let encodedBaseUrl = baseUrl.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-		let finalEncodedUrl = encodedBaseUrl.addingPercentEncoding(withAllowedCharacters: .alphanumerics)!
-		
-		return finalEncodedUrl
-	}
-
 	var iTunesLink: String {
 		_iTunesLink(with: plistEndpoint.absoluteString)
 	}
 	
-	var iTunesLinkExternal: String {
-		_iTunesLink(with: externalServerLink)
+	var iTunesLinkExternal: String? {
+		guard let encoded = manifestUrl?.absoluteString.addingPercentEncoding(withAllowedCharacters: .alphanumerics) else {
+			return nil
+		}
+		
+		return _iTunesLink(with: encoded)
 	}
 	
 	private func _iTunesLink(with url: String) -> String {
@@ -96,7 +92,7 @@ extension ServerInstaller {
 	var html: String {
 		"""
 		<html style="background-color: black;">
-		<script type="text/javascript">window.location="\(iTunesLinkExternal)"</script>
+		<script type="text/javascript">window.location="\(iTunesLinkExternal ?? "")"</script>
 		</html>
 		"""
 	}

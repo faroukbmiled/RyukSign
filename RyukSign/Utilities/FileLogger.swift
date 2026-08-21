@@ -27,7 +27,7 @@ enum FileLogger {
 	}
 
 	static func log(_ message: String, category: String = "general") {
-		Logger.misc.info("[\(category, privacy: .public)] \(message)")
+		Logger.misc.info("[\(category, privacy: .public)] \(message, privacy: .public)")
 		let line = "\(_timestamp()) [\(category)] \(message)\n"
 		_queue.async {
 			let url = logFileURL

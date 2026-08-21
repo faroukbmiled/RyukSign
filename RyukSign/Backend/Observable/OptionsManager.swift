@@ -111,6 +111,8 @@ struct Options: Codable, Equatable {
 	
 	/// Modifies app to support liquid glass
 	var experiment_supportLiquidGlass: Bool
+	/// Modifies app to disable liquid glass
+	var experiment_disableLiquidGlass: Bool
 	/// Modifies application to use ElleKit instead of CydiaSubstrate
 	var experiment_replaceSubstrateWithEllekit: Bool
 	
@@ -155,6 +157,7 @@ struct Options: Codable, Equatable {
 		// MARK: Experiments
 		
 		experiment_supportLiquidGlass: false,
+		experiment_disableLiquidGlass: false,
 		experiment_replaceSubstrateWithEllekit: false,
 		
 		// MARK: Post Modifications
@@ -278,6 +281,7 @@ extension Options {
 		// try? so a stale per-sign blob drops instead of resetting the whole struct.
 		tweakInjections = try? c.decode([TweakInjectionSpec].self, forKey: .tweakInjections)
 		experiment_supportLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_supportLiquidGlass) ?? d.experiment_supportLiquidGlass
+		experiment_disableLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_disableLiquidGlass) ?? d.experiment_disableLiquidGlass
 		experiment_replaceSubstrateWithEllekit = try c.decodeIfPresent(Bool.self, forKey: .experiment_replaceSubstrateWithEllekit) ?? d.experiment_replaceSubstrateWithEllekit
 		post_installAppAfterSigned = try c.decodeIfPresent(Bool.self, forKey: .post_installAppAfterSigned) ?? d.post_installAppAfterSigned
 		post_deleteAppAfterSigned = try c.decodeIfPresent(Bool.self, forKey: .post_deleteAppAfterSigned) ?? d.post_deleteAppAfterSigned

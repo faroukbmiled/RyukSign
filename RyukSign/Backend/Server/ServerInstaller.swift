@@ -21,6 +21,8 @@ class ServerInstaller: Identifiable, ObservableObject {
 	private var _needsShutdown = false
 
 	var packageUrl: URL?
+	var manifestUrl: URL?
+	private(set) var startupError: Error?
 	var app: AppInfoPresentable
 	@ObservedObject var viewModel: InstallerStatusViewModel
 	private var _server: Application?
@@ -30,10 +32,21 @@ class ServerInstaller: Identifiable, ObservableObject {
 	init(app: AppInfoPresentable, viewModel: InstallerStatusViewModel) throws {
 		self.app = app
 		self.viewModel = viewModel
-		try _setup()
-		try _configureRoutes()
-		try _server?.server.start()
-		_needsShutdown = true
+
+		let mode = getServerMethod() == 1 ? "semi-local" : "fully-local"
+		FileLogger.log("installer starting: mode=\(mode) host=\(sni()) port=\(port) ipFix=\(getIPFix())", category: "install")
+
+		do {
+			let server = try setupApp(port: port)
+			_server = server
+			try _configureRoutes()
+			try server.server.start()
+			_needsShutdown = true
+			FileLogger.log("server listening on \(sni()):\(port), payload=\(payloadEndpoint.absoluteString)", category: "install")
+		} catch {
+			FileLogger.error("server failed to start: \(error)", category: "install")
+			startupError = error
+		}
 	}
 	
 	deinit {
@@ -41,13 +54,12 @@ class ServerInstaller: Identifiable, ObservableObject {
 		backgroundTaskManager?.stop()
 	}
 	
-	private func _setup() throws {
-		self._server = try? setupApp(port: port)
-	}
-		
 	private func _configureRoutes() throws {
 		_server?.get("*") { [weak self] req in
 			guard let self else { return Response(status: .badGateway) }
+
+			FileLogger.log("request: \(req.method.rawValue) \(req.url.path)", category: "install")
+
 			switch req.url.path {
 			case plistEndpoint.path:
 				self._updateStatus(.sendingManifest)
@@ -89,6 +101,8 @@ class ServerInstaller: Identifiable, ObservableObject {
 						self.backgroundTaskManager = nil
 					}
 				}
+			case "/healthz":
+				return Response(status: .ok)
 			case "/install":
 				var headers = HTTPHeaders()
 				headers.add(name: .contentType, value: "text/html")
@@ -96,6 +110,32 @@ class ServerInstaller: Identifiable, ObservableObject {
 			default:
 				return Response(status: .notFound)
 			}
+		}
+	}
+	
+	// installd fails silently when unreachable, so prove it first — but not for Semi Local, where probing a LAN address would prompt for local network access.
+	func selfCheck() async -> Error? {
+		guard getServerMethod() != 1 else { return nil }
+
+		let host = sni()
+		let addresses = Self.resolve(host)
+		FileLogger.log("\(host) resolves to \(addresses.isEmpty ? "nothing" : addresses.joined(separator: ", "))", category: "install")
+
+		var comps = URLComponents()
+		comps.scheme = "https"
+		comps.host = host
+		comps.port = port
+		comps.path = "/healthz"
+
+		guard let url = comps.url else { return nil }
+
+		do {
+			let (_, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 10))
+			FileLogger.log("self check reached the server: HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)", category: "install")
+			return nil
+		} catch {
+			FileLogger.error("self check could not reach \(url.absoluteString): \(error.localizedDescription)", category: "install")
+			return error
 		}
 	}
 	

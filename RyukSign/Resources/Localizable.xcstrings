@@ -582,7 +582,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld gerekli sistem dylib kütüphanesi gösterilmiyor."
+            "value" : "%lld gerekli sistem dylib kütüphanesi gizlendi."
           }
         },
         "vi" : {
@@ -4137,7 +4137,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Harika bir uygulama."
+            "value" : "Harika bir uygulama"
           }
         },
         "vi" : {
@@ -8322,7 +8322,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İptal Kontrolü"
+            "value" : "Sertifika İptal Kontrolü"
           }
         },
         "vi" : {
@@ -8649,7 +8649,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dosyalar’dan Seç"
+            "value" : "Dosyalardan Seç"
           }
         },
         "vi" : {
@@ -8893,7 +8893,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotoğraflar’dan Seç"
+            "value" : "Fotoğraflardan Seç"
           }
         },
         "vi" : {
@@ -11026,7 +11026,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İndirme URL’sini Kopyala"
+            "value" : "İndirme URL’lerini Kopyala"
           }
         },
         "vi" : {
@@ -11039,6 +11039,89 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "复制下载连接"
+          }
+        }
+      }
+    },
+    "Could not build the installation link, check your connection and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر إنشاء رابط التثبيت، تحقق من اتصالك وحاول مرة أخرى."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nepodařilo se sestavit instalační odkaz, zkontrolujte připojení a zkuste to znovu."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Installationslink konnte nicht erstellt werden. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not build the installation link, check your connection and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo crear el enlace de instalación, comprueba tu conexión e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de créer le lien d'installation, vérifiez votre connexion et réessayez."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak dapat membuat tautan instalasi, periksa koneksi Anda dan coba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile creare il link di installazione, controlla la connessione e riprova."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie udało się utworzyć odnośnika instalacji, sprawdź połączenie i spróbuj ponownie."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось создать ссылку для установки, проверьте подключение и повторите попытку."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurulum bağlantısı oluşturulamadı, bağlantınızı kontrol edip tekrar deneyin."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể tạo liên kết cài đặt, hãy kiểm tra kết nối và thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法生成安装链接，请检查网络连接后重试。"
           }
         }
       }
@@ -14308,6 +14391,89 @@
         }
       }
     },
+    "Disable Liquid Glass" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعطيل Liquid Glass"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zakázat Liquid Glass"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liquid Glass deaktivieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disable Liquid Glass"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivar Liquid Glass"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désactiver Liquid Glass"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonaktifkan Liquid Glass"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disabilita Liquid Glass"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wyłącz Liquid Glass"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отключить Liquid Glass"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liquid Glass’ı Devre Dışı Bırak"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tắt Liquid Glass"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "禁用Liquid Glass"
+          }
+        }
+      }
+    },
     "Discord" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -14618,7 +14784,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Görünen Ad"
+            "value" : "Görünen Adlar"
           }
         },
         "vi" : {
@@ -18310,7 +18476,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dışarı Aktar"
+            "value" : "Dışa Aktar"
           }
         },
         "vi" : {
@@ -18872,83 +19038,6 @@
         }
       }
     },
-    "Failed to create installation URL" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فشل إنشاء رابط التثبيت"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nepodařilo se vytvořit instalační URL"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installations-URL konnte nicht erstellt werden"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se pudo crear la URL de instalación"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de créer l’URL d’installation"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gagal membuat URL instalasi"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile creare l'URL di installazione"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nie udało się utworzyć URL instalacji"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Не удалось создать URL установки"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kurulum URL'si oluşturulamadı"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không tạo được URL cài đặt"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创建安装 URL 失败"
-          }
-        }
-      }
-    },
     "Failed to download, check your internet connection and try again." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19015,7 +19104,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İndirme sırasında hata oluştu, internet bağlantınızı kontrol edip tekrar deneyin."
+            "value" : "İndirme başarısız oldu. İnternet bağlantınızı kontrol edip tekrar deneyin."
           }
         },
         "vi" : {
@@ -21023,83 +21112,6 @@
         }
       }
     },
-    "Fully Local Install Failed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فشل التثبيت المحلي بالكامل"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plně lokální instalace selhala"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vollständig lokale Installation fehlgeschlagen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Error en la instalación totalmente local"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Échec de l’installation entièrement locale"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instalasi Lokal Penuh Gagal"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installazione completamente locale non riuscita"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "W pełni lokalna instalacja nie powiodła się"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Полностью локальная установка не удалась"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tamamen Yerel Kurulum Başarısız"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cài đặt cục bộ hoàn toàn thất bại"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完全本地安装失败"
-          }
-        }
-      }
-    },
     "Game Mode" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -21913,7 +21925,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "GitHub Repo"
+            "value" : "GitHub仓库"
           }
         }
       }
@@ -21996,7 +22008,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "来我们的GitHub添加星标！"
+            "value" : "来我们的GitHub仓库添加星标！"
           }
         }
       }
@@ -26633,7 +26645,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enjeksiyon Klasörü"
+            "value" : "Ekleme Konumu"
           }
         },
         "vi" : {
@@ -26716,7 +26728,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enjeksiyon Yolu"
+            "value" : "Ekleme Yolu"
           }
         },
         "vi" : {
@@ -27142,83 +27154,6 @@
         }
       }
     },
-    "Installation Error" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خطأ في التثبيت"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chyba instalace"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installationsfehler"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Error de instalación"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erreur d’installation"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kesalahan Instalasi"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Errore di installazione"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Błąd instalacji"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ошибка установки"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kurulum Hatası"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lỗi cài đặt"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安装错误"
-          }
-        }
-      }
-    },
     "Installation Type" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27285,7 +27220,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Yükleme Türü"
+            "value" : "Kurulum Türü"
           }
         },
         "vi" : {
@@ -32556,7 +32491,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hiçbir Dosya seçilmedi."
+            "value" : "Hiçbir dosya seçilmedi."
           }
         },
         "vi" : {
@@ -33273,7 +33208,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eşleştirme dosyası bulunamadı, lütfen içe aktarın."
+            "value" : "Eşleştirme dosyası bulunamadı. Lütfen içe aktarın."
           }
         },
         "vi" : {
@@ -33593,7 +33528,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Depor Yok"
+            "value" : "Depo Yok"
           }
         },
         "vi" : {
@@ -43564,7 +43499,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Heartbeat’ı Sıfırla"
+            "value" : "Heartbeat’i Yeniden Başlat"
           }
         },
         "vi" : {
@@ -59766,7 +59701,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neler Yeni"
+            "value" : "Yenilikler"
           }
         },
         "vi" : {
@@ -60785,7 +60720,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eşleştirme dosyanız geçersiz ve cihazınızla uyumlu değil, lütfen geçerli bir eşleştirme dosyası içe aktarın."
+            "value" : "Eşleştirme dosyanız geçersiz ve cihazınızla uyumlu değil. Lütfen geçerli bir eşleştirme dosyası içe aktarın."
           }
         },
         "vi" : {

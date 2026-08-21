@@ -53,61 +53,53 @@ struct InstallPreviewView: View {
 			SafariRepresentableView(url: installer.pageEndpoint).ignoresSafeArea()
 		}
 		.onReceive(viewModel.$status) { newStatus in
-			if _installationMethod == 0 {
-				if case .ready = newStatus {
-					if _serverMethod == 0 {
-						guard let url = URL(string: installer.iTunesLink) else {
-							UIAlertController.showAlertWithOk(
-								title: .localized("Installation Error"),
-								message: .localized("Failed to create installation URL")
-							)
-							return
-						}
+			guard _installationMethod == 0 else { return }
 
-						Logger.misc.info("Fully Local install: opening itms-services URL")
-
-						UIApplication.shared.open(url) { success in
-							Logger.misc.info("itms-services open result: \(success, privacy: .public)")
-							if !success {
-								DispatchQueue.main.async {
-									UIAlertController.showAlertWithOk(
-										title: .localized("Fully Local Install Failed"),
-										message: .localized("Could not open itms-services URL. This may be due to:\n\n1. Missing entitlements (Associated Domains, Network Extensions)\n2. Invalid SSL certificates\n3. Network configuration issues\n\nTry using 'Semi Local' method in Settings → Installation → Server Type instead.\n\nURL: \(installer.iTunesLink)")
-									)
-								}
-							}
-						}
-					} else if _serverMethod == 1 {
-						_isWebviewPresenting = true
-					}
+			switch newStatus {
+			case .ready:
+				_openInstall(_serverMethod == 0 ? installer.iTunesLink : installer.iTunesLinkExternal)
+			case .sendingPayload:
+				_isWebviewPresenting = false
+			case .installing:
+				if progressTask == nil {
+					progressTask = startInstallProgressPolling(
+						bundleID: app.identifier!,
+						viewModel: viewModel
+					)
 				}
-
-				if case .sendingPayload = newStatus, _serverMethod == 1 {
-					_isWebviewPresenting = false
-				}
-
-				if case .installing = newStatus {
-					if progressTask == nil {
-						progressTask = startInstallProgressPolling(
-							bundleID: app.identifier!,
-							viewModel: viewModel
-						)
-					}
-				}
-
-				switch newStatus {
-				case .completed, .broken(_):
-					progressTask?.cancel()
-					progressTask = nil
-				default:
-					break
-				}
+			case .completed, .broken:
+				progressTask?.cancel()
+				progressTask = nil
+			default:
+				break
 			}
 		}
 		.onAppear(perform: _install)
 		.onDisappear {
 			progressTask?.cancel()
 			progressTask = nil
+		}
+	}
+	
+	// Direct open keeps the install to one tap; the redirect page is only for builds that refuse the scheme.
+	private func _openInstall(_ link: String?) {
+		guard let link, let url = URL(string: link) else {
+			UIAlertController.showAlertWithOk(
+				title: .localized("Install"),
+				message: .localized("Could not build the installation link, check your connection and try again.")
+			)
+			return
+		}
+
+		FileLogger.log("opening \(link)", category: "install")
+
+		UIApplication.shared.open(url) { opened in
+			FileLogger.log("itms-services accepted by iOS: \(opened)", category: "install")
+
+			if !opened {
+				FileLogger.error("iOS refused the scheme, falling back to the redirect page", category: "install")
+				_isWebviewPresenting = true
+			}
 		}
 	}
 	
@@ -163,9 +155,30 @@ struct InstallPreviewView: View {
 
 				if await !isSharing {
 					if await _installationMethod == 0 {
-						await MainActor.run {
+						let payload = await MainActor.run { () -> URL? in
 							installer.packageUrl = packageUrl
-							viewModel.status = .ready
+							guard _serverMethod == 1 else { return nil }
+							viewModel.status = .sendingManifest
+							return installer.payloadEndpoint
+						}
+
+						if let payload {
+							let manifestUrl = await ManifestService.resolve(for: app, payload: payload)
+							await MainActor.run { installer.manifestUrl = manifestUrl }
+						}
+
+						let server = await MainActor.run { installer }
+						var failure = server.startupError
+						if failure == nil {
+							failure = await server.selfCheck()
+						}
+
+						await MainActor.run {
+							if let failure {
+								viewModel.status = .broken(failure)
+							} else {
+								viewModel.status = .ready
+							}
 						}
 					} else if await _installationMethod == 1 {
 						let handler = await InstallationProxy(viewModel: viewModel)

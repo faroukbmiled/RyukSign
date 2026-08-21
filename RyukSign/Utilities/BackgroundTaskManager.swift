@@ -133,11 +133,7 @@ final class BackgroundTaskManager {
 	private func playAudio() -> Bool {
 		do {
 			if audioPlayer == nil {
-				guard let soundURL = Bundle.main.url(forResource: "sound", withExtension: "m4a") else {
-					return false
-				}
-				audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-				audioPlayer?.volume = 0.01
+				audioPlayer = try AVAudioPlayer(data: Self.silence)
 				audioPlayer?.numberOfLoops = -1
 			}
 			audioPlayer?.play()
@@ -146,6 +142,32 @@ final class BackgroundTaskManager {
 			return false
 		}
 	}
+
+	// Generated rather than bundled so the keep-alive loop is provably inaudible on the speaker.
+	private static let silence: Data = {
+		let sampleRate: UInt32 = 44100
+		let bytes = Int(sampleRate) * 2
+
+		var wav = Data(capacity: 44 + bytes)
+		func put<T: FixedWidthInteger>(_ value: T) {
+			withUnsafeBytes(of: value.littleEndian) { wav.append(contentsOf: $0) }
+		}
+
+		wav.append(contentsOf: "RIFF".utf8)
+		put(UInt32(36 + bytes))
+		wav.append(contentsOf: "WAVEfmt ".utf8)
+		put(UInt32(16))
+		put(UInt16(1))
+		put(UInt16(1))
+		put(sampleRate)
+		put(sampleRate * 2)
+		put(UInt16(2))
+		put(UInt16(16))
+		wav.append(contentsOf: "data".utf8)
+		put(UInt32(bytes))
+		wav.append(Data(count: bytes))
+		return wav
+	}()
 
 	private func stopAudio() {
 		audioPlayer?.stop()

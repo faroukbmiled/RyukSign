@@ -311,6 +311,9 @@ extension SigningHandler {
 			infoDictionary.setObject(options.minimumAppRequirement.rawValue, forKey: "MinimumOSVersion" as NSCopying)
 		}
 		
+		if options.experiment_disableLiquidGlass { infoDictionary.setObject(true, forKey: "UIDesignRequiresCompatibility" as NSCopying) }
+		if options.experiment_supportLiquidGlass { infoDictionary.setObject(false, forKey: "UIDesignRequiresCompatibility" as NSCopying) }
+		
 		// strip the device allowlist so the app isn't pinned to specific models
 		if infoDictionary["UISupportedDevices"] != nil {
 			infoDictionary.removeObject(forKey: "UISupportedDevices")

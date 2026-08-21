@@ -91,3 +91,5 @@ RyukSign/Resources/SelfUpdateConfig.plist
 cert.txt
 
 _RyukSign/
+
+manifest-worker
