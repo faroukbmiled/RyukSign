@@ -34,28 +34,10 @@ struct ResetView: View {
 		message: String = "",
 		action: @escaping () -> Void
 	) {
-		let action = UIAlertAction(
-			title: .localized("Proceed"),
-			style: .destructive
-		) { _ in
+		DestructiveConfirm.present(title: title, message: message) {
 			action()
 			UIApplication.shared.suspendAndReopen()
 		}
-		
-		let style: UIAlertController.Style = UIDevice.current.userInterfaceIdiom == .pad
-		? .alert
-		: .actionSheet
-		
-		var msg = ""
-		if !message.isEmpty { msg = message + "\n" }
-		msg.append(.localized("This action cannot be undone. Would you like to proceed?"))
-	
-		UIAlertController.showAlertWithCancel(
-			title: title,
-			message: msg,
-			style: style,
-			actions: [action]
-		)
 	}
 }
 
@@ -153,14 +135,7 @@ extension ResetView {
 // MARK: - View extension: reset
 extension ResetView {
 	static func clearWorkCache() {
-		let fileManager = FileManager.default
-		let tmpDirectory = fileManager.temporaryDirectory
-		
-		if let files = try? fileManager.contentsOfDirectory(atPath: tmpDirectory.path()) {
-			for file in files {
-				try? fileManager.removeItem(atPath: tmpDirectory.appendingPathComponent(file).path())
-			}
-		}
+		StorageManager.purgeTemporary()
 	}
 	
 	static func clearNetworkCache() {

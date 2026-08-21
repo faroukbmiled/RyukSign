@@ -374,7 +374,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, DownloadManager.ErrorDelegat
 	) -> Bool {
 		_createPipeline()
 		_createDocumentsDirectories()
-		ResetView.clearWorkCache()
+		StorageManager.purgeStaleTemporary()
 		_addDefaultCertificates()
 		_registerBackgroundTasks()
 

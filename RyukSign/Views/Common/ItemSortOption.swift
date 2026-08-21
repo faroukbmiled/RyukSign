@@ -1,15 +1,20 @@
 //
-//  TweakSortOption.swift
+//  ItemSortOption.swift
 //  RyukSign
 //
+//  Created by Ryuk
+//
 
-import SwiftUI
-import UIKit
-import NimbleViews
+import Foundation
 import NimbleExtensions
 
-// MARK: - Sorting
-enum TweakSortOption: String, CaseIterable, Identifiable {
+protocol SortableItem {
+	var sortName: String { get }
+	var sortDate: Date { get }
+	var sortSize: Int64 { get }
+}
+
+enum ItemSortOption: String, CaseIterable, Identifiable {
 	case nameAZ
 	case nameZA
 	case dateNewest
@@ -36,18 +41,18 @@ enum TweakSortOption: String, CaseIterable, Identifiable {
 		}
 	}
 
-	var comparator: (ManagedTweak, ManagedTweak) -> Bool {
+	func comparator<T: SortableItem>() -> (T, T) -> Bool {
 		switch self {
 		case .nameAZ:
-			return { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+			return { $0.sortName.localizedCaseInsensitiveCompare($1.sortName) == .orderedAscending }
 		case .nameZA:
-			return { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+			return { $0.sortName.localizedCaseInsensitiveCompare($1.sortName) == .orderedDescending }
 		case .dateNewest:
-			return { $0.dateAdded > $1.dateAdded }
+			return { $0.sortDate > $1.sortDate }
 		case .dateOldest:
-			return { $0.dateAdded < $1.dateAdded }
+			return { $0.sortDate < $1.sortDate }
 		case .sizeLargest:
-			return { ($0.activeVersion?.fileSize ?? 0) > ($1.activeVersion?.fileSize ?? 0) }
+			return { $0.sortSize > $1.sortSize }
 		}
 	}
 }

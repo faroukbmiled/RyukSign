@@ -29,16 +29,6 @@ final class TweakManager: ObservableObject {
 		self.folders = []
 		_load()
 		_loadFolders()
-		_purgeExportTemp()
-	}
-
-	/// Remove leftover export/extract scratch dirs from previous sessions.
-	private func _purgeExportTemp() {
-		let prefixes = ["TweakExport_", "TweakFolderExport_", "FeatherTweakExtract_", "FeatherZipExtract_"]
-		guard let items = try? _fm.contentsOfDirectory(at: _fm.temporaryDirectory, includingPropertiesForKeys: nil) else { return }
-		for item in items where prefixes.contains(where: { item.lastPathComponent.hasPrefix($0) }) {
-			try? _fm.removeItem(at: item)
-		}
 	}
 
 	// MARK: Persistence

@@ -409,3 +409,10 @@ extension ManagedTweak {
 		folderId = try c.decodeIfPresent(UUID.self, forKey: .folderId)
 	}
 }
+
+// MARK: - Model extension: sorting
+extension ManagedTweak: SortableItem {
+	var sortName: String { name }
+	var sortDate: Date { dateAdded }
+	var sortSize: Int64 { activeVersion?.fileSize ?? 0 }
+}

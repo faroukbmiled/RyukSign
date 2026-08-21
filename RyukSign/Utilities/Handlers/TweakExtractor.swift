@@ -206,24 +206,6 @@ enum TweakExtractor {
 
 	/// Size of a file, or the recursive total for a directory (framework/bundle).
 	static func directorySize(at url: URL) -> Int64 {
-		let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
-		if values?.isDirectory != true {
-			return Int64(values?.fileSize ?? 0)
-		}
-
-		var total: Int64 = 0
-		if let enumerator = _fm.enumerator(
-			at: url,
-			includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
-			options: []
-		) {
-			for case let child as URL in enumerator {
-				let cv = try? child.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
-				if cv?.isRegularFile == true {
-					total += Int64(cv?.fileSize ?? 0)
-				}
-			}
-		}
-		return total
+		_fm.allocatedSize(at: url)
 	}
 }

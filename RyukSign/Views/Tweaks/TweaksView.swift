@@ -27,7 +27,7 @@ struct TweakLibraryList: View {
 	@State private var _isEditing = false
 	@State private var _selection: Set<UUID> = []
 	@State private var _query = ""
-	@AppStorage("Feather.tweakSort") private var _sortRaw = TweakSortOption.dateNewest.rawValue
+	@AppStorage("Feather.tweakSort") private var _sortRaw = ItemSortOption.dateNewest.rawValue
 
 	// One sheet/alert modifier each — multiple on the same view shadow each other.
 	@State private var _sheet: Sheet?
@@ -75,7 +75,7 @@ struct TweakLibraryList: View {
 		}
 	}
 
-	private var _sort: TweakSortOption { TweakSortOption(rawValue: _sortRaw) ?? .dateNewest }
+	private var _sort: ItemSortOption { ItemSortOption(rawValue: _sortRaw) ?? .dateNewest }
 
 	private func _matches(_ tweak: ManagedTweak) -> Bool {
 		let q = _query.trimmingCharacters(in: .whitespaces)
@@ -86,7 +86,7 @@ struct TweakLibraryList: View {
 	}
 
 	private var _allFiltered: [ManagedTweak] {
-		manager.tweaks.filter(_matches).sorted(by: _sort.comparator)
+		manager.tweaks.filter(_matches).sorted(by: _sort.comparator())
 	}
 	// Root sections exclude tweaks filed in folders (those show only in their folder).
 	private var _autoTweaks: [ManagedTweak] { _allFiltered.filter { $0.hasAutoRule && $0.folderId == nil } }
@@ -379,7 +379,7 @@ extension TweakLibraryList {
 			ToolbarItem(placement: .topBarTrailing) {
 				Menu {
 					Picker(.localized("Sort By"), selection: $_sortRaw) {
-						ForEach(TweakSortOption.allCases) { option in
+						ForEach(ItemSortOption.allCases) { option in
 							Label(option.label, systemImage: option.systemImage).tag(option.rawValue)
 						}
 					}

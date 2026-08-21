@@ -22,15 +22,23 @@ extension Storage {
 	}
 	
 	func deleteApp(for app: AppInfoPresentable) {
-		do {
+		deleteApps([app])
+	}
+
+	/// One save for the whole batch: saving per item mid-edit blows up the SwiftUI list diff.
+	func deleteApps(_ apps: [AppInfoPresentable]) {
+		guard !apps.isEmpty else { return }
+
+		for app in apps {
 			if let url = getUuidDirectory(for: app) {
 				try? FileManager.default.removeItem(at: url)
 			}
 			if let object = app as? NSManagedObject {
 				context.delete(object)
 			}
-			saveContext()
 		}
+
+		saveContext()
 	}
 	
 	func getCertificate(from app: AppInfoPresentable) -> CertificatePair? {

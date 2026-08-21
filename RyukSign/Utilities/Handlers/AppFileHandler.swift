@@ -22,6 +22,7 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 	private let _install: Bool
 	private let _download: Download?
 	private let _appDescription: String?
+	private var _didAddToDatabase = false
 
 	init(
 		file ipa: URL,
@@ -235,6 +236,8 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 				}
 			}
 		}
+
+		_didAddToDatabase = true
 	}
 
 	private func _directory() async throws -> URL {
@@ -244,6 +247,10 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 
 	func clean() async throws {
 		try _fileManager.removeFileIfNeeded(at: _uniqueWorkDir)
+		// A moved-but-unregistered payload is unreachable from the library, so it would leak forever.
+		if !_didAddToDatabase {
+			try? _fileManager.removeFileIfNeeded(at: _fileManager.unsigned(_uuid))
+		}
 	}
 }
 

@@ -114,6 +114,9 @@ struct SettingsView: View {
                 _directories()
 
                 Section {
+                    NavigationLink(destination: StorageView()) {
+                        Label(.localized("Storage"), systemImage: "internaldrive")
+                    }
                     NavigationLink(destination: BackupView()) {
                         Label(.localized("Backup & Restore"), systemImage: "arrow.triangle.2.circlepath")
                     }
@@ -121,7 +124,7 @@ struct SettingsView: View {
                         Label(.localized("Reset"), systemImage: "trash")
                     }
                 } footer: {
-                    Text(.localized("Reset the applications sources, certificates, apps, and general contents."))
+                    Text(.localized("Check what is using space, back up your setup, or reset the app."))
                 }
             }
         }

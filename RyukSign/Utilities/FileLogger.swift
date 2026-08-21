@@ -17,9 +17,7 @@ enum FileLogger {
 
 	/// `Documents/Logs/ryuksign.log`
 	static var logFileURL: URL {
-		_fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
-			.appendingPathComponent("Logs", isDirectory: true)
-			.appendingPathComponent("ryuksign.log")
+		_fm.logs.appendingPathComponent("ryuksign.log")
 	}
 
 	private static var _rotatedFileURL: URL {

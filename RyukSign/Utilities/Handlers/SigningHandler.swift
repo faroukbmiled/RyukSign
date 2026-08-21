@@ -31,6 +31,7 @@ final class SigningHandler: NSObject {
 	// Original bundle id, captured before PPQ protection / any modifications.
 	private var _originalBundleIdentifier: String?
 	private var _appDescription: String?
+	private var _didAddToDatabase = false
 	
 	init(app: AppInfoPresentable, options: Options = OptionsManager.shared.options) {
 		self._app = app
@@ -198,6 +199,8 @@ final class SigningHandler: NSObject {
 				continuation.resume()
 			}
 		}
+
+		_didAddToDatabase = true
 	}
 	
 	private func _directory() async throws -> URL {
@@ -207,6 +210,10 @@ final class SigningHandler: NSObject {
 	
 	func clean() async throws {
 		try _fileManager.removeFileIfNeeded(at: _uniqueWorkDir)
+		// A moved-but-unregistered bundle is unreachable from the library, so it would leak forever.
+		if !_didAddToDatabase {
+			try? _fileManager.removeFileIfNeeded(at: _fileManager.signed(_uuid))
+		}
 	}
 }
 

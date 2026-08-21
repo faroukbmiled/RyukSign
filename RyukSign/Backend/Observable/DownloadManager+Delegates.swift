@@ -24,8 +24,7 @@ extension DownloadManager: URLSessionDownloadDelegate {
 			}
 		}
 		
-		let tempDirectory = FileManager.default.temporaryDirectory
-		let customTempDir = tempDirectory.appendingPathComponent("FeatherDownloads", isDirectory: true)
+		let customTempDir = FileManager.default.downloadStaging
 		
 		do {
 			try FileManager.default.createDirectoryIfNeeded(at: customTempDir)

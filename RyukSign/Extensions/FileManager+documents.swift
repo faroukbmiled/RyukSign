@@ -56,9 +56,38 @@ extension FileManager {
 		URL.documentsDirectory.appendingPathComponent("WebManager")
 	}
 
+	/// Gives the log directory
+	var logs: URL {
+		URL.documentsDirectory.appendingPathComponent("Logs", isDirectory: true)
+	}
+
+	/// Where finished downloads are staged before they get imported
+	var downloadStaging: URL {
+		temporaryDirectory.appendingPathComponent("FeatherDownloads", isDirectory: true)
+	}
+
 	/// A unique temp directory URL (`tmp/<label>_<uuid>`). The caller creates it.
 	func uniqueTemporaryDirectory(_ label: String) -> URL {
 		temporaryDirectory.appendingPathComponent("\(label)_\(UUID().uuidString)", isDirectory: true)
+	}
+
+	/// On-disk bytes for a file, or the recursive total for a directory.
+	func allocatedSize(at url: URL) -> Int64 {
+		let keys: [URLResourceKey] = [.isDirectoryKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey, .fileSizeKey]
+
+		func size(of item: URL) -> Int64 {
+			guard let values = try? item.resourceValues(forKeys: Set(keys)), values.isDirectory != true else { return 0 }
+			return Int64(values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? values.fileSize ?? 0)
+		}
+
+		guard (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else {
+			return size(of: url)
+		}
+
+		guard let enumerator = enumerator(at: url, includingPropertiesForKeys: keys, options: []) else { return 0 }
+		return enumerator.reduce(into: Int64(0)) { total, item in
+			if let item = item as? URL { total += size(of: item) }
+		}
 	}
 
 	/// Best-effort free bytes for an important write here; `nil` if undeterminable (don't block on it).

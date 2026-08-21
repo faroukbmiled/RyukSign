@@ -18,7 +18,7 @@ struct TweakFolderView: View {
 	let folderId: UUID
 
 	@State private var _query = ""
-	@AppStorage("Feather.tweakSort") private var _sortRaw = TweakSortOption.dateNewest.rawValue
+	@AppStorage("Feather.tweakSort") private var _sortRaw = ItemSortOption.dateNewest.rawValue
 	@State private var _isEditing = false
 	@State private var _selection: Set<UUID> = []
 	@State private var _sheet: Sheet?
@@ -37,7 +37,7 @@ struct TweakFolderView: View {
 		var id: String { if case .confirmDelete = self { return "delete" } else { return "rename" } }
 	}
 
-	private var _sort: TweakSortOption { TweakSortOption(rawValue: _sortRaw) ?? .dateNewest }
+	private var _sort: ItemSortOption { ItemSortOption(rawValue: _sortRaw) ?? .dateNewest }
 	private var _folderName: String { manager.folder(folderId)?.name ?? .localized("Folder") }
 	private var _navTitle: String {
 		_isEditing ? String.localized("%lld Selected", arguments: _selection.count) : _folderName
@@ -52,7 +52,7 @@ struct TweakFolderView: View {
 	}
 
 	private var _tweaks: [ManagedTweak] {
-		manager.tweaks(inFolder: folderId).filter(_matches).sorted(by: _sort.comparator)
+		manager.tweaks(inFolder: folderId).filter(_matches).sorted(by: _sort.comparator())
 	}
 	private var _allIds: Set<UUID> { Set(manager.tweaks(inFolder: folderId).map { $0.id }) }
 
@@ -147,7 +147,7 @@ struct TweakFolderView: View {
 						Button(.localized("Select")) { _isEditing = true }
 					}
 					Picker(.localized("Sort By"), selection: $_sortRaw) {
-						ForEach(TweakSortOption.allCases) { option in
+						ForEach(ItemSortOption.allCases) { option in
 							Label(option.label, systemImage: option.systemImage).tag(option.rawValue)
 						}
 					}
