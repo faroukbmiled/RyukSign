@@ -343,26 +343,25 @@ final class TweakManager: ObservableObject {
 
 	// MARK: Queries
 
+	var injectableTweaks: [ManagedTweak] {
+		tweaks.filter { $0.isEnabled && $0.activeVersion != nil }
+	}
+
 	/// Tweaks that should auto-inject when signing the given bundle id.
 	func resolveAutoInject(forBundleId bundleId: String?) -> [ManagedTweak] {
-		tweaks.filter { tweak in
-			guard tweak.isEnabled, tweak.activeVersion != nil else { return false }
-			if tweak.injectByDefault { return true }
-			if let bundleId, tweak.autoInjectBundleIds.contains(bundleId) { return true }
-			return false
-		}
+		injectableTweaks.filter { $0.autoInjects(into: bundleId) }
 	}
 
 	/// Tweaks set to inject into every sign (drives the tab badge).
 	var defaultInjectCount: Int {
-		tweaks.filter { $0.isEnabled && $0.injectByDefault && $0.activeVersion != nil }.count
+		injectableTweaks.filter { $0.injectByDefault }.count
 	}
 
 	/// Sign-time spec from a tweak's active version: one file per component with its
 	/// effective config (component override else tweak default); "selected" targeting
 	/// is constrained to the app's real extensions.
 	func injectionSpec(for tweak: ManagedTweak, availableAppex: [String]) -> TweakInjectionSpec? {
-		guard let version = tweak.activeVersion else { return nil }
+		guard tweak.isEnabled, let version = tweak.activeVersion else { return nil }
 		let files: [TweakInjectionFile] = version.components.map { component in
 			var config = component.config ?? tweak.config
 			if case .selected(let names) = config.targeting {

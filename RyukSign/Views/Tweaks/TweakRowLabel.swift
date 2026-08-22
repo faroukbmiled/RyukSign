@@ -44,8 +44,13 @@ struct TweakRowLabel: View {
 
 			Spacer()
 
-			if tweak.injectByDefault {
+			if !tweak.isEnabled {
+				_badge(.localized("Disabled"), systemImage: "power", tint: .secondary)
+			} else if tweak.injectByDefault {
 				_badge(.localized("Default"), systemImage: "infinity")
+				if !tweak.autoInjectBundleIds.isEmpty {
+					_badge("\(tweak.autoInjectBundleIds.count)", systemImage: "nosign")
+				}
 			} else if !tweak.autoInjectBundleIds.isEmpty {
 				_badge("\(tweak.autoInjectBundleIds.count)", systemImage: "app.badge")
 			}
@@ -53,17 +58,17 @@ struct TweakRowLabel: View {
 	}
 
 	@ViewBuilder
-	private func _badge(_ text: String, systemImage: String) -> some View {
+	private func _badge(_ text: String, systemImage: String, tint: Color = .accentColor) -> some View {
 		HStack(spacing: 3) {
 			Image(systemName: systemImage)
-				.foregroundStyle(.tint)
+				.foregroundStyle(tint)
 			Text(text)
 				.foregroundStyle(.primary)
 		}
 		.font(.caption2.weight(.semibold))
 		.padding(.horizontal, 7)
 		.padding(.vertical, 3)
-		.background(Color.accentColor.opacity(0.15))
+		.background(tint.opacity(0.15))
 		.clipShape(Capsule())
 	}
 }

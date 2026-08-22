@@ -64,6 +64,8 @@ struct TweakExtractionView: View {
 						systemImage: "magnifyingglass",
 						description: .localized("No dylibs, frameworks or bundles were found inside.")
 					)
+					.frame(maxWidth: .infinity, maxHeight: .infinity)
+					.background(Color(.systemGroupedBackground).ignoresSafeArea())
 				} else {
 					NBList(.localized("Extract Tweaks")) {
 						if _isSearching {

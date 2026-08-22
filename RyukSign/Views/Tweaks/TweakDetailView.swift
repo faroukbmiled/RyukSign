@@ -342,7 +342,7 @@ extension TweakDetailView {
 			Text(.localized("When on, this tweak is added to every app you sign (still editable per-sign)."))
 		}
 
-		NBSection(.localized("Bundle ID Rules")) {
+		NBSection(tweak.injectByDefault ? .localized("Excluded Bundle IDs") : .localized("Bundle ID Rules")) {
 			ForEach(tweak.autoInjectBundleIds, id: \.self) { id in
 				Text(id)
 					.swipeActions(edge: .trailing) {
@@ -372,7 +372,9 @@ extension TweakDetailView {
 				Label(.localized("Choose From Library"), systemImage: "apps.iphone")
 			}
 		} footer: {
-			Text(.localized("Auto-inject this tweak when signing apps with these bundle identifiers."))
+			Text(tweak.injectByDefault
+				 ? .localized("Skip auto-inject when signing apps with these bundle identifiers.")
+				 : .localized("Auto-inject this tweak when signing apps with these bundle identifiers."))
 		}
 	}
 

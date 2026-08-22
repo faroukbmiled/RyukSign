@@ -105,7 +105,7 @@ extension WebManagerServer {
 	private func _configureTweaks(_ app: Application) {
 		app.get("api", "tweaks") { _ async -> Response in
 			let infos = await MainActor.run {
-				TweakManager.shared.tweaks.map { tweak in
+				TweakManager.shared.tweaks.filter(\.isEnabled).map { tweak in
 					let size = tweak.activeVersion.map { version in
 						TweakManager.shared.fileURLs(forTweak: tweak.id, version: version)
 							.reduce(0) { $0 + Self.fileSize($1) }
@@ -128,6 +128,7 @@ extension WebManagerServer {
 			let url: URL? = await MainActor.run {
 				guard
 					let tweak = TweakManager.shared.tweaks.first(where: { $0.id == id }),
+					tweak.isEnabled,
 					let version = tweak.activeVersion
 				else { return nil }
 				return TweakManager.shared.exportableURL(for: tweak, version: version)

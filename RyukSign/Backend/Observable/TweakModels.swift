@@ -205,7 +205,7 @@ struct ManagedTweak: Codable, Identifiable, Equatable {
 	var selectedVersionId: UUID?
 	/// Inject into every app that gets signed.
 	var injectByDefault: Bool
-	/// Inject when signing an app whose bundle id is listed here.
+	/// Allow list when `injectByDefault` is off, exclusion list when it is on.
 	var autoInjectBundleIds: [String]
 	/// Library-level injection defaults.
 	var config: TweakInjectConfig
@@ -251,6 +251,12 @@ struct ManagedTweak: Codable, Identifiable, Equatable {
 
 	var hasAutoRule: Bool {
 		injectByDefault || !autoInjectBundleIds.isEmpty
+	}
+
+	func autoInjects(into bundleId: String?) -> Bool {
+		guard let bundleId else { return injectByDefault }
+		let listed = autoInjectBundleIds.contains { $0.caseInsensitiveCompare(bundleId) == .orderedSame }
+		return injectByDefault ? !listed : listed
 	}
 }
 

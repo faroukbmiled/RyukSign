@@ -225,8 +225,8 @@ private struct SigningLibraryTweakPicker: View {
 	@State private var _query = ""
 
 	private var _available: [ManagedTweak] {
-		manager.tweaks
-			.filter { !existingIds.contains($0.id) && $0.activeVersion != nil }
+		manager.injectableTweaks
+			.filter { !existingIds.contains($0.id) }
 			.filter(_matches)
 	}
 
@@ -254,12 +254,14 @@ private struct SigningLibraryTweakPicker: View {
 	var body: some View {
 		NBNavigationView(.localized("Add From Library")) {
 			Group {
-				if manager.tweaks.allSatisfy({ existingIds.contains($0.id) || $0.activeVersion == nil }) {
+				if manager.injectableTweaks.allSatisfy({ existingIds.contains($0.id) }) {
 					NBContentUnavailable(
 						.localized("Nothing to Add"),
 						systemImage: "books.vertical",
-						description: .localized("Every tweak in your library is already added, or has no files.")
+						description: .localized("Every tweak in your library is already added, disabled, or has no files.")
 					)
+					.frame(maxWidth: .infinity, maxHeight: .infinity)
+					.background(Color(.systemGroupedBackground).ignoresSafeArea())
 				} else {
 					NBList(.localized("Add From Library")) {
 						_pickerContent
