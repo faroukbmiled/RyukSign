@@ -60,6 +60,8 @@ extension StorageCategory {
 		case .leftovers: .localized("Left behind by imports and signings that got interrupted. Nothing uses them.")
 		case .temporary: .localized("Work files from importing and signing. Recreated when needed.")
 		case .archives: .localized("Saved every time you export or share an IPA. Safe to delete.")
+		case .caches: .localized("Icons and web data RyukSign downloaded. Rebuilt as you browse.")
+		case .other: .localized("Anything outside RyukSign's own folders, including files you added yourself. The app database is locked so it can't be deleted here.")
 		default: nil
 		}
 	}

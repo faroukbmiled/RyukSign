@@ -23,14 +23,19 @@ enum StorageCategory: String, CaseIterable, Identifiable {
 
 	var id: String { rawValue }
 
-	/// Cleared by "Free Up Space" — none of it is content the user put here.
 	static let safeToClear: [StorageCategory] = [.caches, .logs, .temporary, .leftovers]
 
-	/// Categories the user can open and delete item by item.
 	var isBrowsable: Bool {
 		switch self {
-		case .signed, .imported, .archives, .leftovers: true
-		default: false
+		case .tweaks, .certificates: false
+		default: true
+		}
+	}
+
+	var allowsExploring: Bool {
+		switch self {
+		case .signed, .imported, .archives: false
+		default: true
 		}
 	}
 }
@@ -56,6 +61,18 @@ struct StorageReport {
 	}
 }
 
+enum StorageLocation: Hashable {
+	case category(StorageCategory)
+	case directory(URL)
+
+	var title: String {
+		switch self {
+		case .category(let category): category.title
+		case .directory(let url): url.lastPathComponent
+		}
+	}
+}
+
 struct StorageEntry: Identifiable, SortableItem {
 	let id: String
 	let name: String
@@ -63,7 +80,9 @@ struct StorageEntry: Identifiable, SortableItem {
 	let size: Int64
 	let date: Date
 	let url: URL
-	/// Set when the entry is a library app, whose deletion also has to drop the Core Data row.
+	let isDirectory: Bool
+	let childCount: Int
+	let isProtected: Bool
 	let appUuid: String?
 
 	var sortName: String { name }
@@ -77,13 +96,12 @@ final class StorageManager: ObservableObject {
 	static let shared = StorageManager()
 
 	@Published private(set) var report: StorageReport?
-	@Published private(set) var entries: [StorageCategory: [StorageEntry]] = [:]
+	@Published private(set) var entries: [StorageLocation: [StorageEntry]] = [:]
 
 	private var _scan: Task<Void, Never>?
 
 	private init() {}
 
-	/// Rescans in the background; the published report stays up until it lands, so revisits never flash a loader.
 	func refresh() {
 		_scan?.cancel()
 		_scan = Task {
@@ -94,24 +112,27 @@ final class StorageManager: ObservableObject {
 		}
 	}
 
-	func refreshEntries(for category: StorageCategory) async {
+	func refreshEntries(at location: StorageLocation) async {
 		let library = _librarySnapshot()
-		entries[category] = await Task.detached(priority: .utility) {
-			StorageScanner.entries(for: category, library)
+		entries[location] = await Task.detached(priority: .utility) {
+			StorageScanner.entries(at: location, library)
 		}.value
 	}
 
 	func delete(_ items: [StorageEntry]) {
-		let uuids = Set(items.compactMap(\.appUuid))
+		let deletable = items.filter { !$0.isProtected }
+		guard !deletable.isEmpty else { return }
+
+		let uuids = Set(deletable.compactMap(\.appUuid))
 		if !uuids.isEmpty {
 			Storage.shared.deleteApps(Storage.shared.getAllApps().filter { uuids.contains($0.uuid ?? "") })
 		}
 
-		for item in items where item.appUuid == nil {
+		for item in deletable where item.appUuid == nil {
 			try? FileManager.default.removeItem(at: item.url)
 		}
 
-		let removed = Set(items.map(\.id))
+		let removed = Set(deletable.map(\.id))
 		entries = entries.mapValues { $0.filter { !removed.contains($0.id) } }
 		refresh()
 	}
@@ -122,7 +143,7 @@ final class StorageManager: ObservableObject {
 			for category in categories { StorageScanner.clear(category, library) }
 		}.value
 
-		for category in categories { entries[category] = nil }
+		entries.removeAll()
 		refresh()
 	}
 
@@ -142,18 +163,24 @@ final class StorageManager: ObservableObject {
 		let certificates = (try? storage.context.fetch(CertificatePair.fetchRequest()))?
 			.compactMap(\.uuid) ?? []
 
-		return LibrarySnapshot(apps: apps, certificates: Set(certificates))
+		var protected: Set<String> = []
+		if let store = storage.container.persistentStoreDescriptions.first?.url?.standardizedFileURL {
+			let base = store.deletingPathExtension()
+			for suffix in ["sqlite", "sqlite-wal", "sqlite-shm"] {
+				protected.insert(base.appendingPathExtension(suffix).path)
+			}
+		}
+
+		return LibrarySnapshot(apps: apps, certificates: Set(certificates), protected: protected)
 	}
 }
 
 // MARK: - Manager extension: temp purging
 extension StorageManager {
-	/// Drops every scratch file, including downloads still waiting to be imported.
 	nonisolated static func purgeTemporary() {
 		StorageScanner.purge(contentsOf: FileManager.default.temporaryDirectory)
 	}
 
-	/// Drops scratch directories orphaned by a crash or a kill mid-job.
 	nonisolated static func purgeStaleTemporary() {
 		let fm = FileManager.default
 		guard let items = try? fm.contentsOfDirectory(
@@ -186,9 +213,15 @@ struct AppDescriptor {
 struct LibrarySnapshot {
 	let apps: [String: AppDescriptor]
 	let certificates: Set<String>
+	let protected: Set<String>
 
 	func owns(_ uuid: String, signed: Bool) -> Bool {
 		apps[uuid]?.isSigned == signed
+	}
+
+	func protects(_ url: URL) -> Bool {
+		let path = url.standardizedFileURL.path
+		return protected.contains { $0 == path || $0.hasPrefix(path + "/") }
 	}
 }
 
@@ -196,7 +229,6 @@ struct LibrarySnapshot {
 private enum StorageScanner {
 	static let fm = FileManager.default
 
-	/// A managed directory split into what the library still references and what it doesn't.
 	struct Partition {
 		var size: Int64 = 0
 		var count = 0
@@ -214,11 +246,14 @@ private enum StorageScanner {
 			+ inbox.reduce(0) { $0 + fm.allocatedSize(at: $1) }
 		let leftoverCount = signed.orphans.count + imported.orphans.count + certificates.orphans.count + inbox.count
 
-		var usages: [StorageUsage] = [
+		let other = otherPaths()
+
+		let usages: [StorageUsage] = [
 			StorageUsage(category: .signed, size: signed.size, count: signed.count),
 			StorageUsage(category: .imported, size: imported.size, count: imported.count),
 			StorageUsage(category: .leftovers, size: leftoverSize, count: leftoverCount),
 			StorageUsage(category: .certificates, size: certificates.size, count: certificates.count),
+			StorageUsage(category: .other, size: other.reduce(0) { $0 + fm.allocatedSize(at: $1) }, count: other.count),
 			measure(.archives, fm.archives),
 			measure(.tweaks, fm.tweaksLibrary),
 			measure(.logs, fm.logs),
@@ -226,43 +261,21 @@ private enum StorageScanner {
 			measure(.caches, cachesDirectory)
 		]
 
-		let total = fm.allocatedSize(at: URL.documentsDirectory)
-			+ fm.allocatedSize(at: libraryDirectory)
-			+ fm.allocatedSize(at: fm.temporaryDirectory)
-
-		let accounted = usages.reduce(0) { $0 + $1.size }
-		usages.append(StorageUsage(category: .other, size: max(0, total - accounted), count: 0))
-
 		return StorageReport(
 			usages: usages.filter { $0.size > 0 },
-			total: total,
+			total: fm.allocatedSize(at: URL.documentsDirectory)
+				+ fm.allocatedSize(at: libraryDirectory)
+				+ fm.allocatedSize(at: fm.temporaryDirectory),
 			deviceFree: fm.availableImportantCapacity(at: URL.documentsDirectory) ?? 0
 		)
 	}
 
-	static func entries(for category: StorageCategory, _ library: LibrarySnapshot) -> [StorageEntry] {
-		switch category {
-		case .signed, .imported:
-			let signed = category == .signed
-			return contents(of: signed ? fm.signed : fm.unsigned).compactMap { url in
-				let uuid = url.lastPathComponent
-				guard let app = library.apps[uuid], app.isSigned == signed else { return nil }
-				return StorageEntry(
-					id: uuid,
-					name: app.name,
-					version: app.version,
-					size: fm.allocatedSize(at: url),
-					date: app.date,
-					url: url,
-					appUuid: uuid
-				)
-			}
-		case .archives:
-			return contents(of: fm.archives).map(fileEntry)
-		case .leftovers:
-			return leftovers(library).map(fileEntry)
-		default:
-			return []
+	static func entries(at location: StorageLocation, _ library: LibrarySnapshot) -> [StorageEntry] {
+		switch location {
+		case .directory(let url):
+			return contents(of: url).map { entry($0, library) }
+		case .category(let category):
+			return categoryEntries(category, library)
 		}
 	}
 
@@ -286,13 +299,6 @@ private enum StorageScanner {
 		}
 	}
 
-	static func leftovers(_ library: LibrarySnapshot) -> [URL] {
-		partition(fm.signed) { library.owns($0, signed: true) }.orphans
-		+ partition(fm.unsigned) { library.owns($0, signed: false) }.orphans
-		+ partition(fm.certificates) { library.certificates.contains($0) }.orphans
-		+ contents(of: fm.webManagerInbox)
-	}
-
 	static func purge(contentsOf directory: URL, olderThan age: TimeInterval? = nil) {
 		for url in contents(of: directory) {
 			if
@@ -305,6 +311,82 @@ private enum StorageScanner {
 			try? fm.removeItem(at: url)
 		}
 	}
+
+	// MARK: Entries
+
+	private static func categoryEntries(_ category: StorageCategory, _ library: LibrarySnapshot) -> [StorageEntry] {
+		switch category {
+		case .signed, .imported:
+			let signed = category == .signed
+			return contents(of: signed ? fm.signed : fm.unsigned).compactMap { url in
+				let uuid = url.lastPathComponent
+				guard let app = library.apps[uuid], app.isSigned == signed else { return nil }
+				return StorageEntry(
+					id: uuid,
+					name: app.name,
+					version: app.version,
+					size: fm.allocatedSize(at: url),
+					date: app.date,
+					url: url,
+					isDirectory: true,
+					childCount: 0,
+					isProtected: false,
+					appUuid: uuid
+				)
+			}
+		case .archives:
+			return contents(of: fm.archives).map { entry($0, library) }
+		case .leftovers:
+			return leftovers(library).map { entry($0, library) }
+		case .caches:
+			return contents(of: cachesDirectory).map { entry($0, library) }
+		case .temporary:
+			return contents(of: fm.temporaryDirectory).map { entry($0, library) }
+		case .logs:
+			return contents(of: fm.logs).map { entry($0, library) }
+		case .other:
+			return otherPaths().map { entry($0, library) }
+		case .tweaks, .certificates:
+			return []
+		}
+	}
+
+	private static func otherPaths() -> [URL] {
+		let claimed = Set(
+			[fm.signed, fm.unsigned, fm.certificates, fm.archives, fm.tweaksLibrary, fm.logs, fm.webManagerInbox]
+				.map(\.lastPathComponent)
+		)
+
+		return contents(of: URL.documentsDirectory).filter { !claimed.contains($0.lastPathComponent) }
+			+ contents(of: libraryDirectory).filter { $0.lastPathComponent != cachesDirectory.lastPathComponent }
+	}
+
+	private static func entry(_ url: URL, _ library: LibrarySnapshot) -> StorageEntry {
+		let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .contentModificationDateKey])
+		let isDirectory = values?.isDirectory == true
+
+		return StorageEntry(
+			id: url.path,
+			name: url.lastPathComponent,
+			version: nil,
+			size: fm.allocatedSize(at: url),
+			date: values?.contentModificationDate ?? .distantPast,
+			url: url,
+			isDirectory: isDirectory,
+			childCount: isDirectory ? contents(of: url).count : 0,
+			isProtected: library.protects(url),
+			appUuid: nil
+		)
+	}
+
+	private static func leftovers(_ library: LibrarySnapshot) -> [URL] {
+		partition(fm.signed) { library.owns($0, signed: true) }.orphans
+		+ partition(fm.unsigned) { library.owns($0, signed: false) }.orphans
+		+ partition(fm.certificates) { library.certificates.contains($0) }.orphans
+		+ contents(of: fm.webManagerInbox)
+	}
+
+	// MARK: Measuring
 
 	private static func partition(_ directory: URL, isKnown: (String) -> Bool) -> Partition {
 		var partition = Partition()
@@ -332,18 +414,6 @@ private enum StorageScanner {
 			category: category,
 			size: fm.allocatedSize(at: directory),
 			count: contents(of: directory).count
-		)
-	}
-
-	private static func fileEntry(_ url: URL) -> StorageEntry {
-		StorageEntry(
-			id: url.path,
-			name: url.lastPathComponent,
-			version: nil,
-			size: fm.allocatedSize(at: url),
-			date: (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast,
-			url: url,
-			appUuid: nil
 		)
 	}
 

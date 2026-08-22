@@ -163,6 +163,172 @@
         }
       }
     },
+    "%@: %lld added, %lld skipped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: تمت إضافة %2$lld، وتم تخطي %3$lld"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: přidáno %2$lld, přeskočeno %3$lld"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld hinzugefügt, %3$lld übersprungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld added, %3$lld skipped"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld añadidos, %3$lld omitidos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ : %2$lld ajoutés, %3$lld ignorés"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld ditambahkan, %3$lld dilewati"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld aggiunti, %3$lld saltati"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: dodano %2$lld, pominięto %3$lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: добавлено %2$lld, пропущено %3$lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld eklendi, %3$lld atlandı"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: đã thêm %2$lld, đã bỏ qua %3$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@：已添加 %2$lld 项，跳过 %3$lld 项"
+          }
+        }
+      }
+    },
+    "%@: %lld added" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: تمت إضافة %2$lld"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: přidáno %2$lld"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld hinzugefügt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld added"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld añadidos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ : %2$lld ajoutés"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld ditambahkan"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld aggiunti"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: dodano %2$lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: добавлено %2$lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld eklendi"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: đã thêm %2$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@：已添加 %2$lld 项"
+          }
+        }
+      }
+    },
     "%lld" : {
       "localizations" : {
         "ar" : {
@@ -1534,6 +1700,1168 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "总体 %lld%%"
+          }
+        }
+      }
+    },
+    "Choose what to include in this backup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما تريد تضمينه في هذه النسخة الاحتياطية."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyberte, co zahrnout do této zálohy."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle aus, was in dieses Backup aufgenommen wird."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what to include in this backup."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige qué incluir en esta copia de seguridad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez ce qu'il faut inclure dans cette sauvegarde."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pilih apa yang disertakan dalam cadangan ini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli cosa includere in questo backup."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wybierz, co uwzględnić w tej kopii zapasowej."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите, что включить в эту резервную копию."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu yedeğe nelerin dahil edileceğini seçin."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn nội dung cần đưa vào bản sao lưu này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择要包含在此备份中的内容。"
+          }
+        }
+      }
+    },
+    "Nothing to back up." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد ما يمكن نسخه احتياطيًا."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Není co zálohovat."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts zu sichern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to back up."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay nada que respaldar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien à sauvegarder."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak ada yang bisa dicadangkan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non c'è nulla da salvare."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie ma nic do zapisania."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нечего резервировать."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedeklenecek bir şey yok."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có gì để sao lưu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有可备份的内容。"
+          }
+        }
+      }
+    },
+    "Nothing is deleted. Anything already here is skipped." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يُحذف أي شيء. ويُتخطى كل ما هو موجود بالفعل."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nic se nesmaže. Co už tu je, se přeskočí."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es wird nichts gelöscht. Was schon da ist, wird übersprungen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is deleted. Anything already here is skipped."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se borra nada. Lo que ya está aquí se omite."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien n'est supprimé. Ce qui est déjà là est ignoré."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak ada yang dihapus. Yang sudah ada akan dilewati."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non viene eliminato nulla. Ciò che è già qui viene saltato."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nic nie jest usuwane. To, co już tu jest, zostaje pominięte."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ничего не удаляется. Всё, что уже есть, пропускается."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiçbir şey silinmez. Zaten burada olanlar atlanır."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có gì bị xóa. Những gì đã có sẽ được bỏ qua."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不会删除任何内容。已存在的项目会被跳过。"
+          }
+        }
+      }
+    },
+    "Open a backup file, then pick what comes back." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح ملف نسخة احتياطية، ثم اختر ما تريد استرجاعه."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otevřete soubor zálohy a pak vyberte, co se má vrátit."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne eine Backup-Datei und wähle dann aus, was zurückkommt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open a backup file, then pick what comes back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre un archivo de copia de seguridad y elige qué recuperar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez un fichier de sauvegarde, puis choisissez ce qui revient."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buka berkas cadangan, lalu pilih apa yang dikembalikan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri un file di backup, poi scegli cosa recuperare."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otwórz plik kopii zapasowej, a potem wybierz, co ma wrócić."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Откройте файл резервной копии и выберите, что вернуть."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir yedek dosyası açın, sonra neyin geri geleceğini seçin."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở tệp sao lưu, rồi chọn những gì cần lấy lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开备份文件，然后选择要恢复的内容。"
+          }
+        }
+      }
+    },
+    "Leave it empty for an unencrypted backup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتركه فارغًا للحصول على نسخة احتياطية غير مشفَّرة."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nechte prázdné pro nešifrovanou zálohu."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer lassen für ein unverschlüsseltes Backup."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave it empty for an unencrypted backup."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déjalo vacío para una copia sin cifrar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laissez vide pour une sauvegarde non chiffrée."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biarkan kosong untuk cadangan tanpa enkripsi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lascia vuoto per un backup non cifrato."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pozostaw puste, aby utworzyć niezaszyfrowaną kopię."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оставьте пустым для незашифрованной копии."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Şifrelenmemiş bir yedek için boş bırakın."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Để trống để có bản sao lưu không mã hóa."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "留空即为不加密的备份。"
+          }
+        }
+      }
+    },
+    "Saves what you pick to one file. Signed and imported apps aren't included." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحفظ ما تختاره في ملف واحد. لا تُضمَّن التطبيقات الموقَّعة والمستوردة."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uloží vybrané položky do jednoho souboru. Podepsané a importované aplikace nejsou zahrnuty."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichert deine Auswahl in einer Datei. Signierte und importierte Apps sind nicht enthalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saves what you pick to one file. Signed and imported apps aren't included."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda lo que elijas en un solo archivo. Las apps firmadas e importadas no se incluyen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistre votre sélection dans un seul fichier. Les apps signées et importées ne sont pas incluses."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menyimpan pilihan Anda ke satu berkas. Aplikasi yang ditandatangani dan diimpor tidak disertakan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva ciò che scegli in un unico file. Le app firmate e importate non sono incluse."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapisuje wybrane elementy do jednego pliku. Podpisane i zaimportowane aplikacje nie są uwzględniane."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сохраняет выбранное в один файл. Подписанные и импортированные приложения не включаются."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seçtiklerinizi tek bir dosyaya kaydeder. İmzalanmış ve içe aktarılmış uygulamalar dahil edilmez."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu những gì bạn chọn vào một tệp. Ứng dụng đã ký và đã nhập không được bao gồm."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将你选择的内容保存为一个文件。不包含已签名和已导入的应用。"
+          }
+        }
+      }
+    },
+    "This backup is empty." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه النسخة الاحتياطية فارغة."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tato záloha je prázdná."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Backup ist leer."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This backup is empty."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta copia de seguridad está vacía."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette sauvegarde est vide."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cadangan ini kosong."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo backup è vuoto."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta kopia zapasowa jest pusta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эта резервная копия пуста."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu yedek boş."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản sao lưu này trống."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此备份为空。"
+          }
+        }
+      }
+    },
+    "RyukSign will restart to apply the backup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيعيد RyukSign التشغيل لتطبيق النسخة الاحتياطية."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign se restartuje, aby se záloha projevila."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign wird neu gestartet, um das Backup anzuwenden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign will restart to apply the backup."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign se reiniciará para aplicar la copia de seguridad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign va redémarrer pour appliquer la sauvegarde."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign akan dimulai ulang untuk menerapkan cadangan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign verrà riavviato per applicare il backup."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign uruchomi się ponownie, aby zastosować kopię zapasową."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign перезапустится, чтобы применить резервную копию."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedeği uygulamak için RyukSign yeniden başlatılacak."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign sẽ khởi động lại để áp dụng bản sao lưu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign 将重启以应用备份。"
+          }
+        }
+      }
+    },
+    "Created %@ · RyukSign %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُنشئت في %1$@ · RyukSign %2$@"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vytvořeno %1$@ · RyukSign %2$@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellt am %1$@ · RyukSign %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created %1$@ · RyukSign %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creada el %1$@ · RyukSign %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créée le %1$@ · RyukSign %2$@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dibuat %1$@ · RyukSign %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creato il %1$@ · RyukSign %2$@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utworzono %1$@ · RyukSign %2$@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Создано %1$@ · RyukSign %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ tarihinde oluşturuldu · RyukSign %2$@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã tạo %1$@ · RyukSign %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建于 %1$@ · RyukSign %2$@"
+          }
+        }
+      }
+    },
+    "This backup needs a password." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحتاج هذه النسخة الاحتياطية إلى كلمة مرور."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tato záloha vyžaduje heslo."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Backup benötigt ein Passwort."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This backup needs a password."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta copia de seguridad necesita una contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette sauvegarde nécessite un mot de passe."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cadangan ini memerlukan kata sandi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo backup richiede una password."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta kopia zapasowa wymaga hasła."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для этой резервной копии нужен пароль."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu yedek bir parola gerektiriyor."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản sao lưu này cần mật khẩu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此备份需要密码。"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovat"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lanjutkan"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontynuuj"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Продолжить"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        }
+      }
+    },
+    "Include" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تضمين"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zahrnout"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einbeziehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inclure"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sertakan"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includi"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uwzględnij"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включить"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dahil Et"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bao gồm"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包含"
+          }
+        }
+      }
+    },
+    "Anything outside RyukSign's own folders, including files you added yourself. The app database is locked so it can't be deleted here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أي شيء خارج مجلدات RyukSign، بما في ذلك الملفات التي أضفتها بنفسك. قاعدة بيانات التطبيق مقفلة فلا يمكن حذفها هنا."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cokoli mimo vlastní složky RyukSign, včetně souborů, které jste přidali sami. Databáze aplikace je zamčená, takže ji tu nelze smazat."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alles außerhalb der eigenen Ordner von RyukSign, auch selbst hinzugefügte Dateien. Die App-Datenbank ist gesperrt und kann hier nicht gelöscht werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anything outside RyukSign's own folders, including files you added yourself. The app database is locked so it can't be deleted here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo lo que está fuera de las carpetas propias de RyukSign, incluidos los archivos que añadiste tú. La base de datos de la app está bloqueada y no se puede borrar aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout ce qui se trouve hors des dossiers propres à RyukSign, y compris les fichiers que vous avez ajoutés. La base de données de l'app est verrouillée et ne peut pas être supprimée ici."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apa pun di luar folder milik RyukSign, termasuk berkas yang Anda tambahkan sendiri. Basis data aplikasi terkunci sehingga tidak bisa dihapus di sini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutto ciò che sta fuori dalle cartelle di RyukSign, inclusi i file che hai aggiunto tu. Il database dell'app è bloccato e non si può eliminare qui."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wszystko poza własnymi folderami RyukSign, w tym pliki dodane przez Ciebie. Baza danych aplikacji jest zablokowana i nie można jej tu usunąć."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Всё, что находится за пределами собственных папок RyukSign, включая добавленные вами файлы. База данных приложения заблокирована и не может быть удалена здесь."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign'ın kendi klasörleri dışındaki her şey, kendi eklediğiniz dosyalar dahil. Uygulama veritabanı kilitlidir, burada silinemez."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mọi thứ nằm ngoài các thư mục riêng của RyukSign, kể cả tệp bạn tự thêm vào. Cơ sở dữ liệu ứng dụng bị khóa nên không thể xóa ở đây."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign 自有文件夹之外的所有内容，包括你自己添加的文件。应用数据库已锁定，无法在此删除。"
+          }
+        }
+      }
+    },
+    "Icons and web data RyukSign downloaded. Rebuilt as you browse." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أيقونات وبيانات ويب نزّلها RyukSign. يُعاد بناؤها أثناء التصفح."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikony a webová data, která RyukSign stáhl. Znovu se vytvoří při procházení."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbole und Webdaten, die RyukSign geladen hat. Werden beim Blättern neu aufgebaut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icons and web data RyukSign downloaded. Rebuilt as you browse."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iconos y datos web que descargó RyukSign. Se reconstruyen al navegar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icônes et données web téléchargées par RyukSign. Reconstruites à la navigation."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikon dan data web yang diunduh RyukSign. Dibangun ulang saat Anda menjelajah."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icone e dati web scaricati da RyukSign. Ricostruiti mentre navighi."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikony i dane sieciowe pobrane przez RyukSign. Odtwarzane podczas przeglądania."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значки и веб-данные, загруженные RyukSign. Создаются заново при просмотре."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign'ın indirdiği simgeler ve web verileri. Gezinirken yeniden oluşur."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biểu tượng và dữ liệu web mà RyukSign đã tải. Được tạo lại khi bạn duyệt."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RyukSign 下载的图标和网页数据。浏览时会重新生成。"
           }
         }
       }
@@ -3112,172 +4440,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加版本"
-          }
-        }
-      }
-    },
-    "Added %lld certificates and %lld sources. RyukSign will restart to apply the backup." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تمت إضافة %lld شهادة و%lld مصدر. سيُعاد تشغيل RyukSign لتطبيق النسخة الاحتياطية."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přidáno %lld certifikátů a %lld zdrojů. RyukSign se restartuje, aby se záloha použila."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Zertifikate und %lld Quellen hinzugefügt. RyukSign startet neu, um das Backup anzuwenden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Added %lld certificates and %lld sources. RyukSign will restart to apply the backup."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se añadieron %lld certificados y %lld fuentes. RyukSign se reiniciará para aplicar la copia de seguridad."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld certificats et %lld sources ajoutés. RyukSign va redémarrer pour appliquer la sauvegarde."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menambahkan %lld sertifikat dan %lld sumber. RyukSign akan dimulai ulang untuk menerapkan cadangan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiunti %lld certificati e %lld sorgenti. RyukSign si riavvierà per applicare il backup."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dodano %lld certyfikatów i %lld źródeł. RyukSign uruchomi się ponownie, aby zastosować kopię zapasową."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Добавлено %lld сертификатов и %lld источников. RyukSign перезапустится, чтобы применить резервную копию."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld sertifika ve %lld kaynak eklendi. Yedeği uygulamak için RyukSign yeniden başlayacak."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã thêm %lld chứng chỉ và %lld nguồn. RyukSign sẽ khởi động lại để áp dụng bản sao lưu."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已添加 %lld 个证书和 %lld 个源。RyukSign 将重启以应用备份。"
-          }
-        }
-      }
-    },
-    "Added %lld certificates and %lld sources. Skipped %lld already present. RyukSign will restart to apply the backup." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تمت إضافة %lld شهادة و%lld مصدر. تم تخطي %lld موجودة مسبقًا. سيُعاد تشغيل RyukSign لتطبيق النسخة الاحتياطية."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přidáno %lld certifikátů a %lld zdrojů. Přeskočeno %lld již existujících. RyukSign se restartuje, aby se záloha použila."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Zertifikate und %lld Quellen hinzugefügt. %lld bereits vorhandene übersprungen. RyukSign startet neu, um das Backup anzuwenden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Added %lld certificates and %lld sources. Skipped %lld already present. RyukSign will restart to apply the backup."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se añadieron %lld certificados y %lld fuentes. Se omitieron %lld ya presentes. RyukSign se reiniciará para aplicar la copia de seguridad."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld certificats et %lld sources ajoutés. %lld déjà présents ignorés. RyukSign va redémarrer pour appliquer la sauvegarde."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menambahkan %lld sertifikat dan %lld sumber. Melewati %lld yang sudah ada. RyukSign akan dimulai ulang untuk menerapkan cadangan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiunti %lld certificati e %lld sorgenti. Saltati %lld già presenti. RyukSign si riavvierà per applicare il backup."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dodano %lld certyfikatów i %lld źródeł. Pominięto %lld już istniejących. RyukSign uruchomi się ponownie, aby zastosować kopię zapasową."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Добавлено %lld сертификатов и %lld источников. Пропущено %lld уже имеющихся. RyukSign перезапустится, чтобы применить резервную копию."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld sertifika ve %lld kaynak eklendi. Zaten mevcut %lld atlandı. Yedeği uygulamak için RyukSign yeniden başlayacak."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đã thêm %lld chứng chỉ và %lld nguồn. Đã bỏ qua %lld mục đã có. RyukSign sẽ khởi động lại để áp dụng bản sao lưu."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已添加 %lld 个证书和 %lld 个源。跳过 %lld 个已存在项。RyukSign 将重启以应用备份。"
           }
         }
       }
@@ -8916,89 +10078,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择导入文件时始终打开的文件夹。"
-          }
-        }
-      }
-    },
-    "Choose a password to encrypt this backup. You'll need it to restore." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اختر كلمة مرور لتشفير هذه النسخة الاحتياطية. ستحتاج إليها للاستعادة."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zvolte heslo pro zašifrování této zálohy. Budete ho potřebovat k obnovení."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle ein Passwort, um dieses Backup zu verschlüsseln. Du brauchst es zum Wiederherstellen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose a password to encrypt this backup. You'll need it to restore."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige una contraseña para cifrar esta copia de seguridad. La necesitarás para restaurar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choisissez un mot de passe pour chiffrer cette sauvegarde. Il vous faudra pour la restaurer."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pilih kata sandi untuk mengenkripsi cadangan ini. Anda memerlukannya untuk memulihkan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegli una password per cifrare questo backup. Ti servirà per il ripristino."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wybierz hasło do zaszyfrowania tej kopii zapasowej. Będzie potrzebne do przywrócenia."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Выберите пароль для шифрования этой резервной копии. Он понадобится для восстановления."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bu yedeği şifrelemek için bir parola seç. Geri yüklemek için gerekecek."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chọn mật khẩu để mã hóa bản sao lưu này. Bạn sẽ cần nó để khôi phục."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择一个密码来加密此备份。恢复时需要用到它。"
           }
         }
       }
@@ -17687,89 +18766,6 @@
         }
       }
     },
-    "Enter a password to protect the backup." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أدخل كلمة مرور لحماية النسخة الاحتياطية."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zadejte heslo pro ochranu zálohy."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gib ein Passwort ein, um das Backup zu schützen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter a password to protect the backup."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Introduce una contraseña para proteger la copia de seguridad."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saisissez un mot de passe pour protéger la sauvegarde."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Masukkan kata sandi untuk melindungi cadangan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inserisci una password per proteggere il backup."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wprowadź hasło, aby zabezpieczyć kopię zapasową."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Введите пароль для защиты резервной копии."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yedeği korumak için bir parola gir."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhập mật khẩu để bảo vệ bản sao lưu."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入密码以保护备份。"
-          }
-        }
-      }
-    },
     "Enter a URL to start validation." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18015,89 +19011,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入软件源链接"
-          }
-        }
-      }
-    },
-    "Enter the backup password." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أدخل كلمة مرور النسخة الاحتياطية."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zadejte heslo zálohy."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gib das Backup-Passwort ein."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter the backup password."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Introduce la contraseña de la copia de seguridad."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saisissez le mot de passe de la sauvegarde."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Masukkan kata sandi cadangan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inserisci la password del backup."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wprowadź hasło kopii zapasowej."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Введите пароль резервной копии."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yedek parolasını gir."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nhập mật khẩu sao lưu."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入备份密码。"
           }
         }
       }
@@ -31039,89 +31952,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "中等视图，显示基本下载进度"
-          }
-        }
-      }
-    },
-    "Merges the backup into this install without deleting existing data. The app restarts when done." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يدمج النسخة الاحتياطية في هذا التثبيت دون حذف البيانات الحالية. يُعاد تشغيل التطبيق عند الانتهاء."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sloučí zálohu do této instalace bez smazání stávajících dat. Po dokončení se aplikace restartuje."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Führt das Backup mit dieser Installation zusammen, ohne vorhandene Daten zu löschen. Die App startet danach neu."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Merges the backup into this install without deleting existing data. The app restarts when done."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Combina la copia de seguridad con esta instalación sin eliminar los datos existentes. La app se reinicia al terminar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fusionne la sauvegarde avec cette installation sans supprimer les données existantes. L'app redémarre une fois terminé."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menggabungkan cadangan ke instalasi ini tanpa menghapus data yang ada. Aplikasi dimulai ulang setelah selesai."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unisce il backup a questa installazione senza eliminare i dati esistenti. L'app si riavvia al termine."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scala kopię zapasową z tą instalacją bez usuwania istniejących danych. Po zakończeniu aplikacja uruchamia się ponownie."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Объединяет резервную копию с этой установкой, не удаляя существующие данные. По завершении приложение перезапустится."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yedeği mevcut verileri silmeden bu kuruluma birleştirir. İşlem bitince uygulama yeniden başlar."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hợp nhất bản sao lưu vào bản cài đặt này mà không xóa dữ liệu hiện có. Ứng dụng sẽ khởi động lại khi hoàn tất."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将备份合并到当前安装中，且不删除现有数据。完成后应用会重启。"
           }
         }
       }
@@ -46724,89 +47554,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "每次导出或分享 IPA 时保存。可以安全删除。"
-          }
-        }
-      }
-    },
-    "Saves your certificates, sources, tweaks, and app settings to a password-encrypted file. Signed and imported apps are not included." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يحفظ الشهادات والمصادر والتعديلات وإعدادات التطبيق في ملف مشفّر بكلمة مرور. لا تُضمَّن التطبيقات المُوقَّعة والمستوردة."
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uloží vaše certifikáty, zdroje, tweaky a nastavení aplikace do souboru zašifrovaného heslem. Podepsané a importované aplikace nejsou zahrnuty."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speichert deine Zertifikate, Quellen, Tweaks und App-Einstellungen in einer passwortverschlüsselten Datei. Signierte und importierte Apps sind nicht enthalten."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saves your certificates, sources, tweaks, and app settings to a password-encrypted file. Signed and imported apps are not included."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guarda tus certificados, fuentes, tweaks y ajustes de la app en un archivo cifrado con contraseña. Las apps firmadas e importadas no se incluyen."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistre vos certificats, sources, tweaks et réglages de l'app dans un fichier chiffré par mot de passe. Les apps signées et importées ne sont pas incluses."
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menyimpan sertifikat, sumber, tweak, dan pengaturan aplikasi ke file terenkripsi dengan kata sandi. Aplikasi yang ditandatangani dan diimpor tidak disertakan."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salva i tuoi certificati, sorgenti, tweak e impostazioni dell'app in un file cifrato con password. Le app firmate e importate non sono incluse."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zapisuje certyfikaty, źródła, tweaki i ustawienia aplikacji do pliku zaszyfrowanego hasłem. Podpisane i zaimportowane aplikacje nie są uwzględniane."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сохраняет ваши сертификаты, источники, твики и настройки приложения в файл, зашифрованный паролем. Подписанные и импортированные приложения не включаются."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sertifikalarınızı, kaynaklarınızı, tweak'lerinizi ve uygulama ayarlarınızı parolayla şifrelenmiş bir dosyaya kaydeder. İmzalanmış ve içe aktarılmış uygulamalar dahil edilmez."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lưu chứng chỉ, nguồn, tweak và cài đặt ứng dụng của bạn vào một tệp được mã hóa bằng mật khẩu. Không bao gồm các ứng dụng đã ký và đã nhập."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将你的证书、源、插件和应用设置保存到一个密码加密的文件中。已签名和已导入的应用不包含在内。"
           }
         }
       }

@@ -8,11 +8,55 @@
 import Foundation
 import Zip
 
+struct BackupComponents: OptionSet, Hashable, Codable {
+	let rawValue: Int
+
+	static let certificates = BackupComponents(rawValue: 1 << 0)
+	static let sources = BackupComponents(rawValue: 1 << 1)
+	static let settings = BackupComponents(rawValue: 1 << 2)
+	static let tweaks = BackupComponents(rawValue: 1 << 3)
+
+	static let ordered: [BackupComponents] = [.certificates, .sources, .settings, .tweaks]
+
+	init(rawValue: Int) { self.rawValue = rawValue }
+
+	init(from decoder: Decoder) throws {
+		rawValue = try decoder.singleValueContainer().decode(Int.self)
+	}
+
+	func encode(to encoder: Encoder) throws {
+		var container = encoder.singleValueContainer()
+		try container.encode(rawValue)
+	}
+
+	var title: String {
+		switch self {
+		case .certificates: .localized("Certificates")
+		case .sources: .localized("Sources")
+		case .settings: .localized("Settings")
+		case .tweaks: .localized("Tweaks")
+		default: ""
+		}
+	}
+
+	var icon: String {
+		switch self {
+		case .certificates: "checkmark.seal"
+		case .sources: "globe.desk"
+		case .settings: "gear"
+		case .tweaks: "wrench.and.screwdriver"
+		default: "questionmark"
+		}
+	}
+}
+
 struct BackupManifest: Codable {
 	var version: Int
 	var createdAt: Date
 	var appVersion: String
-	var includesTweaks: Bool
+	var contents: BackupComponents?
+	var includesTweaks: Bool?
+	var counts: [String: Int]?
 	var selectedCertUUID: String?
 	var certificates: [Cert]
 	var sources: [Source]
@@ -31,23 +75,79 @@ struct BackupManifest: Codable {
 		var url: URL
 		var iconURL: URL?
 	}
+
+	var storedContents: BackupComponents {
+		if let contents { return contents }
+		var inferred: BackupComponents = [.settings]
+		if !certificates.isEmpty { inferred.insert(.certificates) }
+		if !sources.isEmpty { inferred.insert(.sources) }
+		if includesTweaks == true { inferred.insert(.tweaks) }
+		return inferred
+	}
+
+	func count(of component: BackupComponents) -> Int? {
+		switch component {
+		case .certificates: certificates.count
+		case .sources: sources.count
+		default: counts?[String(component.rawValue)]
+		}
+	}
+}
+
+final class BackupArchive: Identifiable {
+	let id = UUID()
+	let manifest: BackupManifest
+	fileprivate let root: URL
+	private let _work: URL
+
+	fileprivate init(manifest: BackupManifest, root: URL, work: URL) {
+		self.manifest = manifest
+		self.root = root
+		self._work = work
+	}
+
+	deinit {
+		try? FileManager.default.removeItem(at: _work)
+	}
+
+	var contents: BackupComponents { manifest.storedContents }
 }
 
 struct BackupRestoreSummary {
-	var certificates: Int
-	var certificatesSkipped: Int
-	var sources: Int
-	var sourcesSkipped: Int
-	var settings: Bool
-	var tweaks: Bool
+	private(set) var restored: BackupComponents = []
+	private var _added: [BackupComponents: Int] = [:]
+	private var _skipped: [BackupComponents: Int] = [:]
 
-	var skipped: Int { certificatesSkipped + sourcesSkipped }
+	mutating func record(_ component: BackupComponents, added: Int, skipped: Int) {
+		restored.insert(component)
+		_added[component] = added
+		_skipped[component] = max(0, skipped)
+	}
+
+	var lines: [String] {
+		BackupComponents.ordered.compactMap { component in
+			guard restored.contains(component) else { return nil }
+			let added = _added[component] ?? 0
+			let skipped = _skipped[component] ?? 0
+			return skipped > 0
+			? .localized("%@: %lld added, %lld skipped", arguments: component.title, added, skipped)
+			: .localized("%@: %lld added", arguments: component.title, added)
+		}
+	}
 }
 
 @MainActor
 final class BackupManager {
 	static let shared = BackupManager()
 	private let _fm = FileManager.default
+
+	enum Failure: LocalizedError {
+		case empty
+
+		var errorDescription: String? {
+			String.localized("Nothing to back up.")
+		}
+	}
 
 	/// Backs up any key in the app's namespaces; only device/install-specific keys are excluded.
 	private static let _settingPrefixes = ["Feather.", "feather.", "RyukSign.", "signing_options"]
@@ -67,61 +167,94 @@ final class BackupManager {
 		return true
 	}
 
-	func makeBackup(password: String) async throws -> URL {
+	func availableComponents() -> (components: BackupComponents, counts: [BackupComponents: Int]) {
+		let counts: [BackupComponents: Int] = [
+			.certificates: Storage.shared.getAllCertificates().count,
+			.sources: Storage.shared.getSources().count,
+			.tweaks: TweakManager.shared.tweaks.count,
+			.settings: UserDefaults.standard.dictionaryRepresentation().keys.filter(Self.isBackupableSettingKey).count,
+		]
+		var components: BackupComponents = []
+		for (component, count) in counts where count > 0 { components.insert(component) }
+		return (components, counts)
+	}
+
+	func makeBackup(password: String, components: BackupComponents) async throws -> URL {
 		let staging = _fm.uniqueTemporaryDirectory("RyukBackup")
 		try _fm.createDirectory(at: staging, withIntermediateDirectories: true)
 		defer { try? _fm.removeItem(at: staging) }
 
-		let certs = Storage.shared.getAllCertificates()
-		let certsDir = staging.appendingPathComponent("certs")
+		var written: BackupComponents = []
+		var counts: [String: Int] = [:]
 		var certEntries: [BackupManifest.Cert] = []
-		for cert in certs {
-			guard
-				let uuid = cert.uuid,
-				let p12 = Storage.shared.getFile(.certificate, from: cert),
-				let provision = Storage.shared.getFile(.provision, from: cert)
-			else { continue }
+		var sources: [BackupManifest.Source] = []
+		var selectedUUID: String?
 
-			let dst = certsDir.appendingPathComponent(uuid)
-			try _fm.createDirectory(at: dst, withIntermediateDirectories: true)
-			try _fm.copyItem(at: p12, to: dst.appendingPathComponent("certificate.p12"))
-			try _fm.copyItem(at: provision, to: dst.appendingPathComponent("certificate.mobileprovision"))
-			certEntries.append(.init(
-				uuid: uuid,
-				nickname: cert.nickname,
-				password: cert.password,
-				expiration: cert.expiration ?? Date(),
-				ppq: cert.ppQCheck
-			))
+		if components.contains(.certificates) {
+			let certs = Storage.shared.getAllCertificates()
+			let certsDir = staging.appendingPathComponent("certs")
+			for cert in certs {
+				guard
+					let uuid = cert.uuid,
+					let p12 = Storage.shared.getFile(.certificate, from: cert),
+					let provision = Storage.shared.getFile(.provision, from: cert)
+				else { continue }
+
+				let dst = certsDir.appendingPathComponent(uuid)
+				try _fm.createDirectory(at: dst, withIntermediateDirectories: true)
+				try _fm.copyItem(at: p12, to: dst.appendingPathComponent("certificate.p12"))
+				try _fm.copyItem(at: provision, to: dst.appendingPathComponent("certificate.mobileprovision"))
+				certEntries.append(.init(
+					uuid: uuid,
+					nickname: cert.nickname,
+					password: cert.password,
+					expiration: cert.expiration ?? Date(),
+					ppq: cert.ppQCheck
+				))
+			}
+
+			let selectedIndex = UserDefaults.standard.integer(forKey: "feather.selectedCert")
+			selectedUUID = (selectedIndex >= 0 && selectedIndex < certs.count) ? certs[selectedIndex].uuid : nil
+			if !certEntries.isEmpty { written.insert(.certificates) }
 		}
 
-		let selectedIndex = UserDefaults.standard.integer(forKey: "feather.selectedCert")
-		let selectedUUID = (selectedIndex >= 0 && selectedIndex < certs.count) ? certs[selectedIndex].uuid : nil
-
-		let sources: [BackupManifest.Source] = Storage.shared.getSources().compactMap { source in
-			guard let url = source.sourceURL, let identifier = source.identifier else { return nil }
-			guard !RyukSignAPI.isPremiumSource(url) else { return nil }
-			return .init(identifier: identifier, name: source.name, url: url, iconURL: source.iconURL)
+		if components.contains(.sources) {
+			sources = Storage.shared.getSources().compactMap { source in
+				guard let url = source.sourceURL, let identifier = source.identifier else { return nil }
+				guard !RyukSignAPI.isPremiumSource(url) else { return nil }
+				return .init(identifier: identifier, name: source.name, url: url, iconURL: source.iconURL)
+			}
+			if !sources.isEmpty { written.insert(.sources) }
 		}
 
-		var settings: [String: Any] = [:]
-		for (key, value) in UserDefaults.standard.dictionaryRepresentation() where Self.isBackupableSettingKey(key) {
-			settings[key] = value
+		if components.contains(.settings) {
+			var settings: [String: Any] = [:]
+			for (key, value) in UserDefaults.standard.dictionaryRepresentation() where Self.isBackupableSettingKey(key) {
+				settings[key] = value
+			}
+			if !settings.isEmpty {
+				let data = try PropertyListSerialization.data(fromPropertyList: settings, format: .binary, options: 0)
+				try data.write(to: staging.appendingPathComponent("settings.plist"))
+				counts[String(BackupComponents.settings.rawValue)] = settings.count
+				written.insert(.settings)
+			}
 		}
-		let settingsData = try PropertyListSerialization.data(fromPropertyList: settings, format: .binary, options: 0)
-		try settingsData.write(to: staging.appendingPathComponent("settings.plist"))
 
-		var includesTweaks = false
-		if _fm.fileExists(atPath: _fm.tweaksLibrary.path) {
+		if components.contains(.tweaks), _fm.fileExists(atPath: _fm.tweaksLibrary.path) {
 			try _fm.copyItem(at: _fm.tweaksLibrary, to: staging.appendingPathComponent("tweaks"))
-			includesTweaks = true
+			counts[String(BackupComponents.tweaks.rawValue)] = TweakManager.shared.tweaks.count
+			written.insert(.tweaks)
 		}
+
+		guard !written.isEmpty else { throw Failure.empty }
 
 		let manifest = BackupManifest(
-			version: 1,
+			version: 2,
 			createdAt: Date(),
 			appVersion: Bundle.main.version,
-			includesTweaks: includesTweaks,
+			contents: written,
+			includesTweaks: written.contains(.tweaks),
+			counts: counts,
 			selectedCertUUID: selectedUUID,
 			certificates: certEntries,
 			sources: sources
@@ -135,103 +268,114 @@ final class BackupManager {
 		defer { try? _fm.removeItem(at: packDir) }
 		let packURL = packDir.appendingPathComponent("pack.zip")
 
-		let encrypted = try await Task.detached(priority: .userInitiated) {
+		let packed = try await Task.detached(priority: .userInitiated) {
 			try Zip.zipFiles(paths: [staging], zipFilePath: packURL, password: nil, progress: nil)
-			return try BackupCrypto.encrypt(try Data(contentsOf: packURL), password: password)
+			return try BackupCrypto.seal(try Data(contentsOf: packURL), password: password)
 		}.value
 
 		let outDir = _fm.uniqueTemporaryDirectory("RyukBackupOut")
 		try _fm.createDirectory(at: outDir, withIntermediateDirectories: true)
 		let file = outDir.appendingPathComponent("RyukSign-Backup-\(Self._stamp()).ryukbackup")
-		try encrypted.write(to: file)
+		try packed.write(to: file)
 		return file
 	}
 
-	func restore(from url: URL, password: String) async throws -> BackupRestoreSummary {
+	func open(_ url: URL, password: String) async throws -> BackupArchive {
 		let data = try Data(contentsOf: url)
 		let work = _fm.uniqueTemporaryDirectory("RyukRestore")
 		try _fm.createDirectory(at: work, withIntermediateDirectories: true)
-		defer { try? _fm.removeItem(at: work) }
 
-		let extractDir = work.appendingPathComponent("extract")
-		try await Task.detached(priority: .userInitiated) {
-			let plaintext = try BackupCrypto.decrypt(data, password: password)
-			let packURL = work.appendingPathComponent("pack.zip")
-			try plaintext.write(to: packURL)
-			try FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
-			try Zip.unzipFile(packURL, destination: extractDir, overwrite: true, password: nil)
-		}.value
+		do {
+			let extractDir = work.appendingPathComponent("extract")
+			try await Task.detached(priority: .userInitiated) {
+				let plaintext = try BackupCrypto.unseal(data, password: password)
+				let packURL = work.appendingPathComponent("pack.zip")
+				try plaintext.write(to: packURL)
+				try FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
+				try Zip.unzipFile(packURL, destination: extractDir, overwrite: true, password: nil)
+			}.value
 
-		guard let root = _findRoot(in: extractDir) else { throw BackupCrypto.Failure.badFormat }
+			guard let root = _findRoot(in: extractDir) else { throw BackupCrypto.Failure.badFormat }
+			let manifestData = try Data(contentsOf: root.appendingPathComponent("manifest.json"))
+			let manifest = try JSONDecoder().decode(BackupManifest.self, from: manifestData)
+			return BackupArchive(manifest: manifest, root: root, work: work)
+		} catch {
+			try? _fm.removeItem(at: work)
+			throw error
+		}
+	}
 
-		let manifestData = try Data(contentsOf: root.appendingPathComponent("manifest.json"))
-		let manifest = try JSONDecoder().decode(BackupManifest.self, from: manifestData)
+	func restore(_ archive: BackupArchive, components: BackupComponents) -> BackupRestoreSummary {
+		let manifest = archive.manifest
+		let root = archive.root
+		let wanted = components.intersection(archive.contents)
+		var summary = BackupRestoreSummary()
 
-		var certCount = 0
-		var certSkipped = 0
-		let existingCertUUIDs = Set(Storage.shared.getAllCertificates().compactMap { $0.uuid })
-		for cert in manifest.certificates {
-			if existingCertUUIDs.contains(cert.uuid) { certSkipped += 1; continue }
-			let srcDir = root.appendingPathComponent("certs").appendingPathComponent(cert.uuid)
-			guard _fm.fileExists(atPath: srcDir.path) else { continue }
-			let dstDir = _fm.certificates(cert.uuid)
-			do {
-				try _fm.removeFileIfNeeded(at: dstDir)
-				try _fm.copyItem(at: srcDir, to: dstDir)
-			} catch {
-				continue
+		if wanted.contains(.certificates) {
+			var added = 0
+			var skipped = 0
+			let existing = Set(Storage.shared.getAllCertificates().compactMap { $0.uuid })
+			for cert in manifest.certificates {
+				if existing.contains(cert.uuid) { skipped += 1; continue }
+				let srcDir = root.appendingPathComponent("certs").appendingPathComponent(cert.uuid)
+				guard _fm.fileExists(atPath: srcDir.path) else { continue }
+				let dstDir = _fm.certificates(cert.uuid)
+				do {
+					try _fm.removeFileIfNeeded(at: dstDir)
+					try _fm.copyItem(at: srcDir, to: dstDir)
+				} catch {
+					continue
+				}
+				Storage.shared.addCertificate(
+					uuid: cert.uuid,
+					password: cert.password,
+					nickname: cert.nickname,
+					ppq: cert.ppq,
+					expiration: cert.expiration
+				) { _ in }
+				added += 1
 			}
-			Storage.shared.addCertificate(
-				uuid: cert.uuid,
-				password: cert.password,
-				nickname: cert.nickname,
-				ppq: cert.ppq,
-				expiration: cert.expiration
-			) { _ in }
-			certCount += 1
+			summary.record(.certificates, added: added, skipped: skipped)
+
+			if
+				let uuid = manifest.selectedCertUUID,
+				let index = Storage.shared.getAllCertificates().firstIndex(where: { $0.uuid == uuid })
+			{
+				UserDefaults.standard.set(index, forKey: "feather.selectedCert")
+			}
 		}
 
-		var sourceCount = 0
-		var sourceSkipped = 0
-		for source in manifest.sources {
-			if Storage.shared.sourceExists(source.identifier) { sourceSkipped += 1; continue }
-			Storage.shared.addSource(source.url, name: source.name, identifier: source.identifier, iconURL: source.iconURL) { _ in }
-			sourceCount += 1
+		if wanted.contains(.sources) {
+			var added = 0
+			var skipped = 0
+			for source in manifest.sources {
+				if Storage.shared.sourceExists(source.identifier) { skipped += 1; continue }
+				Storage.shared.addSource(source.url, name: source.name, identifier: source.identifier, iconURL: source.iconURL) { _ in }
+				added += 1
+			}
+			summary.record(.sources, added: added, skipped: skipped)
 		}
 
-		var settingsRestored = false
 		if
+			wanted.contains(.settings),
 			let data = try? Data(contentsOf: root.appendingPathComponent("settings.plist")),
 			let dict = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
 		{
+			var added = 0
 			for (key, value) in dict where Self.isBackupableSettingKey(key) {
 				UserDefaults.standard.set(value, forKey: key)
+				added += 1
 			}
-			settingsRestored = true
+			summary.record(.settings, added: added, skipped: 0)
 		}
 
-		if
-			let uuid = manifest.selectedCertUUID,
-			let index = Storage.shared.getAllCertificates().firstIndex(where: { $0.uuid == uuid })
-		{
-			UserDefaults.standard.set(index, forKey: "feather.selectedCert")
-		}
-
-		var tweaksRestored = false
 		let tweaksDir = root.appendingPathComponent("tweaks")
-		if manifest.includesTweaks, _fm.fileExists(atPath: tweaksDir.path) {
-			TweakManager.shared.mergeFromBackup(tweaksDir: tweaksDir)
-			tweaksRestored = true
+		if wanted.contains(.tweaks), _fm.fileExists(atPath: tweaksDir.path) {
+			let added = TweakManager.shared.mergeFromBackup(tweaksDir: tweaksDir)
+			summary.record(.tweaks, added: added, skipped: (manifest.count(of: .tweaks) ?? added) - added)
 		}
 
-		return .init(
-			certificates: certCount,
-			certificatesSkipped: certSkipped,
-			sources: sourceCount,
-			sourcesSkipped: sourceSkipped,
-			settings: settingsRestored,
-			tweaks: tweaksRestored
-		)
+		return summary
 	}
 
 	private func _findRoot(in dir: URL) -> URL? {

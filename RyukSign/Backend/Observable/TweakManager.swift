@@ -265,7 +265,9 @@ final class TweakManager: ObservableObject {
 	}
 
 	/// Adds only tweaks/folders whose id isn't already present; existing ones are untouched.
-	func mergeFromBackup(tweaksDir: URL) {
+	@discardableResult
+	func mergeFromBackup(tweaksDir: URL) -> Int {
+		var added = 0
 		if let data = try? Data(contentsOf: tweaksDir.appendingPathComponent("library.json")) {
 			let incoming = TweakManager.decodeLenientArray(ManagedTweak.self, from: data)
 			let existing = Set(tweaks.map { $0.id })
@@ -278,6 +280,7 @@ final class TweakManager: ObservableObject {
 				}
 				guard _fm.fileExists(atPath: dst.path) else { continue }
 				tweaks.append(tweak)
+				added += 1
 			}
 			_save()
 		}
@@ -290,6 +293,8 @@ final class TweakManager: ObservableObject {
 			}
 			_saveFolders()
 		}
+
+		return added
 	}
 
 	/// Wipes the entire tweak library — all tweaks, folders, and files on disk.

@@ -13,6 +13,7 @@ import NimbleExtensions
 struct StorageDetailView: View {
 	@ObservedObject private var _manager = StorageManager.shared
 
+	let location: StorageLocation
 	let category: StorageCategory
 
 	@AppStorage("Feather.storageSort") private var _sortRaw = ItemSortOption.sizeLargest.rawValue
@@ -21,8 +22,18 @@ struct StorageDetailView: View {
 	@State private var _selection: Set<String> = []
 	@State private var _isLoading = true
 
+	init(category: StorageCategory) {
+		self.location = .category(category)
+		self.category = category
+	}
+
+	init(directory: URL, category: StorageCategory) {
+		self.location = .directory(directory)
+		self.category = category
+	}
+
 	private var _sort: ItemSortOption { ItemSortOption(rawValue: _sortRaw) ?? .sizeLargest }
-	private var _all: [StorageEntry] { _manager.entries[category] ?? [] }
+	private var _all: [StorageEntry] { _manager.entries[location] ?? [] }
 
 	private var _entries: [StorageEntry] {
 		let query = _query.trimmingCharacters(in: .whitespaces)
@@ -35,13 +46,13 @@ struct StorageDetailView: View {
 	private var _title: String {
 		_isEditing
 		? String.localized("%lld Selected", arguments: _selection.count)
-		: category.title
+		: location.title
 	}
 
 	// MARK: Body
 	var body: some View {
 		NBList(_title, type: .list) {
-			if let explanation = category.explanation, !_isEditing {
+			if let explanation = _explanation, !_isEditing {
 				Section {
 					Text(explanation)
 						.font(.footnote)
@@ -65,7 +76,7 @@ struct StorageDetailView: View {
 		.safeAreaInset(edge: .bottom) { _deleteBar }
 		.animation(.snappy, value: _isEditing)
 		.task {
-			await _manager.refreshEntries(for: category)
+			await _manager.refreshEntries(at: location)
 			_isLoading = false
 		}
 	}
@@ -74,11 +85,18 @@ struct StorageDetailView: View {
 // MARK: - View extension
 @MainActor
 private extension StorageDetailView {
+	var _explanation: String? {
+		if case .category = location { return category.explanation }
+		return nil
+	}
+
 	var _total: Int64 {
 		_all.reduce(0) { $0 + $1.size }
 	}
 
-	var _allIds: Set<String> { Set(_all.map(\.id)) }
+	var _selectableIds: Set<String> {
+		Set(_all.filter { !$0.isProtected }.map(\.id))
+	}
 
 	@ViewBuilder
 	var _empty: some View {
@@ -109,13 +127,24 @@ private extension StorageDetailView {
 					StorageEntryLabel(entry: entry)
 				}
 			}
+			.disabled(entry.isProtected)
+		} else if entry.isDirectory, category.allowsExploring {
+			NavigationLink(destination: StorageDetailView(directory: entry.url, category: category)) {
+				StorageEntryLabel(entry: entry)
+			}
+			.swipeActions(edge: .trailing) { _deleteAction(entry) }
 		} else {
 			StorageEntryLabel(entry: entry)
-				.swipeActions(edge: .trailing) {
-					Button(.localized("Delete"), systemImage: "trash", role: .destructive) {
-						_delete([entry])
-					}
-				}
+				.swipeActions(edge: .trailing) { _deleteAction(entry) }
+		}
+	}
+
+	@ViewBuilder
+	func _deleteAction(_ entry: StorageEntry) -> some View {
+		if !entry.isProtected {
+			Button(.localized("Delete"), systemImage: "trash", role: .destructive) {
+				_delete([entry])
+			}
 		}
 	}
 
@@ -123,8 +152,8 @@ private extension StorageDetailView {
 	var _toolbar: some ToolbarContent {
 		if _isEditing {
 			ToolbarItem(placement: .topBarLeading) {
-				Button(_selection == _allIds ? .localized("Deselect All") : .localized("Select All")) {
-					_selection = (_selection == _allIds) ? [] : _allIds
+				Button(_selection == _selectableIds ? .localized("Deselect All") : .localized("Select All")) {
+					_selection = (_selection == _selectableIds) ? [] : _selectableIds
 				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
@@ -134,7 +163,7 @@ private extension StorageDetailView {
 		} else {
 			ToolbarItem(placement: .topBarTrailing) {
 				Menu {
-					if !_all.isEmpty {
+					if !_selectableIds.isEmpty {
 						Button(.localized("Select")) { _isEditing = true }
 					}
 					Picker(.localized("Sort By"), selection: $_sortRaw) {
@@ -201,6 +230,12 @@ struct StorageEntryLabel: View {
 
 			Spacer(minLength: 8)
 
+			if entry.isProtected {
+				Image(systemName: "lock.fill")
+					.font(.caption)
+					.foregroundStyle(.secondary)
+			}
+
 			Text(entry.size.formattedFileSize)
 				.font(.subheadline)
 				.foregroundStyle(.secondary)
@@ -210,6 +245,9 @@ struct StorageEntryLabel: View {
 	private var _subtitle: String? {
 		var parts: [String] = []
 		if let version = entry.version { parts.append(version) }
+		if entry.isDirectory, entry.childCount > 0 {
+			parts.append(.localized("%lld items", arguments: entry.childCount))
+		}
 		if entry.date != .distantPast {
 			parts.append(DateFormatter.localizedString(from: entry.date, dateStyle: .medium, timeStyle: .none))
 		}
