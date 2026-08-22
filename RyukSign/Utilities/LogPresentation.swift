@@ -5,26 +5,25 @@
 //  Created by Ryuk
 //
 
-import SwiftUI
+import UIKit
 
 enum LogKind {
 	case info, success, error, detail
 
-	var tint: Color {
+	var tint: UIColor {
 		switch self {
-		case .info: .secondary
-		case .success: .green
-		case .error: .red
-		case .detail: .secondary
+		case .info, .detail: .secondaryLabel
+		case .success: .systemGreen
+		case .error: .systemRed
 		}
 	}
 
-	var textColor: Color {
+	var textColor: UIColor {
 		switch self {
-		case .info: .primary
-		case .success: .green
-		case .error: .red
-		case .detail: .secondary
+		case .info: .label
+		case .success: .systemGreen
+		case .error: .systemRed
+		case .detail: .secondaryLabel
 		}
 	}
 }
@@ -57,7 +56,7 @@ enum LogParser {
 		return raw.replacingOccurrences(of: "\u{1B}\\[[0-9;]*[A-Za-z]", with: "", options: .regularExpression)
 	}
 
-	static func classify(_ raw: String, level: SigningLogLine.Level? = nil) -> (kind: LogKind, text: String) {
+	static func classify(_ raw: String, level: LogKind? = nil) -> (kind: LogKind, text: String) {
 		let message = sanitize(raw)
 		if level == .error || message.hasPrefix("ERROR:") {
 			let text = message.hasPrefix("ERROR:")
@@ -79,10 +78,11 @@ enum LogParser {
 		return (detail ? .detail : .info, text)
 	}
 
+	/// Newest first, matching the console.
 	static func parseFile(_ raw: String, limit: Int? = nil) -> [LogEntry] {
 		var lines = raw.split(separator: "\n", omittingEmptySubsequences: true)
 		if let limit, lines.count > limit { lines = Array(lines.suffix(limit)) }
-		return lines.map { line in
+		return lines.reversed().map { line in
 			let line = String(line)
 			guard
 				let firstSpace = line.firstIndex(of: " "),
@@ -106,72 +106,22 @@ enum LogParser {
 }
 
 enum LogFormat {
-	private static let _time: DateFormatter = {
+	private static let _stamp: DateFormatter = {
 		let f = DateFormatter()
-		f.dateFormat = "HH:mm:ss"
-		return f
-	}()
-
-	private static let _dateTime: DateFormatter = {
-		let f = DateFormatter()
-		f.dateFormat = "MMM d, HH:mm:ss"
+		f.setLocalizedDateFormatFromTemplate("MMMdjms")
 		return f
 	}()
 
 	static func string(_ date: Date) -> String {
-		Calendar.current.isDateInToday(date) ? _time.string(from: date) : _dateTime.string(from: date)
+		_stamp.string(from: date)
 	}
 
-	static func color(forCategory category: String) -> Color {
+	static func color(forCategory category: String) -> UIColor {
 		switch category.lowercased() {
-		case "sign": .blue
-		case "analyze": .orange
-		case "inject": .purple
-		default: .secondary
+		case "sign": .systemBlue
+		case "analyze": .systemOrange
+		case "inject": .systemPurple
+		default: .secondaryLabel
 		}
-	}
-}
-
-struct LogRowView: View {
-	let entry: LogEntry
-	var showCategory = false
-
-	var body: some View {
-		HStack(alignment: .top, spacing: 8) {
-			RoundedRectangle(cornerRadius: 1)
-				.fill(entry.kind.tint.opacity(entry.kind == .info ? 0.4 : 1))
-				.frame(width: 2.5)
-
-			VStack(alignment: .leading, spacing: 3) {
-				if entry.kind != .detail, _hasMeta {
-					HStack(spacing: 6) {
-						if let date = entry.date {
-							Text(LogFormat.string(date)).monospacedDigit()
-						}
-						if showCategory, let category = entry.category {
-							Text(category.uppercased())
-								.padding(.horizontal, 5)
-								.padding(.vertical, 1)
-								.background(LogFormat.color(forCategory: category).opacity(0.18), in: Capsule())
-								.foregroundStyle(LogFormat.color(forCategory: category))
-						}
-					}
-					.font(.system(size: 10, weight: .medium, design: .monospaced))
-					.foregroundStyle(.tertiary)
-				}
-
-				Text(entry.message)
-					.font(.system(.footnote, design: .monospaced))
-					.foregroundStyle(entry.kind.textColor)
-					.textSelection(.enabled)
-					.fixedSize(horizontal: false, vertical: true)
-					.frame(maxWidth: .infinity, alignment: .leading)
-					.padding(.leading, entry.kind == .detail ? 8 : 0)
-			}
-		}
-	}
-
-	private var _hasMeta: Bool {
-		entry.date != nil || (showCategory && entry.category != nil)
 	}
 }

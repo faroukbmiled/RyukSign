@@ -7,28 +7,26 @@
 
 import Foundation
 
-struct SigningLogLine: Identifiable, Equatable {
-	enum Level {
-		case info
-		case success
-		case error
-	}
-
-	let id = UUID()
-	let date: Date
-	let level: Level
-	let message: String
-}
-
+// zsign stdout batches rather than one view update per appended line
 final class SigningLog: ObservableObject {
 	static let shared = SigningLog()
 
-	@Published private(set) var lines: [SigningLogLine] = []
+	@Published private(set) var lines: [LogEntry] = []
+
+	private static let _maxLines = 4000
+	private static let _flushInterval = 0.08
+
+	private let _queue = DispatchQueue(label: "app.ryuksign.signinglog")
+	private var _pending: [LogEntry] = []
+	private var _flushScheduled = false
 
 	private init() {}
 
 	func reset() {
-		DispatchQueue.main.async { self.lines.removeAll() }
+		_queue.async {
+			self._pending.removeAll()
+			DispatchQueue.main.async { self.lines.removeAll() }
+		}
 	}
 
 	func info(_ message: String) { _append(.info, message) }
@@ -37,19 +35,43 @@ final class SigningLog: ObservableObject {
 
 	func exportText() -> String {
 		let formatter = ISO8601DateFormatter()
-		return lines.map { "\(formatter.string(from: $0.date))  \($0.message)" }.joined(separator: "\n")
+		return lines.reversed().map { entry in
+			guard let date = entry.date else { return entry.message }
+			return "\(formatter.string(from: date))  \(entry.message)"
+		}.joined(separator: "\n")
 	}
 
-	private func _append(_ level: SigningLogLine.Level, _ rawMessage: String) {
-		let message = LogParser.sanitize(rawMessage)
-		if level == .error {
-			FileLogger.error(message, category: "sign")
+	private func _append(_ level: LogKind, _ rawMessage: String) {
+		let classified = LogParser.classify(rawMessage, level: level)
+
+		if classified.kind == .error {
+			FileLogger.error(classified.text, category: "sign")
 		} else {
-			FileLogger.log(message, category: "sign")
+			FileLogger.log(classified.text, category: "sign")
 		}
 
+		let entry = LogEntry(date: Date(), category: nil, message: classified.text, kind: classified.kind)
+
+		_queue.async {
+			self._pending.append(entry)
+			guard !self._flushScheduled else { return }
+			self._flushScheduled = true
+			self._queue.asyncAfter(deadline: .now() + Self._flushInterval) { self._flush() }
+		}
+	}
+
+	private func _flush() {
+		_flushScheduled = false
+		guard !_pending.isEmpty else { return }
+
+		let batch = Array(_pending.reversed())
+		_pending.removeAll(keepingCapacity: true)
+
 		DispatchQueue.main.async {
-			self.lines.append(SigningLogLine(date: Date(), level: level, message: message))
+			self.lines.insert(contentsOf: batch, at: 0)
+			if self.lines.count > Self._maxLines {
+				self.lines.removeLast(self.lines.count - Self._maxLines)
+			}
 		}
 	}
 }
