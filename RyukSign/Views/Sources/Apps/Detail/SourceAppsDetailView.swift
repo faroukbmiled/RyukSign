@@ -147,14 +147,14 @@ struct SourceAppsDetailView: View {
 						.frame(maxWidth: .infinity, alignment: .leading)
 					}
 
-					if let tgURL = app.telegramLink {
+					ForEach(app.descriptionLinks) { link in
 						Button {
-							TelegramLinkParser.open(tgURL)
+							link.tag.open(link.url)
 						} label: {
 							HStack {
-								Image(systemName: "paperplane.fill")
+								Image(systemName: link.tag.symbol)
 									.foregroundColor(.accentColor)
-								Text("Telegram")
+								Text(link.tag.title)
 									.foregroundColor(.primary)
 								Spacer()
 								Image(systemName: "arrow.up.right")
@@ -438,14 +438,13 @@ extension SourceAppsDetailView {
 	}
 }
 
-// MARK: - ASRepository.App Telegram Link Helpers
+// MARK: - ASRepository.App Link Tag Helpers
 extension ASRepository.App {
-	var telegramLink: URL? {
-		guard let desc = localizedDescription else { return nil }
-		return TelegramLinkParser.extractURL(from: desc)
+	var descriptionLinks: [TaggedLink] {
+		LinkTagParser.links(in: localizedDescription)
 	}
 
 	var cleanedLocalizedDescription: String? {
-		TelegramLinkParser.stripTag(from: localizedDescription)
+		LinkTagParser.strip(from: localizedDescription)
 	}
 }

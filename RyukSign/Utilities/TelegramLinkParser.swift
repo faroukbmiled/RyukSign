@@ -72,38 +72,4 @@ enum TelegramLinkParser {
 		// Plain username: t.me/username
 		return URL(string: "tg://resolve?domain=\(first)")
 	}
-	private static let allowedHosts: Set<String> = ["t.me", "telegram.me", "telegram.org"]
-
-	static func extractURL(from text: String) -> URL? {
-		guard let start = text.range(of: "<tg-link>"),
-			  let end = text.range(of: "</tg-link>") else { return nil }
-		let urlString = String(text[start.upperBound..<end.lowerBound])
-			.trimmingCharacters(in: .whitespacesAndNewlines)
-		guard let url = URL(string: urlString),
-			  let host = url.host?.lowercased(),
-			  allowedHosts.contains(host) else { return nil }
-		return url
-	}
-
-	/// Extracts the raw `<tg-link>...</tg-link>` tag from a description, if present.
-	static func extractRawTag(from text: String?) -> String? {
-		guard let text = text,
-			  let start = text.range(of: "<tg-link>"),
-			  let end = text.range(of: "</tg-link>") else { return nil }
-		return String(text[start.lowerBound..<end.upperBound])
-	}
-
-	/// Only strips the tag if the URL is a valid telegram link.
-	/// Non-telegram tags are left visible so the user can see/edit them.
-	static func stripTag(from text: String?) -> String? {
-		guard var desc = text else { return nil }
-		if let start = desc.range(of: "<tg-link>"),
-		   let end = desc.range(of: "</tg-link>") {
-			if extractURL(from: desc) != nil {
-				desc.removeSubrange(start.lowerBound..<end.upperBound)
-			}
-		}
-		desc = desc.trimmingCharacters(in: .whitespacesAndNewlines)
-		return desc.isEmpty ? nil : desc
-	}
 }

@@ -69,14 +69,11 @@ extension LibraryInfoView {
 			NavigationLink {
 				SigningDescriptionView(
 					title: .localized("Description"),
-					initialValue: TelegramLinkParser.stripTag(from: _displayedDescription) ?? "",
+					initialValue: LinkTagParser.strip(from: _displayedDescription) ?? "",
 					onSave: { newValue in
 						var saved = newValue
-						// Only re-append the hidden tag if it's a valid telegram link.
-						if let desc = _displayedDescription,
-						   TelegramLinkParser.extractURL(from: desc) != nil,
-						   let tag = TelegramLinkParser.extractRawTag(from: desc) {
-							saved = saved.map { $0 + tag } ?? tag
+						if let tags = LinkTagParser.rawTags(in: _displayedDescription) {
+							saved = saved.map { $0 + tags } ?? tags
 						}
 						Storage.shared.updateDescription(for: app, description: saved)
 						_displayedDescription = saved
@@ -84,11 +81,11 @@ extension LibraryInfoView {
 				)
 			} label: {
 				LabeledContent(.localized("Description")) {
-					Text(TelegramLinkParser.stripTag(from: _displayedDescription) ?? .localized("None"))
+					Text(LinkTagParser.strip(from: _displayedDescription) ?? .localized("None"))
 						.lineLimit(1)
 				}
 			}
-			.copyableText(TelegramLinkParser.stripTag(from: _displayedDescription) ?? "")
+			.copyableText(LinkTagParser.strip(from: _displayedDescription) ?? "")
 
 			if let date = app.date {
 				_infoCell(.localized("Date Added"), desc: date.formatted())
@@ -130,14 +127,14 @@ extension LibraryInfoView {
 	
 	@ViewBuilder
 	private func _linksSection(for app: AppInfoPresentable) -> some View {
-		if let desc = _displayedDescription, let tgURL = TelegramLinkParser.extractURL(from: desc) {
+		ForEach(LinkTagParser.links(in: _displayedDescription)) { link in
 			Button {
-				TelegramLinkParser.open(tgURL)
+				link.tag.open(link.url)
 			} label: {
 				Label {
-					Text("Telegram")
+					Text(link.tag.title)
 				} icon: {
-					Image(systemName: "paperplane.fill")
+					Image(systemName: link.tag.symbol)
 				}
 			}
 		}
