@@ -124,6 +124,15 @@ struct SigningOptionsView: View {
 				isOn: $options.ipadFullscreen,
 				temporaryValue: temporaryOptions?.ipadFullscreen
 			)
+
+			_toggle(
+				.localized("Fix File Picker"),
+				systemImage: "doc.viewfinder",
+				isOn: $options.fixFilePicker,
+				temporaryValue: temporaryOptions?.fixFilePicker
+			)
+		} footer: {
+			Text(.localized("Injects a small fix for apps whose file picker does nothing when you choose a file. Picked files are copied into the app's own folder first, so it can read them without the sandbox permissions it's missing."))
 		}
 		
 		NBSection(.localized("Removal")) {

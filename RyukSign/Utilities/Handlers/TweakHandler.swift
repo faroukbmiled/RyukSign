@@ -36,6 +36,22 @@ class TweakHandler {
 		!_options.injectionFiles.isEmpty || !_enabledSpecs.isEmpty
 	}
 
+	/// Bundled document picker fix
+	private var _filePickerFixURL: URL? {
+		guard _options.fixFilePicker else { return nil }
+		guard let url = Bundle.main.url(forResource: "FilePickerFix", withExtension: "dylib") else {
+			SigningLog.shared.error(.localized("File picker fix is unavailable"))
+			return nil
+		}
+		return url
+	}
+
+	/// `Frameworks/` can be absent from apps, so the parent has to exist before the move.
+	private func _place(_ url: URL, at destination: URL) throws {
+		try _fileManager.createDirectoryIfNeeded(at: destination.deletingLastPathComponent())
+		try _fileManager.moveFileIfNeeded(from: url, to: destination)
+	}
+
 	private func _checkEllekit() async throws {
 		let frameworksPath = _app.appendingPathComponent("Frameworks").appendingPathComponent("CydiaSubstrate.framework")
 
@@ -72,14 +88,22 @@ class TweakHandler {
 	public func getInputFiles() async throws {
 		Logger.misc.info("Attempting to inject")
 
+		let filePickerFix = _filePickerFixURL
+
 		if !_options.experiment_replaceSubstrateWithEllekit {
-			guard _hasAnyInjection else { return }
+			guard _hasAnyInjection || filePickerFix != nil else { return }
 		}
 
 		try await _checkEllekit()
 
 		let baseTmpDir = _fileManager.uniqueTemporaryDirectory("FeatherTweak")
 		try _fileManager.createDirectoryIfNeeded(at: baseTmpDir)
+
+		if let filePickerFix {
+			let staged = baseTmpDir.appendingPathComponent(filePickerFix.lastPathComponent)
+			try _fileManager.copyItem(at: filePickerFix, to: staged)
+			_urls.append(staged)
+		}
 
 		// Legacy job: injectionFiles + ellekit, extensions only when injectIntoExtensions.
 		if !_urls.isEmpty {
@@ -202,7 +226,7 @@ class TweakHandler {
 			case "framework":
 				// Drop into Frameworks/, add load command; return load name for targeting.
 				let destinationURL = _app.appendingPathComponent("Frameworks").appendingPathComponent(url.lastPathComponent)
-				try _fileManager.moveFileIfNeeded(from: url, to: destinationURL)
+				try _place(url, at: destinationURL)
 				try await _handleDylib(framework: destinationURL)
 				if let fexe = Bundle(url: destinationURL)?.executableURL?.lastPathComponent {
 					collected.append("\(destinationURL.lastPathComponent)/\(fexe)")
@@ -252,7 +276,7 @@ class TweakHandler {
 
 		destinationURL = destinationURL.appendingPathComponent(url.lastPathComponent)
 
-		try _fileManager.moveFileIfNeeded(from: url, to: destinationURL)
+		try _place(url, at: destinationURL)
 
 		guard let appexe = Bundle(url: _app)?.executableURL else {
 			return nil
@@ -308,7 +332,7 @@ class TweakHandler {
 				}
 			case "framework":
 				let destinationURL = _app.appendingPathComponent("Frameworks").appendingPathComponent(url.lastPathComponent)
-				try _fileManager.moveFileIfNeeded(from: url, to: destinationURL)
+				try _place(url, at: destinationURL)
 				try await _handleDylib(framework: destinationURL)
 			case "bundle":
 				let destinationURL = _app.appendingPathComponent(url.lastPathComponent)

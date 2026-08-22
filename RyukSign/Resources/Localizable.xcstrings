@@ -1953,6 +1953,172 @@
         }
       }
     },
+    "File picker fix is unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصلاح منتقي الملفات غير متوفر"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oprava výběru souborů není dostupná"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateiauswahl-Korrektur nicht verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File picker fix is unavailable"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La corrección del selector de archivos no está disponible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le correctif du sélecteur de fichiers est indisponible"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perbaikan pemilih berkas tidak tersedia"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La correzione del selettore file non è disponibile"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poprawka wyboru plików jest niedostępna"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Исправление выбора файлов недоступно"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosya seçici düzeltmesi kullanılamıyor"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản sửa bộ chọn tệp không khả dụng"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件选择器修复不可用"
+          }
+        }
+      }
+    },
+    "Fix File Picker" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصلاح منتقي الملفات"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opravit výběr souborů"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateiauswahl reparieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fix File Picker"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corregir el selector de archivos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corriger le sélecteur de fichiers"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perbaiki Pemilih Berkas"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correggi il selettore file"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napraw wybór plików"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Исправить выбор файлов"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosya Seçiciyi Düzelt"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sửa bộ chọn tệp"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修复文件选择器"
+          }
+        }
+      }
+    },
     "Skip auto-inject when signing apps with these bundle identifiers." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -28401,6 +28567,89 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "注入路径"
+          }
+        }
+      }
+    },
+    "Injects a small fix for apps whose file picker does nothing when you choose a file. Picked files are copied into the app's own folder first, so it can read them without the sandbox permissions it's missing." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحقن إصلاحًا صغيرًا للتطبيقات التي لا يستجيب فيها منتقي الملفات عند اختيار ملف. تُنسخ الملفات المختارة أولًا إلى مجلد التطبيق نفسه، حتى يتمكن من قراءتها دون أذونات الحماية التي ينقصه."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vloží drobnou opravu pro aplikace, jejichž výběr souborů po zvolení souboru nic neudělá. Vybrané soubory se nejdřív zkopírují do vlastní složky aplikace, takže je může číst i bez chybějících oprávnění sandboxu."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fügt eine kleine Korrektur für Apps ein, deren Dateiauswahl nichts tut, wenn du eine Datei auswählst. Ausgewählte Dateien werden zuerst in den eigenen Ordner der App kopiert, damit sie ohne die fehlenden Sandbox-Berechtigungen gelesen werden können."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Injects a small fix for apps whose file picker does nothing when you choose a file. Picked files are copied into the app's own folder first, so it can read them without the sandbox permissions it's missing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inyecta una pequeña corrección para las apps cuyo selector de archivos no hace nada al elegir un archivo. Los archivos elegidos se copian primero a la carpeta propia de la app, para que pueda leerlos sin los permisos de sandbox que le faltan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Injecte un petit correctif pour les apps dont le sélecteur de fichiers ne fait rien quand vous choisissez un fichier. Les fichiers choisis sont d'abord copiés dans le dossier de l'app, afin qu'elle puisse les lire sans les autorisations de bac à sable qui lui manquent."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menyuntikkan perbaikan kecil untuk aplikasi yang pemilih berkasnya tidak melakukan apa pun saat kamu memilih berkas. Berkas yang dipilih disalin dulu ke folder milik aplikasi, sehingga bisa dibaca tanpa izin sandbox yang tidak dimilikinya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inietta una piccola correzione per le app il cui selettore file non fa nulla quando scegli un file. I file scelti vengono prima copiati nella cartella dell'app, così può leggerli senza i permessi sandbox che le mancano."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wstrzykuje drobną poprawkę dla aplikacji, w których wybór pliku nic nie robi. Wybrane pliki są najpierw kopiowane do własnego folderu aplikacji, dzięki czemu może je odczytać bez brakujących uprawnień piaskownicy."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Внедряет небольшое исправление для приложений, у которых выбор файла ничего не даёт. Выбранные файлы сначала копируются в собственную папку приложения, чтобы оно могло прочитать их без недостающих разрешений песочницы."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosya seçtiğinizde dosya seçicisi hiçbir şey yapmayan uygulamalar için küçük bir düzeltme enjekte eder. Seçilen dosyalar önce uygulamanın kendi klasörüne kopyalanır, böylece eksik olan sandbox izinleri olmadan da okunabilir."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiêm một bản sửa nhỏ cho các ứng dụng có bộ chọn tệp không phản hồi khi bạn chọn tệp. Tệp đã chọn được sao chép vào thư mục riêng của ứng dụng trước, để ứng dụng đọc được mà không cần các quyền sandbox mà nó thiếu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为选择文件后毫无反应的 App 注入一个小修复。选中的文件会先复制到 App 自己的文件夹，这样即使缺少沙盒权限也能读取。"
           }
         }
       }

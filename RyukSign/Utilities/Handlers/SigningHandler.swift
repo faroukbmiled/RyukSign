@@ -121,7 +121,7 @@ final class SigningHandler: NSObject {
 			SigningLog.shared.info(.localized("Injecting tweaks"))
 			try await _inject(for: movedAppPath, with: _options)
 		} else {
-			if !_options.injectionFiles.isEmpty || hasTweakSpecs {
+			if !_options.injectionFiles.isEmpty || hasTweakSpecs || _options.fixFilePicker {
 				SigningLog.shared.info(.localized("Injecting tweaks"))
 				try await _inject(for: movedAppPath, with: _options)
 			}

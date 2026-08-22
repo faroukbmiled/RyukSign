@@ -104,6 +104,8 @@ struct Options: Codable, Equatable {
 	var injectIntoExtensions: Bool
 	/// Gives each signed app a keychain group derived from its bundle id so apps can't read each other's entries
 	var keychainIsolation: Bool
+	/// Injects the bundled fix that makes the document picker import files into the app's own container
+	var fixFilePicker: Bool
 	/// Resolved managed-tweak injections for this sign; per-sign working copy only. Optional so old saved options decode.
 	var tweakInjections: [TweakInjectionSpec]? = nil
 
@@ -153,6 +155,7 @@ struct Options: Codable, Equatable {
 		changeLanguageFilesForCustomDisplayName: false,
 		injectIntoExtensions: false,
 		keychainIsolation: false,
+		fixFilePicker: false,
 
 		// MARK: Experiments
 		
@@ -278,6 +281,7 @@ extension Options {
 		changeLanguageFilesForCustomDisplayName = try c.decodeIfPresent(Bool.self, forKey: .changeLanguageFilesForCustomDisplayName) ?? d.changeLanguageFilesForCustomDisplayName
 		injectIntoExtensions = try c.decodeIfPresent(Bool.self, forKey: .injectIntoExtensions) ?? d.injectIntoExtensions
 		keychainIsolation = try c.decodeIfPresent(Bool.self, forKey: .keychainIsolation) ?? d.keychainIsolation
+		fixFilePicker = try c.decodeIfPresent(Bool.self, forKey: .fixFilePicker) ?? d.fixFilePicker
 		// try? so a stale per-sign blob drops instead of resetting the whole struct.
 		tweakInjections = try? c.decode([TweakInjectionSpec].self, forKey: .tweakInjections)
 		experiment_supportLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_supportLiquidGlass) ?? d.experiment_supportLiquidGlass
