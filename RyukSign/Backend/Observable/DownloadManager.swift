@@ -28,6 +28,10 @@ class DownloadManager: NSObject, ObservableObject {
 		downloads.filter { isManualDownload($0.id) }
 	}
 
+	var activeNetworkDownloads: [Download] {
+		downloads.filter { !$0.onlyArchiving && ($0.isActive || $0.progress > 0) && $0.progress < 1.0 && !$0.isPaused }
+	}
+
 	var _backgroundSession: URLSession!
 	var _foregroundSession: URLSession!
 	var backgroundCompletionHandler: (() -> Void)?
@@ -56,8 +60,7 @@ class DownloadManager: NSObject, ObservableObject {
 	// progress timer would otherwise post a fallback notification.
 	var isCreatingLiveActivity = false
 
-	var lastBytesDownloaded: Int64 = 0
-	var lastSpeedUpdateTime: Date = Date()
+	private var speedTracker = DownloadSpeedTracker()
 
 	var completedDownloadNames: [String] = []
 	var isActivityShowingCompletion = false
@@ -174,7 +177,7 @@ class DownloadManager: NSObject, ObservableObject {
 						self.backgroundTaskManager?.start()
 					}
 
-					self.startProgressNotificationTimer()
+					self.startProgressTimer()
 
 					// Audio cycle keeps us alive, so the foreground session works — no switch to the background session.
 				}
@@ -188,8 +191,6 @@ class DownloadManager: NSObject, ObservableObject {
 
 		backgroundTaskManager?.stop()
 		backgroundTaskManager = nil
-
-		endProgressNotificationTimer()
 
 		UNUserNotificationCenter.current().removeAllDeliveredNotifications()
 
@@ -247,7 +248,7 @@ class DownloadManager: NSObject, ObservableObject {
 		backgroundTaskManager?.stop()
 		backgroundTaskManager = nil
 
-		endProgressNotificationTimer()
+		endProgressTimer()
 
 		if #available(iOS 16.2, *), let activity = _downloadActivity {
 			Task {
@@ -274,22 +275,43 @@ class DownloadManager: NSObject, ObservableObject {
 	}
 	
 	
-	private func startProgressNotificationTimer() {
-		progressUpdateTimer?.invalidate()
+	private func startProgressTimer() {
+		guard progressUpdateTimer == nil else { return }
 
-		progressUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-			guard let self = self else { return }
-			self.updateMergedProgressNotification()
+		let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+			self?.handleProgressTick()
 		}
 
-		if let timer = progressUpdateTimer {
-			RunLoop.main.add(timer, forMode: .common)
+		RunLoop.main.add(timer, forMode: .common)
+		progressUpdateTimer = timer
+	}
+
+	private func endProgressTimer() {
+		progressUpdateTimer?.invalidate()
+		progressUpdateTimer = nil
+	}
+
+	private func handleProgressTick() {
+		sampleDownloadSpeed()
+
+		if isAppInBackground {
+			updateMergedProgressNotification()
+		} else if activeNetworkDownloads.isEmpty {
+			endProgressTimer()
 		}
 	}
 
-	private func endProgressNotificationTimer() {
-		progressUpdateTimer?.invalidate()
-		progressUpdateTimer = nil
+	private func sampleDownloadSpeed() {
+		guard !activeNetworkDownloads.isEmpty else {
+			speedTracker.reset()
+			if currentDownloadSpeed != 0 { currentDownloadSpeed = 0 }
+			return
+		}
+
+		// Finished downloads stay in the sum to keep the total monotonic.
+		let totalBytes = downloads.reduce(Int64(0)) { $0 + ($1.onlyArchiving ? 0 : $1.bytesDownloaded) }
+		let speed = speedTracker.sample(totalBytes: totalBytes)
+		if currentDownloadSpeed != speed { currentDownloadSpeed = speed }
 	}
 	
 	private func processPendingDownloads() {
@@ -335,13 +357,12 @@ class DownloadManager: NSObject, ObservableObject {
 		guard !activeDownloads.isEmpty || !pausedDownloads.isEmpty else {
 			UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["merged_download_progress"])
 
-			currentDownloadSpeed = 0
 			endLiveActivity()
 
 			if isAppInBackground && downloads.allSatisfy({ !$0.isActive || $0.isPaused }) {
 				backgroundTaskManager?.stop()
 				backgroundTaskManager = nil
-				endProgressNotificationTimer()
+				endProgressTimer()
 			}
 
 			return
@@ -495,6 +516,8 @@ class DownloadManager: NSObject, ObservableObject {
 			self.objectWillChange.send()
 			self.downloads.append(download)
 
+			self.startProgressTimer()
+
 			if self.isAppInBackground && self.downloads.count == 1 {
 				if self.backgroundTaskManager == nil {
 					self.backgroundTaskManager = BackgroundTaskManager(
@@ -504,7 +527,6 @@ class DownloadManager: NSObject, ObservableObject {
 					)
 					self.backgroundTaskManager?.start()
 				}
-				self.startProgressNotificationTimer()
 			}
 
 			// BGContinuedProcessingTask keeps work going in the background on iOS 19+.
@@ -626,6 +648,8 @@ class DownloadManager: NSObject, ObservableObject {
 		}
 		
 		DispatchQueue.main.async {
+			self.startProgressTimer()
+
 			let activeDownloads = self.downloads.filter {
 				($0.progress > 0 && $0.progress < 1.0) ||
 				($0.unpackageProgress > 0 && $0.unpackageProgress < 1.0)
@@ -678,7 +702,7 @@ class DownloadManager: NSObject, ObservableObject {
 				if self.isAppInBackground && self.downloads.allSatisfy({ !$0.isActive || $0.isPaused }) {
 					self.backgroundTaskManager?.stop()
 					self.backgroundTaskManager = nil
-					self.endProgressNotificationTimer()
+					self.endProgressTimer()
 				}
 			}
 		}
@@ -718,7 +742,7 @@ class DownloadManager: NSObject, ObservableObject {
 					expirationBody: "Downloads will continue in the background"
 				)
 				backgroundTaskManager?.start()
-				startProgressNotificationTimer()
+				startProgressTimer()
 			}
 		}
 	}

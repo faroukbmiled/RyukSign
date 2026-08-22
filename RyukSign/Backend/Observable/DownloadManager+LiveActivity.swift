@@ -93,9 +93,6 @@ extension DownloadManager {
 		let totalBytesDownloaded = activeDownloads.reduce(Int64(0)) { $0 + $1.bytesDownloaded }
 		let totalBytesExpected = activeDownloads.reduce(Int64(0)) { $0 + $1.totalBytes }
 
-		lastBytesDownloaded = totalBytesDownloaded
-		lastSpeedUpdateTime = Date()
-
 		let contentState = DownloadActivityAttributes.ContentState(
 			currentDownload: 0,
 			totalDownloads: activeDownloads.count,
@@ -104,7 +101,7 @@ extension DownloadManager {
 			appNames: appNames,
 			totalBytesDownloaded: totalBytesDownloaded,
 			totalBytesExpected: max(totalBytesExpected, 1),
-			bytesPerSecond: 0,
+			bytesPerSecond: currentDownloadSpeed,
 			lastUpdateTime: Date(),
 			estimatedCompletionDate: nil,
 			isCompleted: false,
@@ -211,23 +208,7 @@ extension DownloadManager {
 		let totalBytesExpected = allActivityDownloads.values.reduce(Int64(0)) { $0 + $1.total }
 		let averageProgress = totalBytesExpected > 0 ? Double(totalBytesDownloaded) / Double(totalBytesExpected) : 0.0
 
-		let activeDownloadedBytes = activeDownloads.reduce(Int64(0)) { $0 + $1.bytesDownloaded }
-		let timeSinceLastUpdate = now.timeIntervalSince(lastSpeedUpdateTime)
-		let bytesSinceLastUpdate = activeDownloadedBytes - lastBytesDownloaded
-
-		// Guard tiny intervals and restart-induced negatives; cap at 1 GB/s to avoid overflow display.
-		var bytesPerSecond: Int64 = 0
-		if timeSinceLastUpdate > 0.1 && bytesSinceLastUpdate > 0 {
-			let calculatedSpeed = Int64(Double(bytesSinceLastUpdate) / timeSinceLastUpdate)
-			bytesPerSecond = min(max(calculatedSpeed, 0), 1073741824)
-		}
-
-		lastBytesDownloaded = activeDownloadedBytes
-		lastSpeedUpdateTime = now
-
-		DispatchQueue.main.async {
-			self.currentDownloadSpeed = bytesPerSecond
-		}
+		let bytesPerSecond = currentDownloadSpeed
 
 		var estimatedCompletionDate: Date? = nil
 		if bytesPerSecond > 0 {
