@@ -208,6 +208,7 @@ struct TweakLibraryList: View {
 			FileImporterRepresentableView(
 				allowedContentTypes: [.dylib, .deb],
 				allowsMultipleSelection: true,
+				folder: .tweaks,
 				onDocumentsPicked: { urls in _handlePickedImport(urls) }
 			)
 			.ignoresSafeArea()
@@ -215,6 +216,7 @@ struct TweakLibraryList: View {
 			FileImporterRepresentableView(
 				allowedContentTypes: [.ipa, .tipa],
 				allowsMultipleSelection: false,
+				folder: .apps,
 				onDocumentsPicked: { urls in
 					guard let url = urls.first else { _sheet = nil; return }
 					_queueSheet(.ipaExtract(url))

@@ -74,6 +74,7 @@ struct TunnelView: View {
 		.sheet(isPresented: $_isImportingPairingPresenting) {
 			FileImporterRepresentableView(
 				allowedContentTypes:  [.xmlPropertyList, .plist, .mobiledevicepairing],
+				folder: .pairing,
 				onDocumentsPicked: { urls in
 					guard let selectedFileURL = urls.first else { return }
 					FR.movePairing(selectedFileURL)

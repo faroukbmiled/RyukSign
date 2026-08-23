@@ -108,7 +108,7 @@ struct TweakConfigFields: View {
 				.localized("Injection Path"),
 				systemImage: "doc.badge.gearshape",
 				selection: Binding(
-					get: { config.injectPath ?? .executable_path },
+					get: { config.customPath },
 					set: { config.injectPath = $0 }
 				),
 				values: Options.InjectPath.allCases
@@ -117,7 +117,7 @@ struct TweakConfigFields: View {
 				.localized("Injection Folder"),
 				systemImage: "folder.badge.gearshape",
 				selection: Binding(
-					get: { config.injectFolder ?? .frameworks },
+					get: { config.customFolder },
 					set: { config.injectFolder = $0 }
 				),
 				values: Options.InjectFolder.allCases

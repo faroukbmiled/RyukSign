@@ -126,8 +126,8 @@ struct TweakInfoView: View {
 		if let onApply = onApplyRecommendation, a.hasRecommendation,
 		   let path = a.recommendedPath, let folder = a.recommendedFolder {
 			let applied = _applied || (currentConfig?.useCustom == true
-				&& currentConfig?.injectPath == path
-				&& currentConfig?.injectFolder == folder)
+				&& currentConfig?.customPath == path
+				&& currentConfig?.customFolder == folder)
 			NBSection(.localized("Recommended")) {
 				Button {
 					onApply(path, folder)

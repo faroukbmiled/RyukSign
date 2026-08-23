@@ -1,5 +1,5 @@
 //
-//  ArchiveView.swift
+//  FilesCompressionView.swift
 //  RyukSign
 //
 //  Created by samara on 6.05.2025.
@@ -10,17 +10,15 @@ import Zip
 import NimbleViews
 
 // MARK: - View
-struct ArchiveView: View {
+struct FilesCompressionView: View {
 	@AppStorage("Feather.compressionLevel") private var _compressionLevel: Int = ZipCompression.DefaultCompression.rawValue
 	@AppStorage("Feather.useShareSheetForArchiving") private var _useShareSheet: Bool = false
 	@AppStorage(ArchiveBackend.storageKey) private var _backend: Int = ArchiveBackend.zip.rawValue
 	@AppStorage("RyukSign.useLastExportLocation") private var _useLastExportLocation: Bool = false
-	@AppStorage(DefaultFolderPickerView.folderNameKey) private var _importFolderName: String = ""
-	@State private var _isPickingImportFolder = false
 
 	// MARK: Body
     var body: some View {
-		NBList(.localized("Archive & Compression")) {
+		NBList(.localized("Files & Compression")) {
 			Section {
 				Picker(.localized("Compression Level"), systemImage: "archivebox", selection: $_compressionLevel) {
 					ForEach(ZipCompression.allCases, id: \.rawValue) { level in
@@ -49,30 +47,12 @@ struct ArchiveView: View {
 			}
 
 			Section {
-				Button {
-					_isPickingImportFolder = true
-				} label: {
-					HStack {
-						Label(.localized("Default Import Folder"), systemImage: "folder")
-						Spacer()
-						Text(_importFolderName.isEmpty ? .localized("Not Set") : _importFolderName)
-							.foregroundStyle(.secondary)
-							.lineLimit(1)
-					}
-				}
-				if !_importFolderName.isEmpty {
-					Button(.localized("Clear Default Folder"), systemImage: "xmark.circle", role: .destructive) {
-						UserDefaults.standard.removeObject(forKey: FileImporterRepresentableView.defaultFolderBookmarkKey)
-						_importFolderName = ""
-					}
+				NavigationLink(destination: ImportFoldersView()) {
+					Label(.localized("Import Folders"), systemImage: "folder")
 				}
 			} footer: {
-				Text(.localized("Choose a folder to always open when importing files."))
+				Text(.localized("Choose which folder each kind of import opens in."))
 			}
-		}
-		.sheet(isPresented: $_isPickingImportFolder) {
-			DefaultFolderPickerView { _ in _isPickingImportFolder = false }
-				.ignoresSafeArea()
 		}
     }
 }

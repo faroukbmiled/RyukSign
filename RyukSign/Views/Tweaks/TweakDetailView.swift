@@ -47,6 +47,7 @@ struct TweakDetailView: View {
 			FileImporterRepresentableView(
 				allowedContentTypes: [.dylib, .deb],
 				allowsMultipleSelection: true,
+				folder: .tweaks,
 				onDocumentsPicked: { urls in
 					guard !urls.isEmpty else { return }
 					let next = (manager.tweak(tweakId)?.versions.count ?? 0) + 1
@@ -61,6 +62,7 @@ struct TweakDetailView: View {
 			FileImporterRepresentableView(
 				allowedContentTypes: [.dylib, .deb],
 				allowsMultipleSelection: true,
+				folder: .tweaks,
 				onDocumentsPicked: { urls in
 					guard
 						!urls.isEmpty,

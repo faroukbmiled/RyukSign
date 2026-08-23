@@ -86,6 +86,7 @@ struct BackupView: View {
 		.sheet(isPresented: $_showImporter) {
 			FileImporterRepresentableView(
 				allowedContentTypes: [.ryukBackup],
+				folder: .backups,
 				onDocumentsPicked: { urls in
 					guard let url = urls.first else { return }
 					_pendingImportURL = url

@@ -44,6 +44,7 @@ struct SigningTweaksView: View {
 			FileImporterRepresentableView(
 				allowedContentTypes: [.dylib, .deb],
 				allowsMultipleSelection: true,
+				folder: .tweaks,
 				onDocumentsPicked: { urls in
 					guard !urls.isEmpty else { return }
 					for url in urls {

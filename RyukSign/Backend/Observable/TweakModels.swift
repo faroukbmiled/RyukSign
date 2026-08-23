@@ -79,6 +79,21 @@ struct TweakInjectConfig: Codable, Equatable {
 		injectFolder: nil,
 		targeting: .mainOnly
 	)
+
+	// Pickers show these when unset, so resolution must match.
+	static let defaultPath: Options.InjectPath = .executable_path
+	static let defaultFolder: Options.InjectFolder = .frameworks
+
+	var customPath: Options.InjectPath { injectPath ?? Self.defaultPath }
+	var customFolder: Options.InjectFolder { injectFolder ?? Self.defaultFolder }
+
+	func resolvedPath(global: Options.InjectPath) -> Options.InjectPath {
+		useCustom ? customPath : global
+	}
+
+	func resolvedFolder(global: Options.InjectFolder) -> Options.InjectFolder {
+		useCustom ? customFolder : global
+	}
 }
 
 /// User-created folder for organising the library. Cosmetic only — no effect on injection.

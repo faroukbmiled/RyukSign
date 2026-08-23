@@ -63,6 +63,7 @@ struct CertificatesAddView: View {
 			.sheet(isPresented: $_isImportingP12Presenting) {
 				FileImporterRepresentableView(
 					allowedContentTypes: [.p12],
+					folder: .certificates,
 					onDocumentsPicked: { urls in
 						guard let selectedFileURL = urls.first else { return }
 						self._p12URL = selectedFileURL
@@ -73,6 +74,7 @@ struct CertificatesAddView: View {
 			.sheet(isPresented: $_isImportingMobileProvisionPresenting) {
 				FileImporterRepresentableView(
 					allowedContentTypes: [.mobileProvision],
+					folder: .certificates,
 					onDocumentsPicked: { urls in
 						guard let selectedFileURL = urls.first else { return }
 						self._provisionURL = selectedFileURL

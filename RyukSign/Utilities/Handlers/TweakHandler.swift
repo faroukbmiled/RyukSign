@@ -49,7 +49,30 @@ class TweakHandler {
 	/// `Frameworks/` can be absent from apps, so the parent has to exist before the move.
 	private func _place(_ url: URL, at destination: URL) throws {
 		try _fileManager.createDirectoryIfNeeded(at: destination.deletingLastPathComponent())
+		// The move silently drops a same-named file.
+		if _fileManager.fileExists(atPath: destination.path) {
+			SigningLog.shared.error(.localized("Kept the existing %@ — another tweak ships a file with that name", arguments: destination.lastPathComponent))
+		}
 		try _fileManager.moveFileIfNeeded(from: url, to: destination)
+	}
+
+	/// Suffixes `-2`, `-3`… so two tweaks can ship the same dylib name.
+	private func _uniqueDylibDestination(_ destination: URL) -> URL {
+		guard _fileManager.fileExists(atPath: destination.path) else { return destination }
+
+		let directory = destination.deletingLastPathComponent()
+		let base = destination.deletingPathExtension().lastPathComponent
+		let ext = destination.pathExtension
+
+		var index = 2
+		var candidate = destination
+		repeat {
+			candidate = directory.appendingPathComponent("\(base)-\(index).\(ext)")
+			index += 1
+		} while _fileManager.fileExists(atPath: candidate.path)
+
+		SigningLog.shared.info(.localized("Renamed %1$@ to %2$@ — that name was already taken", arguments: destination.lastPathComponent, candidate.lastPathComponent))
+		return candidate
 	}
 
 	private func _checkEllekit() async throws {
@@ -140,8 +163,8 @@ class TweakHandler {
 
 	/// Stages one tweak file, then places (.appex) or injects it.
 	private func _processSpecFile(_ file: TweakInjectionFile, spec: TweakInjectionSpec, baseTmpDir: URL) async throws {
-		let path = (file.config.useCustom ? file.config.injectPath : nil) ?? _options.injectPath
-		let folder = (file.config.useCustom ? file.config.injectFolder : nil) ?? _options.injectFolder
+		let path = file.config.resolvedPath(global: _options.injectPath)
+		let folder = file.config.resolvedFolder(global: _options.injectFolder)
 
 		// Copy into temp first so the persistent library file isn't moved away.
 		let staged = baseTmpDir.appendingPathComponent(UUID().uuidString)
@@ -274,7 +297,7 @@ class TweakHandler {
 			injectFolder = .root
 		}
 
-		destinationURL = destinationURL.appendingPathComponent(url.lastPathComponent)
+		destinationURL = _uniqueDylibDestination(destinationURL.appendingPathComponent(url.lastPathComponent))
 
 		try _place(url, at: destinationURL)
 

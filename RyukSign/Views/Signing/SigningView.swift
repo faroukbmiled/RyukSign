@@ -136,6 +136,7 @@ struct SigningView: View {
 			.sheet(isPresented: $_isFilePickerPresenting) {
 				FileImporterRepresentableView(
 					allowedContentTypes:  [.image],
+					folder: .icons,
 					onDocumentsPicked: { urls in
 						guard let selectedFileURL = urls.first else { return }
 						self.appIcon = UIImage.fromFile(selectedFileURL)?.resizeToSquare()

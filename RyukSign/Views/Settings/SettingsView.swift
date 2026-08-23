@@ -95,8 +95,8 @@ struct SettingsView: View {
                     } label: {
                         Label(.localized("Tweaks"), systemImage: "wrench.and.screwdriver")
                     }
-                    NavigationLink(destination: ArchiveView()) {
-                        Label(.localized("Archive & Compression"), systemImage: "archivebox")
+                    NavigationLink(destination: FilesCompressionView()) {
+                        Label(.localized("Files & Compression"), systemImage: "archivebox")
                     }
                     NavigationLink(destination: InstallationView()) {
                         Label(.localized("Installation"), systemImage: "arrow.down.app")

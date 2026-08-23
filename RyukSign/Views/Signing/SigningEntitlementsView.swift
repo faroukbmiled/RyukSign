@@ -35,6 +35,7 @@ struct SigningEntitlementsView: View {
 		.sheet(isPresented: $_isAddingPresenting) {
 			FileImporterRepresentableView(
 				allowedContentTypes:  [.xmlPropertyList, .plist, .entitlements],
+				folder: .entitlements,
 				onDocumentsPicked: { urls in
 					guard let selectedFileURL = urls.first else { return }
 
