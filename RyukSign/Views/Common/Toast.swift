@@ -183,9 +183,21 @@ struct ToastBanner: View {
 				.fixedSize(horizontal: false, vertical: true)
 				.opacity(_textIn ? 1 : 0)
 				.offset(x: _textIn ? 0 : -8)
+
+			if item.duration == nil {
+				Button(action: onDismiss) {
+					Image(systemName: "xmark")
+						.font(.system(size: 11, weight: .bold))
+						.foregroundStyle(.secondary)
+						.frame(width: 22, height: 22)
+						.background(.quaternary, in: Circle())
+				}
+				.buttonStyle(.plain)
+				.opacity(_textIn ? 1 : 0)
+			}
 		}
 		.padding(.leading, 10)
-		.padding(.trailing, 18)
+		.padding(.trailing, item.duration == nil ? 10 : 18)
 		.padding(.vertical, 9)
 		.background(
 			Capsule(style: .continuous)

@@ -169,7 +169,7 @@ extension WebManagerView {
 				Label(.localized("Keep Alive"), systemImage: "bolt.badge.clock")
 			}
 		} footer: {
-			Text(.localized("Keeps the server reachable while Feather is in the background by playing silent audio. This noticeably increases battery drain — turn it off when you're done transferring."))
+			Text(.localized("Keeps the server reachable while RyukSign is in the background by playing silent audio. This noticeably increases battery drain — turn it off when you're done transferring."))
 		}
 	}
 

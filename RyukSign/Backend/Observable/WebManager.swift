@@ -135,7 +135,7 @@ final class WebManager: ObservableObject {
 		let task = BackgroundTaskManager(
 			taskName: "WebManager",
 			expirationTitle: .localized("Web Manager running"),
-			expirationBody: .localized("Reopen Feather to keep the server reachable.")
+			expirationBody: .localized("Reopen RyukSign to keep the server reachable.")
 		)
 		task.start()
 		_keepAliveTask = task

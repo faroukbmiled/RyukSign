@@ -32955,79 +32955,79 @@
         }
       }
     },
-    "Keeps the server reachable while Feather is in the background by playing silent audio. This noticeably increases battery drain — turn it off when you're done transferring." : {
+    "Keeps the server reachable while RyukSign is in the background by playing silent audio. This noticeably increases battery drain — turn it off when you're done transferring." : {
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يبقي الخادم متاحًا أثناء وجود Feather في الخلفية عبر تشغيل صوت صامت. يزيد هذا من استهلاك البطارية بشكل ملحوظ — أوقفه عند انتهائك من النقل."
+            "value" : "يبقي الخادم متاحًا أثناء وجود RyukSign في الخلفية عبر تشغيل صوت صامت. يزيد هذا من استهلاك البطارية بشكل ملحوظ — أوقفه عند انتهائك من النقل."
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Udržuje server dostupný, když je Feather na pozadí, přehráváním tichého zvuku. To znatelně zvyšuje spotřebu baterie — po dokončení přenosu jej vypněte."
+            "value" : "Udržuje server dostupný, když je RyukSign na pozadí, přehráváním tichého zvuku. To znatelně zvyšuje spotřebu baterie — po dokončení přenosu jej vypněte."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hält den Server erreichbar, während Feather im Hintergrund ist, indem stilles Audio abgespielt wird. Dies erhöht den Akkuverbrauch spürbar — schalte es aus, wenn du mit dem Übertragen fertig bist."
+            "value" : "Hält den Server erreichbar, während RyukSign im Hintergrund ist, indem stilles Audio abgespielt wird. Dies erhöht den Akkuverbrauch spürbar — schalte es aus, wenn du mit dem Übertragen fertig bist."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantiene el servidor accesible mientras Feather está en segundo plano reproduciendo audio silencioso. Esto aumenta notablemente el consumo de batería — desactívalo cuando termines de transferir."
+            "value" : "Mantiene el servidor accesible mientras RyukSign está en segundo plano reproduciendo audio silencioso. Esto aumenta notablemente el consumo de batería — desactívalo cuando termines de transferir."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Maintient le serveur accessible pendant que Feather est en arrière-plan en lisant un son silencieux. Cela augmente nettement la consommation de la batterie — désactivez-le une fois vos transferts terminés."
+            "value" : "Maintient le serveur accessible pendant que RyukSign est en arrière-plan en lisant un son silencieux. Cela augmente nettement la consommation de la batterie — désactivez-le une fois vos transferts terminés."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Menjaga server tetap dapat diakses saat Feather berada di latar belakang dengan memutar audio senyap. Ini meningkatkan pengurasan baterai secara nyata — matikan saat Anda selesai mentransfer."
+            "value" : "Menjaga server tetap dapat diakses saat RyukSign berada di latar belakang dengan memutar audio senyap. Ini meningkatkan pengurasan baterai secara nyata — matikan saat Anda selesai mentransfer."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantiene il server raggiungibile mentre Feather è in background riproducendo audio silenzioso. Questo aumenta sensibilmente il consumo della batteria — disattivalo quando hai finito di trasferire."
+            "value" : "Mantiene il server raggiungibile mentre RyukSign è in background riproducendo audio silenzioso. Questo aumenta sensibilmente il consumo della batteria — disattivalo quando hai finito di trasferire."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utrzymuje dostępność serwera, gdy Feather działa w tle, odtwarzając cichy dźwięk. Zauważalnie zwiększa to zużycie baterii — wyłącz to po zakończeniu przesyłania."
+            "value" : "Utrzymuje dostępność serwera, gdy RyukSign działa w tle, odtwarzając cichy dźwięk. Zauważalnie zwiększa to zużycie baterii — wyłącz to po zakończeniu przesyłania."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Поддерживает доступность сервера, пока Feather в фоне, воспроизводя беззвучный звук. Это заметно увеличивает расход заряда — отключите его после завершения передачи."
+            "value" : "Поддерживает доступность сервера, пока RyukSign в фоне, воспроизводя беззвучный звук. Это заметно увеличивает расход заряда — отключите его после завершения передачи."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessiz ses çalarak Feather arka plandayken sunucuya erişilebilir tutar. Bu, pil tüketimini belirgin şekilde artırır — aktarımı bitirdiğinizde kapatın."
+            "value" : "Sessiz ses çalarak RyukSign arka plandayken sunucuya erişilebilir tutar. Bu, pil tüketimini belirgin şekilde artırır — aktarımı bitirdiğinizde kapatın."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Giữ máy chủ truy cập được khi Feather chạy nền bằng cách phát âm thanh im lặng. Điều này làm hao pin đáng kể — hãy tắt khi bạn truyền xong."
+            "value" : "Giữ máy chủ truy cập được khi RyukSign chạy nền bằng cách phát âm thanh im lặng. Điều này làm hao pin đáng kể — hãy tắt khi bạn truyền xong."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "通过播放静音音频，使 Feather 在后台时服务器仍可访问。这会明显增加电量消耗——传输完成后请将其关闭。"
+            "value" : "通过播放静音音频，使 RyukSign 在后台时服务器仍可访问。这会明显增加电量消耗——传输完成后请将其关闭。"
           }
         }
       }
@@ -48300,79 +48300,79 @@
         }
       }
     },
-    "Reopen Feather to keep the server reachable." : {
+    "Reopen RyukSign to keep the server reachable." : {
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أعد فتح Feather لإبقاء الخادم متاحًا."
+            "value" : "أعد فتح RyukSign لإبقاء الخادم متاحًا."
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Znovu otevřete Feather, aby server zůstal dostupný."
+            "value" : "Znovu otevřete RyukSign, aby server zůstal dostupný."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Öffne Feather erneut, um den Server erreichbar zu halten."
+            "value" : "Öffne RyukSign erneut, um den Server erreichbar zu halten."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vuelve a abrir Feather para mantener el servidor accesible."
+            "value" : "Vuelve a abrir RyukSign para mantener el servidor accesible."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rouvrez Feather pour garder le serveur accessible."
+            "value" : "Rouvrez RyukSign pour garder le serveur accessible."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buka kembali Feather untuk menjaga server tetap dapat diakses."
+            "value" : "Buka kembali RyukSign untuk menjaga server tetap dapat diakses."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Riapri Feather per mantenere il server raggiungibile."
+            "value" : "Riapri RyukSign per mantenere il server raggiungibile."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otwórz ponownie Feather, aby utrzymać dostępność serwera."
+            "value" : "Otwórz ponownie RyukSign, aby utrzymać dostępność serwera."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Откройте Feather заново, чтобы сервер оставался доступным."
+            "value" : "Откройте RyukSign заново, чтобы сервер оставался доступным."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sunucuya erişilebilir tutmak için Feather'ı yeniden açın."
+            "value" : "Sunucuya erişilebilir tutmak için RyukSign'ı yeniden açın."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mở lại Feather để giữ máy chủ truy cập được."
+            "value" : "Mở lại RyukSign để giữ máy chủ truy cập được."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "重新打开 Feather 以保持服务器可访问。"
+            "value" : "重新打开 RyukSign 以保持服务器可访问。"
           }
         }
       }
