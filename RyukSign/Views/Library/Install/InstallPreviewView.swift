@@ -26,8 +26,7 @@ struct InstallPreviewView: View {
 	var body: some View {
 		ZStack {
 			InstallProgressView(app: app, viewModel: _installer.viewModel)
-			_status()
-			_button()
+			InstallStatusView(app: app, viewModel: _installer.viewModel)
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 		.background(Color(UIColor.secondarySystemBackground))
@@ -42,32 +41,6 @@ struct InstallPreviewView: View {
 		}
 		.onAppear { _installer.start(completion: _handle) }
 		.onDisappear { _installer.stop() }
-	}
-
-	@ViewBuilder
-	private func _status() -> some View {
-		Label(_installer.viewModel.statusLabel, systemImage: _installer.viewModel.statusImage)
-			.padding()
-			.labelStyle(.titleAndIcon)
-			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-			.animation(.smooth, value: _installer.viewModel.statusImage)
-	}
-
-	@ViewBuilder
-	private func _button() -> some View {
-		ZStack {
-			if _installer.viewModel.isCompleted {
-				Button {
-					UIApplication.openApp(with: app.identifier ?? "")
-				} label: {
-					NBButton("Open", systemImage: "", style: .text)
-				}
-				.padding()
-				.compatTransition()
-			}
-		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-		.animation(.easeInOut(duration: 0.3), value: _installer.viewModel.isCompleted)
 	}
 
 	private func _handle(_ result: Result<AppInstaller.Outcome, Error>) {
@@ -89,5 +62,45 @@ struct InstallPreviewView: View {
 				}
 			)
 		}
+	}
+}
+
+// MARK: - View: Status
+/// Observes the status model directly
+private struct InstallStatusView: View {
+	var app: AppInfoPresentable
+	@ObservedObject var viewModel: InstallerStatusViewModel
+
+	var body: some View {
+		ZStack {
+			_status()
+			_button()
+		}
+	}
+
+	@ViewBuilder
+	private func _status() -> some View {
+		Label(viewModel.statusLabel, systemImage: viewModel.statusImage)
+			.padding()
+			.labelStyle(.titleAndIcon)
+			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+			.animation(.smooth, value: viewModel.statusImage)
+	}
+
+	@ViewBuilder
+	private func _button() -> some View {
+		ZStack {
+			if viewModel.isCompleted {
+				Button {
+					UIApplication.openApp(with: app.identifier ?? "")
+				} label: {
+					NBButton("Open", systemImage: "", style: .text)
+				}
+				.padding()
+				.compatTransition()
+			}
+		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+		.animation(.easeInOut(duration: 0.3), value: viewModel.isCompleted)
 	}
 }
