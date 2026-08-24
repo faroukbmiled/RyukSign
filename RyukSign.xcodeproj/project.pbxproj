@@ -390,23 +390,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3A7F10012E9A11B0009DE4CE /* Build FilePickerFix */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 0;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/Tweaks/FilePickerFix/FilePickerFix.m",
-			);
-			name = "Build FilePickerFix";
-			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/FilePickerFix.dylib",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\nOUTPUT=\"${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FilePickerFix.dylib\"\nmkdir -p \"$(dirname \"${OUTPUT}\")\"\nxcrun --sdk iphoneos clang -dynamiclib -fobjc-arc -Os -target arm64-apple-ios14.0 -isysroot \"$(xcrun --sdk iphoneos --show-sdk-path)\" -Wno-deprecated-declarations -framework Foundation -framework UIKit -install_name @executable_path/Frameworks/FilePickerFix.dylib -o \"${OUTPUT}\" \"${SRCROOT}/Tweaks/FilePickerFix/FilePickerFix.m\"\n";
-		};
 		3379BC662DC9DB32004372DA /* Copy Acknowledgements */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -420,6 +403,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "echo \"Will copy acknowledgements\"\n\nACKNOWLEDGEMENTS_DIR=${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/com.mono0926.LicensePlist.Output\nDESTINATION_PATH=${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Settings.bundle/\n\ncp -r \"${ACKNOWLEDGEMENTS_DIR}\"/thewonderofyou.RyukSign \"${DESTINATION_PATH}\"\ncp -r \"${ACKNOWLEDGEMENTS_DIR}\"/thewonderofyou.RyukSign.plist \"${DESTINATION_PATH}\"\nrm -rf \"${ACKNOWLEDGEMENTS_DIR}\"\n";
+		};
+		3A7F10012E9A11B0009DE4CE /* Build FilePickerFix */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Tweaks/FilePickerFix/FilePickerFix.m",
+			);
+			name = "Build FilePickerFix";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/FilePickerFix.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nOUTPUT=\"${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FilePickerFix.dylib\"\nmkdir -p \"$(dirname \"${OUTPUT}\")\"\nxcrun --sdk iphoneos clang -dynamiclib -fobjc-arc -Os -target arm64-apple-ios14.0 -isysroot \"$(xcrun --sdk iphoneos --show-sdk-path)\" -Wno-deprecated-declarations -framework Foundation -framework UIKit -install_name @executable_path/Frameworks/FilePickerFix.dylib -o \"${OUTPUT}\" \"${SRCROOT}/Tweaks/FilePickerFix/FilePickerFix.m\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -630,7 +629,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.8;
+				MARKETING_VERSION = 2.9.9;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -698,7 +697,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.8;
+				MARKETING_VERSION = 2.9.9;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -830,7 +829,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.8;
+				MARKETING_VERSION = 2.9.9;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -978,7 +977,7 @@
 					"$(PROJECT_DIR)/RyukSign/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-				MARKETING_VERSION = 2.9.8;
+				MARKETING_VERSION = 2.9.9;
 				PRODUCT_BUNDLE_IDENTIFIER = ryuk2.anoxclan.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1031,7 +1030,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = RyukSignWidgetExtension/RyukSignWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution: ADNANE KAABI (S4Q99652S6)";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 2dbf78cc8947292c963bcef71fbde7ffad2180b4;
 				DEVELOPMENT_TEAM = "";
@@ -1071,7 +1070,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = RyukSignWidgetExtension/RyukSignWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution: ADNANE KAABI (S4Q99652S6)";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 2dbf78cc8947292c963bcef71fbde7ffad2180b4;
 				DEVELOPMENT_TEAM = "";
@@ -1111,7 +1110,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = RyukSignWidgetExtension/RyukSignWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution: ADNANE KAABI (S4Q99652S6)";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 2dbf78cc8947292c963bcef71fbde7ffad2180b4;
 				DEVELOPMENT_TEAM = "";
@@ -1152,7 +1151,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = RyukSignWidgetExtension/RyukSignWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution: ADNANE KAABI (S4Q99652S6)";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 2dbf78cc8947292c963bcef71fbde7ffad2180b4;
 				DEVELOPMENT_TEAM = "";

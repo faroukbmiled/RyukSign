@@ -114,7 +114,7 @@ final class SourcesViewModel: ObservableObject {
 			}
 			return FetchItem(
 				source: source,
-				url: url,
+				url: RyukSignAPI.catalogURL(for: url),
 				headers: RyukSignAPI.authHeaders(for: url),
 				isPremium: RyukSignAPI.isPremiumSource(url)
 			)

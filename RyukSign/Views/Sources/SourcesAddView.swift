@@ -14,10 +14,7 @@ import UIKit.UIImpactFeedbackGenerator
 
 // MARK: - View
 struct SourcesAddView: View {
-	typealias RepositoryDataHandler = Result<ASRepository, Error>
 	@Environment(\.dismiss) var dismiss
-
-	let _dataService = NBFetchService()
 
 	@State private var _filteredRecommendedSourcesData: [(url: URL, data: ASRepository)] = []
 	func _refreshFilteredRecommendedSourcesData() {
@@ -64,10 +61,9 @@ struct SourcesAddView: View {
 	@State var _isValidatingAPIKey = false
 	@State var _showPremiumError = false
 	@State var _premiumErrorMessage = ""
-	@State var _isPremium = RyukSignAPI.isPremium && !RyukSignAPI.premiumSourceHosts.isEmpty
 	@State private var _showResetConfirmation = false
 	@State private var _showRestorePrompt = false
-	@State private var _showPremiumInfo = false
+	@ObservedObject var _premium = PremiumManager.shared
 
 	@State private var _isImporting = false
 	@State var _isAddingRyukRepos = false
@@ -116,14 +112,6 @@ struct SourcesAddView: View {
 				} message: {
 					Text(_premiumErrorMessage)
 				}
-				.alert("Premium RyukSign", isPresented: $_showPremiumInfo) {
-					Button("Reset Premium", role: .destructive) {
-						_showResetConfirmation = true
-					}
-					Button("Dismiss", role: .cancel) { }
-				} message: {
-					Text("Your premium access is active. Premium repositories are protected and cannot be deleted individually. Swipe left or tap Reset to deactivate.")
-				}
 				.alert("Reset Premium?", isPresented: $_showResetConfirmation) {
 					Button("Reset", role: .destructive) {
 						_resetPremium()
@@ -134,20 +122,17 @@ struct SourcesAddView: View {
 				}
 				.alert("Premium Found", isPresented: $_showRestorePrompt) {
 					Button("Restore") {
-						_restorePremiumFromKeychain()
+						_restorePremium()
 					}
 					Button("No Thanks", role: .destructive) {
-						RyukSignAPI.clearPremiumKeychain()
+						RyukSignAPI.clearPremiumIdentity()
 					}
 				} message: {
 					Text("A previous RyukSign premium activation was found on this device. Would you like to restore your premium repositories?")
 				}
 				.task {
-					// Restore premium state if UserDefaults still has premium hosts (keychain cleared but UserDefaults wasn't).
-					if !RyukSignAPI.premiumSourceHosts.isEmpty && !RyukSignAPI.isPremium {
-						RyukSignAPI.isPremium = true
-						_isPremium = true
-					}
+					RyukSignAPI.migrateIfNeeded()
+					_premium.refresh()
 					await _fetchRecommendedRepositories()
 					await _fetchRyukReposList()
 				}
@@ -216,11 +201,10 @@ struct SourcesAddView: View {
 	@ViewBuilder
 	var premiumRyukSignSection: some View {
 		Section {
-			if _isPremium {
-				// Already premium — tap for info, swipe left for reset
-				Button(action: {
-					_showPremiumInfo = true
-				}) {
+			if _premium.isActive {
+				NavigationLink {
+					PremiumSettingsView()
+				} label: {
 					HStack {
 						Image(systemName: "crown.fill")
 							.foregroundColor(.yellow)
@@ -236,9 +220,7 @@ struct SourcesAddView: View {
 						Image(systemName: "checkmark.seal.fill")
 							.foregroundColor(.green)
 					}
-					.contentShape(Rectangle())
 				}
-				.buttonStyle(PlainButtonStyle())
 				.swipeActions(edge: .trailing) {
 					Button("Reset", role: .destructive) {
 						_showResetConfirmation = true
@@ -246,8 +228,7 @@ struct SourcesAddView: View {
 				}
 			} else {
 				Button(action: {
-					// Check for reinstall recovery (keychain has premium but UserDefaults wiped)
-					if RyukSignAPI.hasKeychainPremiumButNotLocal {
+					if RyukSignAPI.hasStoredPremiumButNotLocal {
 						_showRestorePrompt = true
 					} else {
 						_premiumAPIKey = ""
@@ -304,8 +285,8 @@ struct SourcesAddView: View {
 			}
 			.buttonStyle(PlainButtonStyle())
 		} footer: {
-			if _isPremium {
-				Text("Swipe left to reset. Premium repos cannot be deleted individually.")
+			if _premium.isActive {
+				Text("Tap to manage premium options, or swipe left to reset.")
 			} else {
 				Text("API keys are single-use.")
 			}
@@ -367,10 +348,10 @@ struct SourcesAddView: View {
 				.contentShape(Rectangle())
 			}
 			.buttonStyle(PlainButtonStyle())
-			.disabled(_isPremium || _isAddingRyukRepos || (ryukReposCount == 0 && ryukReposFetchError == nil))
-			.opacity(_isPremium ? 0.4 : 1.0)
+			.disabled(_premium.isActive || _isAddingRyukRepos || (ryukReposCount == 0 && ryukReposFetchError == nil))
+			.opacity(_premium.isActive ? 0.4 : 1.0)
 		} footer: {
-			if _isPremium {
+			if _premium.isActive {
 				Text("Already included in your premium repositories.")
 			} else if let error = ryukReposFetchError {
 				Text(error)

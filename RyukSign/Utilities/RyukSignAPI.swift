@@ -25,180 +25,113 @@ enum RyukSignAPI {
 	static let apiURLsEndpoint = "\(apiBaseURL)/urls"
 	static let apiHealthEndpoint = "\(apiBaseURL)/health"
 
+	// MARK: - API Models
+
+	struct URLsResponse: Decodable {
+		struct Item: Decodable {
+			let url: String
+		}
+
+		let urls: [Item]?
+	}
+
+	struct ErrorResponse: Decodable {
+		let detail: String
+	}
+
 	// MARK: - Repos
 
 	static let reposListURL = URL(string: "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/repos.json")!
 
-	// MARK: - Keychain Device UUID
+	// MARK: - Device Identity
 
-	private static let keychainService = "com.ryuksign.deviceuuid"
-	private static let keychainAccount = "deviceUUID"
-
-	/// Device UUID in Keychain (survives reinstalls).
 	static var deviceUUID: String? {
-		if let existingUUID = getKeychainUUID() {
-			return existingUUID
+		if let existing = IdentityVault.read(.deviceUUID) {
+			return existing
 		}
 
-		let newUUID = UUID().uuidString
-		if saveKeychainUUID(newUUID) {
-			return newUUID
-		}
-
-		// Fallback to vendor ID if Keychain fails
-		return UIDevice.current.identifierForVendor?.uuidString
-	}
-
-	private static func getKeychainUUID() -> String? {
-		let query: [String: Any] = [
-			kSecClass as String: kSecClassGenericPassword,
-			kSecAttrService as String: keychainService,
-			kSecAttrAccount as String: keychainAccount,
-			kSecReturnData as String: true,
-			kSecMatchLimit as String: kSecMatchLimitOne
-		]
-
-		var result: AnyObject?
-		let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-		guard status == errSecSuccess,
-			  let data = result as? Data,
-			  let uuid = String(data: data, encoding: .utf8) else {
-			return nil
-		}
-
+		let uuid = UUID().uuidString
+		IdentityVault.write(.deviceUUID, uuid)
 		return uuid
 	}
 
-	private static func saveKeychainUUID(_ uuid: String) -> Bool {
-		guard let data = uuid.data(using: .utf8) else { return false }
+	@discardableResult
+	static func adoptDeviceUUID(_ uuid: String) -> Bool {
+		let trimmed = uuid.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+		guard UUID(uuidString: trimmed) != nil else { return false }
 
-		let deleteQuery: [String: Any] = [
-			kSecClass as String: kSecClassGenericPassword,
-			kSecAttrService as String: keychainService,
-			kSecAttrAccount as String: keychainAccount
-		]
-		SecItemDelete(deleteQuery as CFDictionary)
-
-		let addQuery: [String: Any] = [
-			kSecClass as String: kSecClassGenericPassword,
-			kSecAttrService as String: keychainService,
-			kSecAttrAccount as String: keychainAccount,
-			kSecValueData as String: data,
-			kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
-		]
-
-		let status = SecItemAdd(addQuery as CFDictionary, nil)
-		return status == errSecSuccess
+		IdentityVault.write(.deviceUUID, trimmed)
+		return true
 	}
 
-	// MARK: - Premium State (Keychain-persisted)
+	// MARK: - Premium State
 
-	private static let premiumStateService = "com.ryuksign.premium"
-	private static let premiumStateAccount = "isPremium"
-	private static let premiumURLsAccount = "premiumURLs"
-
-	/// Premium activation state (survives reinstall via Keychain).
 	static var isPremium: Bool {
-		get { _getKeychainString(service: premiumStateService, account: premiumStateAccount) == "true" }
+		get { IdentityVault.read(.premiumActive) == "true" }
 		set {
 			if newValue {
-				_saveKeychainString("true", service: premiumStateService, account: premiumStateAccount)
+				IdentityVault.write(.premiumActive, "true")
 			} else {
-				_deleteKeychainItem(service: premiumStateService, account: premiumStateAccount)
+				IdentityVault.delete(.premiumActive)
 			}
 		}
 	}
 
-	/// Save premium repo URLs to keychain for reinstall recovery.
-	static func savePremiumURLsToKeychain(_ urls: [URL]) {
+	static func savePremiumURLs(_ urls: [URL]) {
 		let strings = urls.map { $0.absoluteString }
-		guard let data = try? JSONEncoder().encode(strings) else { return }
-		guard let encoded = String(data: data, encoding: .utf8) else { return }
-		_saveKeychainString(encoded, service: premiumStateService, account: premiumURLsAccount)
+		guard
+			let data = try? JSONEncoder().encode(strings),
+			let encoded = String(data: data, encoding: .utf8)
+		else {
+			return
+		}
+
+		IdentityVault.write(.premiumURLs, encoded)
 	}
 
 	static func getSavedPremiumURLs() -> [URL]? {
-		guard let encoded = _getKeychainString(service: premiumStateService, account: premiumURLsAccount),
-			  let data = encoded.data(using: .utf8),
-			  let strings = try? JSONDecoder().decode([String].self, from: data) else {
+		guard
+			let encoded = IdentityVault.read(.premiumURLs),
+			let data = encoded.data(using: .utf8),
+			let strings = try? JSONDecoder().decode([String].self, from: data)
+		else {
 			return nil
 		}
+
 		let urls = strings.compactMap { URL(string: $0) }
 		return urls.isEmpty ? nil : urls
 	}
 
-	static func clearPremiumKeychain() {
-		_deleteKeychainItem(service: premiumStateService, account: premiumStateAccount)
-		_deleteKeychainItem(service: premiumStateService, account: premiumURLsAccount)
+	static func clearPremiumIdentity() {
+		IdentityVault.delete(.premiumActive)
+		IdentityVault.delete(.premiumURLs)
 	}
 
-	/// Keychain has premium but UserDefaults doesn't (reinstall scenario).
-	static var hasKeychainPremiumButNotLocal: Bool {
-		return isPremium && premiumSourceHosts.isEmpty
-	}
-
-	// MARK: - Generic Keychain Helpers
-
-	private static func _getKeychainString(service: String, account: String) -> String? {
-		let query: [String: Any] = [
-			kSecClass as String: kSecClassGenericPassword,
-			kSecAttrService as String: service,
-			kSecAttrAccount as String: account,
-			kSecReturnData as String: true,
-			kSecMatchLimit as String: kSecMatchLimitOne
-		]
-		var result: AnyObject?
-		let status = SecItemCopyMatching(query as CFDictionary, &result)
-		guard status == errSecSuccess,
-			  let data = result as? Data,
-			  let string = String(data: data, encoding: .utf8) else {
-			return nil
-		}
-		return string
-	}
-
-	private static func _saveKeychainString(_ string: String, service: String, account: String) {
-		guard let data = string.data(using: .utf8) else { return }
-		_deleteKeychainItem(service: service, account: account)
-		let query: [String: Any] = [
-			kSecClass as String: kSecClassGenericPassword,
-			kSecAttrService as String: service,
-			kSecAttrAccount as String: account,
-			kSecValueData as String: data,
-			kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
-		]
-		SecItemAdd(query as CFDictionary, nil)
-	}
-
-	private static func _deleteKeychainItem(service: String, account: String) {
-		let query: [String: Any] = [
-			kSecClass as String: kSecClassGenericPassword,
-			kSecAttrService as String: service,
-			kSecAttrAccount as String: account
-		]
-		SecItemDelete(query as CFDictionary)
+	/// Activation survived in the vault but this install has no premium sources.
+	static var hasStoredPremiumButNotLocal: Bool {
+		isPremium && premiumSourceHosts.isEmpty
 	}
 
 	// MARK: - Migration
 
-	/// Migrates existing premium users to keychain persistence.
-	/// Idempotent: safe to call on every launch — no-op once keychain is populated.
+	/// Rebuilds the vault from this install, so a wiped keychain doesn't cost premium access.
 	static func migrateIfNeeded() {
 		let hosts = premiumSourceHosts
-		guard !hosts.isEmpty, !isPremium else { return }
+		guard !hosts.isEmpty else { return }
 
-		// Premium hosts in UserDefaults but nothing in keychain — old version.
-		isPremium = true
+		if !isPremium {
+			isPremium = true
+		}
 
-		let sources = Storage.shared.getSources()
-		let premiumURLs = sources.compactMap { $0.sourceURL }.filter { url in
+		guard getSavedPremiumURLs() == nil else { return }
+
+		let premiumURLs = Storage.shared.getSources().compactMap { $0.sourceURL }.filter { url in
 			guard let host = url.host?.lowercased() else { return false }
 			return hosts.contains(host)
 		}
 
 		if !premiumURLs.isEmpty {
-			savePremiumURLsToKeychain(premiumURLs)
+			savePremiumURLs(premiumURLs)
 		}
 	}
 
@@ -260,6 +193,23 @@ enum RyukSignAPI {
 			return [:]
 		}
 		return ["ryukSignUUID": uuid]
+	}
+
+	/// Lets the server trim the payload instead of downloading the whole catalog first.
+	@MainActor
+	static func catalogURL(for url: URL) -> URL {
+		guard isPremiumSource(url) else { return url }
+
+		let items = PremiumFilterPreferences.shared.queryItems
+		guard
+			!items.isEmpty,
+			var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+		else {
+			return url
+		}
+
+		components.queryItems = (components.queryItems ?? []) + items
+		return components.url ?? url
 	}
 
 	static func applyAuthHeaders(to request: inout URLRequest) {

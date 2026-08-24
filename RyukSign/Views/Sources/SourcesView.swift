@@ -38,6 +38,7 @@ struct SourcesView: View {
 	}
 
 	@ObservedObject var appNavigationManager = AppNavigationManager.shared
+	@ObservedObject private var _premiumFilter = PremiumFilterPreferences.shared
 
 	private var _filteredSources: [AltSource] {
 		_sources.filter { _searchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(_searchText) ?? false) }
@@ -63,6 +64,11 @@ struct SourcesView: View {
 		.onChange(of: _isEditMode) { isEditing in
 			if !isEditing {
 				_selectedSources.removeAll()
+			}
+		}
+		.onChange(of: _premiumFilter.stamp) { _ in
+			Task {
+				await viewModel.fetchSources(_sources, refresh: true)
 			}
 		}
 		.onChange(of: scenePhase) { newPhase in
