@@ -49,6 +49,35 @@ struct SigningCustomizationView: View {
 					FRAppIconView(app: app, size: 56)
 				}
 			}
+			.sheet(isPresented: $_isAltPickerPresenting) {
+				NavigationStack {
+					SigningAlternativeIconView(app: app, appIcon: $appIcon, isModifing: true)
+				}
+			}
+			.sheet(isPresented: $_isFilePickerPresenting) {
+				FileImporterRepresentableView(
+					allowedContentTypes: [.image],
+					folder: .icons,
+					onDocumentsPicked: { urls in
+						guard let url = urls.first else { return }
+						appIcon = UIImage.fromFile(url)?.resizeToSquare()
+					}
+				)
+				.ignoresSafeArea()
+			}
+			.photosPicker(isPresented: $_isImagePickerPresenting, selection: $_selectedPhoto)
+			.onChange(of: _selectedPhoto) { newValue in
+				guard let newValue else { return }
+
+				Task {
+					if
+						let data = try? await newValue.loadTransferable(type: Data.self),
+						let image = UIImage(data: data)?.resizeToSquare()
+					{
+						appIcon = image
+					}
+				}
+			}
 
 			_infoCell(.localized("Name"), desc: options.appName ?? app.name) {
 				SigningPropertiesView(
@@ -88,33 +117,6 @@ struct SigningCustomizationView: View {
 				}
 			}
 			.copyableText(_displayedDescription ?? "")
-		}
-		.sheet(isPresented: $_isAltPickerPresenting) {
-			SigningAlternativeIconView(app: app, appIcon: $appIcon, isModifing: .constant(true))
-		}
-		.sheet(isPresented: $_isFilePickerPresenting) {
-			FileImporterRepresentableView(
-				allowedContentTypes: [.image],
-				folder: .icons,
-				onDocumentsPicked: { urls in
-					guard let url = urls.first else { return }
-					appIcon = UIImage.fromFile(url)?.resizeToSquare()
-				}
-			)
-			.ignoresSafeArea()
-		}
-		.photosPicker(isPresented: $_isImagePickerPresenting, selection: $_selectedPhoto)
-		.onChange(of: _selectedPhoto) { newValue in
-			guard let newValue else { return }
-
-			Task {
-				if
-					let data = try? await newValue.loadTransferable(type: Data.self),
-					let image = UIImage(data: data)?.resizeToSquare()
-				{
-					appIcon = image
-				}
-			}
 		}
 	}
 

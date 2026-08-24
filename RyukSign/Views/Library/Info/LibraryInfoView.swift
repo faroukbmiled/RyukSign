@@ -108,7 +108,7 @@ extension LibraryInfoView {
 	private func _bundleSection(for app: AppInfoPresentable) -> some View {
 		NBSection(.localized("Bundle")) {
 			NavigationLink(.localized("Alternative Icons")) {
-				SigningAlternativeIconView(app: app, appIcon: .constant(nil), isModifing: .constant(false))
+				SigningAlternativeIconView(app: app, appIcon: .constant(nil), isModifing: false)
 			}
 			NavigationLink(.localized("Frameworks & PlugIns")) {
 				SigningFrameworksView(app: app, options: .constant(nil))

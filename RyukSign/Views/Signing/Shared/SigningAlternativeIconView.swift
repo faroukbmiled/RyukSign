@@ -16,33 +16,31 @@ struct SigningAlternativeIconView: View {
 	
 	var app: AppInfoPresentable
 	@Binding var appIcon: UIImage?
-	@Binding var isModifing: Bool
+	let isModifing: Bool
 	
 	// MARK: Body
 	var body: some View {
-		NBNavigationView(.localized("Alternative Icons"), displayMode: .inline) {
-			List {
-				if !_alternateIcons.isEmpty {
-					ForEach(_alternateIcons, id: \.name) { icon in
-						Button {
-							appIcon = _iconUrl(icon.path)
-							dismiss()
-						} label: {
-							_icon(icon)
-						}
-						.disabled(!isModifing)
+		NBList(.localized("Alternative Icons"), displayMode: .inline, type: .list) {
+			if !_alternateIcons.isEmpty {
+				ForEach(_alternateIcons, id: \.name) { icon in
+					Button {
+						appIcon = _iconUrl(icon.path)
+						dismiss()
+					} label: {
+						_icon(icon)
 					}
-				} else {
-					Text(.localized("No Icons Found."))
-						.font(.footnote)
-						.foregroundColor(.disabled())
+					.disabled(!isModifing)
 				}
+			} else {
+				Text(.localized("No Icons Found."))
+					.font(.footnote)
+					.foregroundColor(.disabled())
 			}
-			.onAppear(perform: _loadAlternateIcons)
-			.toolbar {
-				if isModifing {
-					NBToolbarButton(role: .close)
-				}
+		}
+		.onAppear(perform: _loadAlternateIcons)
+		.toolbar {
+			if isModifing {
+				NBToolbarButton(role: .close)
 			}
 		}
 	}

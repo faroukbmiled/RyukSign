@@ -88,6 +88,8 @@ struct StorageView: View {
 				}
 
 				_cleanup(report)
+			} else {
+				_scanning
 			}
 		}
 		.disabled(_isClearing)
@@ -99,6 +101,19 @@ struct StorageView: View {
 // MARK: - View extension
 @MainActor
 private extension StorageView {
+	var _scanning: some View {
+		Section {
+			HStack(spacing: 10) {
+				ProgressView()
+				Text(.localized("Calculating…"))
+					.foregroundStyle(.secondary)
+			}
+			.frame(maxWidth: .infinity, alignment: .center)
+			.padding(.vertical, 12)
+			.listRowBackground(Color.clear)
+		}
+	}
+
 	@ViewBuilder
 	func _row(_ usage: StorageUsage) -> some View {
 		if usage.category.isBrowsable, usage.count > 0 {
