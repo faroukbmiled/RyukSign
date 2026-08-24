@@ -8,6 +8,24 @@
 import Foundation
 import ActivityKit
 
+enum DownloadPhase: String, Codable, Hashable {
+	case queued
+	case downloading
+	case paused
+	case importing
+	case completed
+
+	var icon: String {
+		switch self {
+		case .queued: return "clock"
+		case .downloading: return "arrow.down"
+		case .paused: return "pause.fill"
+		case .importing: return "shippingbox.fill"
+		case .completed: return "checkmark"
+		}
+	}
+}
+
 struct DownloadActivityAttributes: ActivityAttributes {
 	public struct ContentState: Codable, Hashable {
 		var currentDownload: Int
@@ -22,6 +40,14 @@ struct DownloadActivityAttributes: ActivityAttributes {
 		var estimatedCompletionDate: Date?
 		var isCompleted: Bool
 		var isPaused: Bool
+		// Optional so older builds' activities still decode.
+		var phase: DownloadPhase?
+
+		var resolvedPhase: DownloadPhase {
+			if let phase { return phase }
+			if isCompleted { return .completed }
+			return isPaused ? .paused : .downloading
+		}
 	}
 
 	var startTime: Date

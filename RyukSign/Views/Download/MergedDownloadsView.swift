@@ -7,39 +7,22 @@
 
 import SwiftUI
 import Foundation
-import Combine
 import NimbleExtensions
 
 struct MergedDownloadsView: View {
     let downloads: [Download]
-    let combinedProgress: Double
+    let summary: DownloadProgressSummary
     @State private var showDetails: Bool = false
     @State private var dragOffset: CGFloat = 0
     @State private var showCustomMenu: Bool = false
-    @State private var anyPaused: Bool = false
-    @State private var cancellables = Set<AnyCancellable>()
-
-    private var headerText: String {
-        if anyPaused {
-            let pausedCount = downloads.filter { $0.isPaused && $0.progress > 0 && $0.progress < 1.0 }.count
-            let activeCount = downloads.filter { $0.progress > 0 && $0.progress < 1.0 && !$0.isPaused }.count
-
-            if pausedCount > 0 && activeCount == 0 {
-                return "\(pausedCount) Paused"
-            } else if pausedCount > 0 && activeCount > 0 {
-                return "\(activeCount) Downloading, \(pausedCount) Paused"
-            }
-        }
-        return "Downloading \(downloads.count) apps"
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(headerText)
+                    Text(summary.detail)
                         .font(.subheadline.weight(.medium))
-                        .foregroundColor(anyPaused ? .orange : .primary)
+                        .foregroundColor(summary.phase.tint)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
@@ -153,34 +136,19 @@ struct MergedDownloadsView: View {
                 .padding(.top, 4)
             }
             
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(height: 6)
-                    .foregroundColor(Color(uiColor: .quaternarySystemFill))
-                
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: UIScreen.main.bounds.width * 0.85 * combinedProgress, height: 6)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: anyPaused ? [.orange.opacity(0.8), .orange] : [.accentColor.opacity(0.8), .accentColor],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .animation(.easeInOut(duration: 0.3), value: combinedProgress)
-            }
-            
+            DownloadPhaseBar(phase: summary.phase, progress: summary.progress)
+
             HStack {
-                Text(anyPaused ? "Paused" : "\(Int(combinedProgress * 100))% overall")
+                Text(verbatim: "\(Int(summary.progress * 100))%")
                     .font(.caption.weight(.medium))
-                    .foregroundColor(anyPaused ? .orange : .primary)
+                    .foregroundColor(summary.phase.tint)
 
                 Spacer()
-                
+
                 let totalBytesDownloaded = downloads.reduce(Int64(0)) { $0 + $1.bytesDownloaded }
                 let totalBytesExpected = downloads.reduce(Int64(0)) { $0 + $1.totalBytes }
-                
-                if totalBytesExpected > 0 {
+
+                if summary.phase != .importing, totalBytesExpected > 0 {
                     HStack(spacing: 4) {
                         Text(totalBytesDownloaded.formattedByteCount)
                         Text("of")
@@ -233,43 +201,8 @@ struct MergedDownloadsView: View {
                 }
             }
         )
-        .onAppear {
-            setupPauseStateObserver()
-        }
-        .onDisappear {
-            cancellables.forEach { $0.cancel() }
-        }
-        .onChange(of: downloads.map { $0.id }) { _ in
-            setupPauseStateObserver()
-        }
     }
 
-    private func setupPauseStateObserver() {
-        cancellables.removeAll()
-
-        for download in downloads {
-            download.$isPaused
-                .receive(on: DispatchQueue.main)
-                .sink { _ in
-                    updatePauseState()
-                }
-                .store(in: &cancellables)
-        }
-
-        updatePauseState()
-    }
-
-    private func updatePauseState() {
-        let downloadableItems = downloads.filter {
-            $0.progress > 0 && $0.progress < 1.0
-        }
-
-        if downloadableItems.isEmpty {
-            anyPaused = false
-        } else {
-            anyPaused = downloadableItems.allSatisfy { $0.isPaused }
-        }
-    }
 
     private var appNamesPreview: String {
         let names = downloads.prefix(3).map { download in

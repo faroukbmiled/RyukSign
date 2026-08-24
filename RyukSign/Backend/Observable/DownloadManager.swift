@@ -32,6 +32,14 @@ class DownloadManager: NSObject, ObservableObject {
 		downloads.filter { !$0.onlyArchiving && ($0.isActive || $0.progress > 0) && $0.progress < 1.0 && !$0.isPaused }
 	}
 
+	var importingDownloads: [Download] {
+		downloads.filter { $0.phase == .importing }
+	}
+
+	var hasUnfinishedWork: Bool {
+		downloads.contains { $0.isActive || $0.isImporting || ($0.progress > 0 && $0.progress < 1.0) }
+	}
+
 	var _backgroundSession: URLSession!
 	var _foregroundSession: URLSession!
 	var backgroundCompletionHandler: (() -> Void)?
@@ -40,6 +48,7 @@ class DownloadManager: NSObject, ObservableObject {
 	var backgroundEntryTime: Date?
 
 	var backgroundTaskManager: BackgroundTaskManager?
+	private var importObservers: [String: AnyCancellable] = [:]
 	var progressUpdateTimer: Timer?
 
 	// `Any?` so the property carries no availability requirement (ActivityKit is 16.1+, app deploys to 16.0).
@@ -144,6 +153,45 @@ class DownloadManager: NSObject, ObservableObject {
 		NotificationCenter.default.removeObserver(self)
 	}
 	
+	// Audio sessions can only be activated while the app is still foreground.
+	private func ensureKeepAlive() {
+		guard backgroundTaskManager == nil else { return }
+
+		let manager = BackgroundTaskManager(
+			taskName: "DownloadManager",
+			expirationTitle: "Downloads continuing",
+			expirationBody: "Downloads and imports continue in the background"
+		)
+		manager.start()
+		backgroundTaskManager = manager
+		startProgressTimer()
+	}
+
+	private func releaseKeepAliveIfIdle() {
+		guard !hasUnfinishedWork else { return }
+		backgroundTaskManager?.stop()
+		backgroundTaskManager = nil
+		endProgressTimer()
+	}
+
+	func beginImport(for download: Download) {
+		download.beginImport()
+
+		// Unpacking has no session callbacks to piggyback on.
+		importObservers[download.id] = download.$unpackageProgress
+			.receive(on: DispatchQueue.main)
+			.sink { [weak self] _ in
+				self?.updateLiveActivity(activeDownloads: [])
+			}
+
+		if isAppInBackground { ensureKeepAlive() }
+	}
+
+	func endImport(for download: Download) {
+		importObservers.removeValue(forKey: download.id)
+		download.endImport()
+	}
+
 	private func requestNotificationPermissions() {
 		UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .providesAppNotificationSettings]) { granted, error in
 			if granted {
@@ -161,26 +209,10 @@ class DownloadManager: NSObject, ObservableObject {
 		DispatchQueue.global(qos: .userInitiated).async { [weak self] in
 			guard let self = self else { return }
 
-			let hasActiveDownloads = self.downloads.contains { download in
-				download.isActive || (download.progress > 0 && download.progress < 1.0)
-			}
+			guard self.hasUnfinishedWork else { return }
 
-			if hasActiveDownloads {
-				DispatchQueue.main.async {
-					// Loop silent audio to keep the app alive in the background.
-					if self.backgroundTaskManager == nil {
-						self.backgroundTaskManager = BackgroundTaskManager(
-							taskName: "DownloadManager",
-							expirationTitle: "Downloads continuing",
-							expirationBody: "Downloads will continue in the background"
-						)
-						self.backgroundTaskManager?.start()
-					}
-
-					self.startProgressTimer()
-
-					// Audio cycle keeps us alive, so the foreground session works — no switch to the background session.
-				}
+			DispatchQueue.main.async {
+				self.ensureKeepAlive()
 			}
 		}
 	}
@@ -204,7 +236,7 @@ class DownloadManager: NSObject, ObservableObject {
 			download.isPaused && download.progress > 0 && download.progress < 1.0
 		}
 
-		if downloadActivity != nil && !hasActiveDownloads && !hasPausedDownloads {
+		if downloadActivity != nil && !hasActiveDownloads && !hasPausedDownloads && importingDownloads.isEmpty {
 			dismissLiveActivityImmediately()
 			completedDownloadNames = []
 			isActivityShowingCompletion = false
@@ -296,7 +328,7 @@ class DownloadManager: NSObject, ObservableObject {
 
 		if isAppInBackground {
 			updateMergedProgressNotification()
-		} else if activeNetworkDownloads.isEmpty {
+		} else if activeNetworkDownloads.isEmpty && importingDownloads.isEmpty {
 			endProgressTimer()
 		}
 	}
@@ -315,14 +347,9 @@ class DownloadManager: NSObject, ObservableObject {
 	}
 	
 	private func processPendingDownloads() {
-		for download in downloads {
-			if let pendingURL = download.pendingFileURL {
-				do {
-					try handlePackageFile(url: pendingURL, dl: download)
-				} catch {
-				}
-				download.pendingFileURL = nil
-			}
+		for download in downloads where !download.isImporting {
+			guard let pendingURL = download.pendingFileURL else { continue }
+			try? handlePackageFile(url: pendingURL, dl: download)
 		}
 	}
 	
@@ -357,13 +384,14 @@ class DownloadManager: NSObject, ObservableObject {
 		guard !activeDownloads.isEmpty || !pausedDownloads.isEmpty else {
 			UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["merged_download_progress"])
 
+			guard importingDownloads.isEmpty else {
+				updateLiveActivity(activeDownloads: [])
+				return
+			}
+
 			endLiveActivity()
 
-			if isAppInBackground && downloads.allSatisfy({ !$0.isActive || $0.isPaused }) {
-				backgroundTaskManager?.stop()
-				backgroundTaskManager = nil
-				endProgressTimer()
-			}
+			releaseKeepAliveIfIdle()
 
 			return
 		}
@@ -518,15 +546,8 @@ class DownloadManager: NSObject, ObservableObject {
 
 			self.startProgressTimer()
 
-			if self.isAppInBackground && self.downloads.count == 1 {
-				if self.backgroundTaskManager == nil {
-					self.backgroundTaskManager = BackgroundTaskManager(
-						taskName: "DownloadManager",
-						expirationTitle: "Downloads continuing",
-						expirationBody: "Downloads will continue in the background"
-					)
-					self.backgroundTaskManager?.start()
-				}
+			if self.isAppInBackground {
+				self.ensureKeepAlive()
 			}
 
 			// BGContinuedProcessingTask keeps work going in the background on iOS 19+.
@@ -551,22 +572,11 @@ class DownloadManager: NSObject, ObservableObject {
 		DispatchQueue.main.async {
 			self.objectWillChange.send()
 			self.downloads.append(download)
-			download.unpackageProgress = 0.1
+			self.beginImport(for: download)
 		}
-
-		let archivingTaskManager = BackgroundTaskManager(
-			taskName: "DownloadManager_Archive",
-			expirationTitle: "Archiving continuing",
-			expirationBody: "The archiving will continue when you reopen the app"
-		)
-		archivingTaskManager.start()
 
 		DispatchQueue.global().async {
 			FR.handlePackageFile(url, download: download) { err in
-				defer {
-					archivingTaskManager.stop()
-				}
-
 				if let error = err {
 					let generator = UINotificationFeedbackGenerator()
 					generator.notificationOccurred(.error)
@@ -591,6 +601,8 @@ class DownloadManager: NSObject, ObservableObject {
 				download.isActive = false
 
 				DispatchQueue.main.async {
+					self.endImport(for: download)
+
 					// Drop from activity tracking only once archiving completes (not on download finish).
 					if err == nil {
 						self.completedDownloadNames.append(download.fileName)
@@ -699,11 +711,7 @@ class DownloadManager: NSObject, ObservableObject {
 					self.endLiveActivity()
 				}
 
-				if self.isAppInBackground && self.downloads.allSatisfy({ !$0.isActive || $0.isPaused }) {
-					self.backgroundTaskManager?.stop()
-					self.backgroundTaskManager = nil
-					self.endProgressTimer()
-				}
+				self.releaseKeepAliveIfIdle()
 			}
 		}
 	}
@@ -730,20 +738,8 @@ class DownloadManager: NSObject, ObservableObject {
 			resumeDownload(download)
 		}
 
-		if isAppInBackground && backgroundTaskManager == nil {
-			let hasActiveDownloads = downloads.contains { download in
-				download.isActive || (download.progress > 0 && download.progress < 1.0)
-			}
-
-			if hasActiveDownloads {
-				backgroundTaskManager = BackgroundTaskManager(
-					taskName: "DownloadManager",
-					expirationTitle: "Downloads continuing",
-					expirationBody: "Downloads will continue in the background"
-				)
-				backgroundTaskManager?.start()
-				startProgressTimer()
-			}
+		if isAppInBackground && hasUnfinishedWork {
+			ensureKeepAlive()
 		}
 	}
 	
@@ -768,30 +764,17 @@ class DownloadManager: NSObject, ObservableObject {
 	}
 
 	func handlePackageFile(url: URL, dl: Download) throws {
-		// Defer archiving only if it hasn't started yet; if it has, let it continue.
-		if isAppInBackground && dl.unpackageProgress == 0.0 {
-			dl.pendingFileURL = url
-			sendCompletionNotification(for: dl, status: "✅ Download complete - ready to import")
-			return
-		}
+		guard !dl.isImporting else { return }
 
 		DispatchQueue.main.async {
 			self.objectWillChange.send()
 			dl.progress = 1.0
-			dl.unpackageProgress = 0.0
+			// Retry point if the import dies before it finishes.
+			dl.pendingFileURL = url
+			self.beginImport(for: dl)
 		}
 
-		let archivingTaskManager = BackgroundTaskManager(
-			taskName: "DownloadManager_Import",
-			expirationTitle: "Import continuing",
-			expirationBody: "The import will continue when you reopen the app"
-		)
-		archivingTaskManager.start()
-
 		FR.handlePackageFile(url, download: dl) { err in
-			defer {
-				archivingTaskManager.stop()
-			}
 			if let error = err {
 				let generator = UINotificationFeedbackGenerator()
 				generator.notificationOccurred(.error)
@@ -809,11 +792,17 @@ class DownloadManager: NSObject, ObservableObject {
 					self.objectWillChange.send()
 					dl.unpackageProgress = 1.0
 				}
+
+				if self.isAppInBackground {
+					self.sendCompletionNotification(for: dl, status: "✅ Added to Library")
+				}
 			}
 
 			dl.isActive = false
 
 			DispatchQueue.main.async {
+				DownloadManager.shared.endImport(for: dl)
+
 				// Drop from activity tracking only once archiving completes (not on download finish).
 				if err == nil {
 					DownloadManager.shared.completedDownloadNames.append(dl.fileName)

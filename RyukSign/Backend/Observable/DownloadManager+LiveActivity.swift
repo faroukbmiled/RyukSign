@@ -105,7 +105,8 @@ extension DownloadManager {
 			lastUpdateTime: Date(),
 			estimatedCompletionDate: nil,
 			isCompleted: false,
-			isPaused: false
+			isPaused: false,
+			phase: .downloading
 		)
 
 		let attributes = DownloadActivityAttributes(startTime: Date())
@@ -159,7 +160,8 @@ extension DownloadManager {
 			lastUpdateTime: Date(),
 			estimatedCompletionDate: nil,
 			isCompleted: false,
-			isPaused: hasPausedDownloads
+			isPaused: hasPausedDownloads,
+			phase: .paused
 		)
 
 		Task { @MainActor [weak self] in
@@ -206,7 +208,6 @@ extension DownloadManager {
 		// Across the whole session — includes finished-but-not-yet-archived downloads.
 		let totalBytesDownloaded = allActivityDownloads.values.reduce(Int64(0)) { $0 + $1.downloaded }
 		let totalBytesExpected = allActivityDownloads.values.reduce(Int64(0)) { $0 + $1.total }
-		let averageProgress = totalBytesExpected > 0 ? Double(totalBytesDownloaded) / Double(totalBytesExpected) : 0.0
 
 		let bytesPerSecond = currentDownloadSpeed
 
@@ -228,25 +229,24 @@ extension DownloadManager {
 			? "Multiple Downloads"
 			: (allActivityDownloads.values.first?.fileName ?? activeDownloads.first?.fileName ?? "Download")
 
-		// Check the full array, not activeDownloads (which excludes paused).
-		let inProgressDownloads = downloads.filter { $0.progress > 0 && $0.progress < 1.0 }
-		let allDownloadsArePaused = !inProgressDownloads.isEmpty && inProgressDownloads.allSatisfy { $0.isPaused }
-
-		let hasResumedDownloads = downloads.contains { $0.isActive && !$0.isPaused && $0.progress > 0 && $0.progress < 1.0 }
+		let summary = DownloadProgressSummary(downloads.filter { !$0.onlyArchiving })
+		let isDownloading = summary.phase == .downloading
+		let isPaused = summary.phase == .paused
 
 		let contentState = DownloadActivityAttributes.ContentState(
 			currentDownload: finishedDownloadingCount,
 			totalDownloads: totalCount,
-			overallProgress: averageProgress,
+			overallProgress: summary.progress,
 			currentFileName: currentFileName,
 			appNames: appNames,
 			totalBytesDownloaded: totalBytesDownloaded,
 			totalBytesExpected: totalBytesExpected,
-			bytesPerSecond: allDownloadsArePaused ? 0 : bytesPerSecond,
+			bytesPerSecond: isDownloading ? bytesPerSecond : 0,
 			lastUpdateTime: now,
-			estimatedCompletionDate: allDownloadsArePaused ? nil : estimatedCompletionDate,
+			estimatedCompletionDate: isDownloading ? estimatedCompletionDate : nil,
 			isCompleted: false,
-			isPaused: allDownloadsArePaused
+			isPaused: isPaused,
+			phase: summary.phase
 		)
 
 		let staleDate = Date().addingTimeInterval(10)
@@ -342,7 +342,8 @@ extension DownloadManager {
 			lastUpdateTime: Date(),
 			estimatedCompletionDate: nil,
 			isCompleted: true,
-			isPaused: false
+			isPaused: false,
+			phase: .completed
 		)
 
 		forceNextProgressUpdate()

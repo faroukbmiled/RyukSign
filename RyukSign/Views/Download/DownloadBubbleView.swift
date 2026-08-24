@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Foundation
-import Combine
 
 struct DownloadBubbleOverlayContainer: View {
     @ObservedObject var downloadManager: DownloadManager
@@ -42,12 +41,8 @@ struct DownloadBubbleOverlayContainer: View {
 struct DownloadBubbleView: View {
     @ObservedObject var downloadManager: DownloadManager
     @Binding var showOverlay: Bool
-    @State private var combinedProgress: Double = 0
-    @State private var anyPaused: Bool = false
-    @State private var cancellables = Set<AnyCancellable>()
+    @StateObject private var model = DownloadsSummaryModel()
     @State private var dragAmount: CGPoint?
-    @State private var isDragging = false
-    @State private var observedDownloadIdentities: [ObjectIdentifier] = []
 
     private var activeDownloads: [Download] {
         downloadManager.downloads.filter { download in
@@ -68,36 +63,27 @@ struct DownloadBubbleView: View {
                                     .fill(Color(uiColor: .systemBackground))
                                     .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
 
-                                Circle()
-                                    .stroke(Color(uiColor: .quaternarySystemFill), lineWidth: 3)
-                                    .frame(width: 44, height: 44)
-
-                                Circle()
-                                    .trim(from: 0, to: combinedProgress)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: anyPaused ? [.orange.opacity(0.8), .orange] : [.accentColor.opacity(0.8), .accentColor],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        ),
-                                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                                    )
-                                    .frame(width: 44, height: 44)
-                                    .rotationEffect(.degrees(-90))
+                                DownloadPhaseRing(phase: model.summary.phase, progress: model.summary.progress, size: 44)
 
                                 ZStack {
-                                    if anyPaused {
+                                    if model.summary.phase == .paused {
                                         Image(systemName: "pause.fill")
                                             .font(.system(size: 14))
                                             .foregroundColor(.orange)
                                     } else {
-                                        Text("\(Int(combinedProgress * 100))")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(.primary)
-                                            .id(Int(combinedProgress * 100))
+                                        VStack(spacing: 0) {
+                                            Text(verbatim: "\(Int(model.summary.progress * 100))")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                                .id(Int(model.summary.progress * 100))
+
+                                            Image(systemName: model.summary.phase.icon)
+                                                .font(.system(size: 8))
+                                                .foregroundColor(model.summary.phase.tint)
+                                        }
                                     }
                                 }
-                                .animation(nil, value: combinedProgress)
+                                .animation(nil, value: model.summary.progress)
 
                                 if activeDownloads.count > 1 {
                                     Text("\(activeDownloads.count)")
@@ -155,87 +141,11 @@ struct DownloadBubbleView: View {
                 }
             }
             .onAppear {
-                setupProgressObservers()
-                setupPauseStateObserver()
+                model.bind(to: activeDownloads)
             }
-            .onDisappear {
-                cancellables.forEach { $0.cancel() }
+            .onChange(of: activeDownloads.map { $0.id }) { _ in
+                model.bind(to: activeDownloads)
             }
-            .onChange(of: downloadManager.downloads.map { $0.id }) { _ in
-                setupProgressObservers()
-                setupPauseStateObserver()
-            }
-            .onChange(of: downloadManager.downloads.map { ObjectIdentifier($0) }) { _ in
-                setupProgressObservers()
-                setupPauseStateObserver()
-            }
-        }
-    }
-    
-    private func setupProgressObservers() {
-        // Rebuild only when download identities change (objects recreated on restart)
-        let currentIdentities = activeDownloads.map { ObjectIdentifier($0) }
-        guard currentIdentities != observedDownloadIdentities else { return }
-        observedDownloadIdentities = currentIdentities
-
-        cancellables.removeAll()
-
-        // Progress + pause observers together so neither set clears the other
-        for download in activeDownloads {
-            Publishers.CombineLatest(
-                download.$progress,
-                download.$unpackageProgress
-            )
-            .receive(on: DispatchQueue.main)
-            .sink { _, _ in
-                self.updateCombinedProgress()
-            }
-            .store(in: &cancellables)
-
-            Publishers.CombineLatest3(
-                download.$isPaused,
-                download.$progress,
-                download.$isActive
-            )
-            .receive(on: DispatchQueue.main)
-            .sink { _, _, _ in
-                self.updatePauseState()
-            }
-            .store(in: &cancellables)
-        }
-
-        updateCombinedProgress()
-        updatePauseState()
-    }
-
-    private func updateCombinedProgress() {
-        guard !activeDownloads.isEmpty else {
-            combinedProgress = 0
-            return
-        }
-
-        let totalProgress = activeDownloads.reduce(0.0) { total, download in
-            return total + download.overallProgress
-        }
-
-        combinedProgress = totalProgress / Double(activeDownloads.count)
-    }
-
-    private func setupPauseStateObserver() {
-        // Pause observer is set up in setupProgressObservers
-        updatePauseState()
-    }
-    
-    private func updatePauseState() {
-        let downloadableItems = activeDownloads.filter {
-            $0.progress > 0 && $0.progress < 1.0
-        }
-
-        if downloadableItems.isEmpty {
-            anyPaused = false
-        } else {
-            let pausedCount = downloadableItems.filter { $0.isPaused }.count
-            anyPaused = pausedCount > 0 && pausedCount == downloadableItems.count
         }
     }
     

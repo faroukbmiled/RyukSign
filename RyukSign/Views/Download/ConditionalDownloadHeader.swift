@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Foundation
-import Combine
 import NimbleExtensions
 
 struct ConditionalDownloadHeaderView: View {
@@ -75,27 +74,25 @@ struct MinimizedConditionalHeader: View {
     let downloads: [Download]
     @Binding var viewState: ConditionalDownloadHeaderView.HeaderState
     @State private var dragOffset: CGFloat = 0
-    @State private var calculatedProgress: Double = 0
-    @State private var cancellables = Set<AnyCancellable>()
-    @State private var anyPaused: Bool = false
+    @StateObject private var model = DownloadsSummaryModel()
     
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: anyPaused ? "pause.circle.fill" : "arrow.down.circle.fill")
+            Image(systemName: model.summary.phase.icon)
                 .font(.caption)
-                .foregroundColor(anyPaused ? .orange : .accentColor)
+                .foregroundColor(model.summary.phase.tint)
 
             Text("\(downloads.count)")
                 .font(.caption2.weight(.bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(anyPaused ? Color.orange : Color.accentColor)
+                .background(model.summary.phase.tint)
                 .clipShape(Capsule())
 
-            Text(anyPaused ? "Paused" : "\(Int(calculatedProgress * 100))%")
+            Text(verbatim: model.summary.phase == .paused ? .localized("Paused") : "\(Int(model.summary.progress * 100))%")
                 .font(.caption.weight(.medium))
-                .foregroundColor(anyPaused ? .orange : .primary)
+                .foregroundColor(model.summary.phase == .paused ? .orange : .primary)
                 .contentTransition(.numericText())
             
             Spacer()
@@ -135,107 +132,32 @@ struct MinimizedConditionalHeader: View {
                 }
         )
         .onAppear {
-            setupProgressObservers()
-            setupPauseStateObserver()
-        }
-        .onDisappear {
-            cancellables.forEach { $0.cancel() }
+            model.bind(to: downloads)
         }
         .onChange(of: downloads.map { $0.id }) { _ in
-            setupProgressObservers()
-            setupPauseStateObserver()
+            model.bind(to: downloads)
         }
     }
 
-    private func setupProgressObservers() {
-        for download in downloads {
-            Publishers.CombineLatest(
-                download.$progress,
-                download.$unpackageProgress
-            )
-            .sink { _, _ in
-                updateCalculatedProgress()
-            }
-            .store(in: &cancellables)
-        }
-
-        updateCalculatedProgress()
-    }
-
-    private func updateCalculatedProgress() {
-        guard !downloads.isEmpty else {
-            calculatedProgress = 0
-            return
-        }
-
-        let totalProgress = downloads.reduce(0.0) { total, download in
-            return total + download.overallProgress
-        }
-
-        calculatedProgress = totalProgress / Double(downloads.count)
-    }
-
-    private func setupPauseStateObserver() {
-        for download in downloads {
-            download.$isPaused
-                .receive(on: DispatchQueue.main)
-                .sink { _ in
-                    updatePauseState()
-                }
-                .store(in: &cancellables)
-        }
-
-        updatePauseState()
-    }
-
-    private func updatePauseState() {
-        let downloadableItems = downloads.filter {
-            $0.progress > 0 && $0.progress < 1.0
-        }
-
-        if downloadableItems.isEmpty {
-            anyPaused = false
-        } else {
-            anyPaused = downloadableItems.allSatisfy { $0.isPaused }
-        }
-    }
 }
 
 struct CollapsedConditionalHeader: View {
     let downloads: [Download]
     @Binding var viewState: ConditionalDownloadHeaderView.HeaderState
     @State private var dragOffset: CGFloat = 0
-    @State private var calculatedProgress: Double = 0
-    @State private var cancellables = Set<AnyCancellable>()
-    @State private var anyPaused: Bool = false
+    @StateObject private var model = DownloadsSummaryModel()
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                Circle()
-                    .stroke(Color(uiColor: .quaternarySystemFill), lineWidth: 3)
-                    .frame(width: 28, height: 28)
+                DownloadPhaseRing(phase: model.summary.phase, progress: model.summary.progress)
 
-                Circle()
-                    .trim(from: 0, to: calculatedProgress)
-                    .stroke(
-                        LinearGradient(
-                            colors: anyPaused ? [.orange.opacity(0.8), .orange] : [.accentColor.opacity(0.8), .accentColor],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                    )
-                    .frame(width: 28, height: 28)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.3), value: calculatedProgress)
-
-                if anyPaused {
+                if model.summary.phase == .paused {
                     Image(systemName: "pause.fill")
                         .font(.system(size: 10))
                         .foregroundColor(.orange)
                 } else {
-                    Text("\(Int(calculatedProgress * 100))")
+                    Text(verbatim: "\(Int(model.summary.progress * 100))")
                         .font(.system(size: 10, weight: .semibold))
                 }
             }
@@ -257,9 +179,9 @@ struct CollapsedConditionalHeader: View {
                         .lineLimit(1)
                 }
                 
-                Text(statusText)
+                Text(model.summary.detail)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(model.summary.phase.tint)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -314,99 +236,21 @@ struct CollapsedConditionalHeader: View {
                 }
         )
         .onAppear {
-            setupProgressObservers()
-            setupPauseStateObserver()
-        }
-        .onDisappear {
-            cancellables.forEach { $0.cancel() }
+            model.bind(to: downloads)
         }
         .onChange(of: downloads.map { $0.id }) { _ in
-            setupProgressObservers()
-            setupPauseStateObserver()
+            model.bind(to: downloads)
         }
     }
 
-    private func setupProgressObservers() {
-        for download in downloads {
-            Publishers.CombineLatest(
-                download.$progress,
-                download.$unpackageProgress
-            )
-            .sink { _, _ in
-                updateCalculatedProgress()
-            }
-            .store(in: &cancellables)
-        }
 
-        updateCalculatedProgress()
-    }
-
-    private func updateCalculatedProgress() {
-        guard !downloads.isEmpty else {
-            calculatedProgress = 0
-            return
-        }
-
-        let totalProgress = downloads.reduce(0.0) { total, download in
-            return total + download.overallProgress
-        }
-
-        calculatedProgress = totalProgress / Double(downloads.count)
-    }
-
-    private func setupPauseStateObserver() {
-        for download in downloads {
-            download.$isPaused
-                .receive(on: DispatchQueue.main)
-                .sink { _ in
-                    updatePauseState()
-                }
-                .store(in: &cancellables)
-        }
-
-        updatePauseState()
-    }
-
-    private func updatePauseState() {
-        let downloadableItems = downloads.filter {
-            $0.progress > 0 && $0.progress < 1.0
-        }
-
-        if downloadableItems.isEmpty {
-            anyPaused = false
-        } else {
-            anyPaused = downloadableItems.allSatisfy { $0.isPaused }
-        }
-    }
-
-    private var statusText: String {
-        let activeCount = downloads.filter { $0.progress > 0 && $0.progress < 1.0 && !$0.isPaused }.count
-        let pausedCount = downloads.filter { $0.isPaused && $0.progress > 0 && $0.progress < 1.0 }.count
-        let processingCount = downloads.filter { $0.unpackageProgress > 0 && $0.unpackageProgress < 1.0 && $0.progress >= 1.0 }.count
-
-        if pausedCount > 0 && activeCount == 0 && processingCount == 0 {
-            return "\(pausedCount) paused"
-        } else if pausedCount > 0 && activeCount > 0 {
-            return "\(activeCount) downloading, \(pausedCount) paused"
-        } else if activeCount > 0 && processingCount > 0 {
-            return "\(activeCount) downloading, \(processingCount) processing"
-        } else if activeCount > 0 {
-            return "\(activeCount) downloading"
-        } else if processingCount > 0 {
-            return "\(processingCount) processing"
-        } else {
-            return "Preparing..."
-        }
-    }
 }
 
 struct ExpandedConditionalHeader: View {
     let downloads: [Download]
     @Binding var viewState: ConditionalDownloadHeaderView.HeaderState
     @State private var dragOffset: CGFloat = 0
-    @State private var calculatedProgress: Double = 0
-    @State private var cancellables = Set<AnyCancellable>()
-    @State private var anyPaused: Bool = false
+    @StateObject private var model = DownloadsSummaryModel()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -418,15 +262,15 @@ struct ExpandedConditionalHeader: View {
                 Spacer()
 
                 Button {
-                    if anyPaused {
+                    if isPaused {
                         DownloadManager.shared.resumeAllDownloads()
                     } else {
                         DownloadManager.shared.pauseAllDownloads()
                     }
                 } label: {
-                    Image(systemName: anyPaused ? "play.circle.fill" : "pause.circle.fill")
+                    Image(systemName: isPaused ? "play.circle.fill" : "pause.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(anyPaused ? .green : .orange)
+                        .foregroundStyle(isPaused ? .green : .orange)
                 }
                 .buttonStyle(.borderless)
 
@@ -447,7 +291,7 @@ struct ExpandedConditionalHeader: View {
                 DownloadItemView(download: firstDownload)
                     .padding(.horizontal)
             } else if downloads.count > 1 {
-                MergedDownloadsView(downloads: downloads, combinedProgress: calculatedProgress)
+                MergedDownloadsView(downloads: downloads, summary: model.summary)
                     .padding(.horizontal)
             }
         }
@@ -475,69 +319,12 @@ struct ExpandedConditionalHeader: View {
                 }
         )
         .onAppear {
-            setupProgressObservers()
-            setupPauseStateObserver()
-        }
-        .onDisappear {
-            cancellables.forEach { $0.cancel() }
+            model.bind(to: downloads)
         }
         .onChange(of: downloads.map { $0.id }) { _ in
-            setupProgressObservers()
-            setupPauseStateObserver()
+            model.bind(to: downloads)
         }
     }
 
-    private func setupProgressObservers() {
-        // Don't clear cancellables — progress and pause are two observer sets
-        for download in downloads {
-            Publishers.CombineLatest(
-                download.$progress,
-                download.$unpackageProgress
-            )
-            .sink { _, _ in
-                updateCalculatedProgress()
-            }
-            .store(in: &cancellables)
-        }
-
-        updateCalculatedProgress()
-    }
-
-    private func updateCalculatedProgress() {
-        guard !downloads.isEmpty else {
-            calculatedProgress = 0
-            return
-        }
-
-        let totalProgress = downloads.reduce(0.0) { total, download in
-            return total + download.overallProgress
-        }
-
-        calculatedProgress = totalProgress / Double(downloads.count)
-    }
-
-    private func setupPauseStateObserver() {
-        for download in downloads {
-            download.$isPaused
-                .receive(on: DispatchQueue.main)
-                .sink {_ in
-                    updatePauseState()
-                }
-                .store(in: &cancellables)
-        }
-
-        updatePauseState()
-    }
-
-    private func updatePauseState() {
-        let downloadableItems = downloads.filter {
-            $0.progress > 0 && $0.progress < 1.0
-        }
-
-        if downloadableItems.isEmpty {
-            anyPaused = false
-        } else {
-            anyPaused = downloadableItems.allSatisfy { $0.isPaused }
-        }
-    }
+    private var isPaused: Bool { model.summary.phase == .paused }
 }

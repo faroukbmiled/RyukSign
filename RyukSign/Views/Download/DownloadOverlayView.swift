@@ -13,12 +13,9 @@ import Combine
 struct DownloadOverlaySheetContent: View {
     @ObservedObject var downloadManager: DownloadManager
     @Binding var isPresented: Bool
-    @State private var hasPausedDownloads: Bool = false
-    @State private var overallProgress: Double = 0
-    @State private var totalDownloadSize: Int64 = 0
+    @StateObject private var model = DownloadsSummaryModel()
     @State private var currentSpeed: Int64 = 0
-    @State private var cancellables = Set<AnyCancellable>()
-    private let updateThrottle: TimeInterval = 0.3
+    @State private var speedObserver: AnyCancellable?
     @AppStorage("Feather.downloadOverlayTheme") private var overlayTheme: String = "default"
     @Environment(\.colorScheme) private var colorScheme
 
@@ -87,23 +84,23 @@ struct DownloadOverlaySheetContent: View {
                     HStack(spacing: 8) {
                         if !activeDownloads.isEmpty {
                             Button {
-                                if hasPausedDownloads {
+                                if isPaused {
                                     DownloadManager.shared.resumeAllDownloads()
                                 } else {
                                     DownloadManager.shared.pauseAllDownloads()
                                 }
                             } label: {
                                 HStack(spacing: 4) {
-                                    Image(systemName: hasPausedDownloads ? "play.fill" : "pause.fill")
+                                    Image(systemName: isPaused ? "play.fill" : "pause.fill")
                                         .font(.caption.weight(.semibold))
-                                    Text(hasPausedDownloads ? "Resume" : "Pause")
+                                    Text(isPaused ? "Resume" : "Pause")
                                         .font(.caption.weight(.semibold))
                                         .fixedSize()
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(hasPausedDownloads ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
-                                .foregroundStyle(hasPausedDownloads ? .green : .orange)
+                                .background(isPaused ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
+                                .foregroundStyle(isPaused ? .green : .orange)
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
@@ -153,9 +150,7 @@ struct DownloadOverlaySheetContent: View {
                 }
 
                 if !activeDownloads.isEmpty {
-                    Text(totalDownloadSize > 0
-                        ? "\(Int(overallProgress * 100))% • \(formatSpeed(currentSpeed)) • \(totalDownloadSize.formattedByteCount)"
-                        : "\(Int(overallProgress * 100))% • \(formatSpeed(currentSpeed))")
+                    Text(overlayStatusText)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -165,25 +160,7 @@ struct DownloadOverlaySheetContent: View {
                 }
 
                 if !activeDownloads.isEmpty {
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .frame(height: 4)
-                                .foregroundColor(Color(uiColor: .quaternarySystemFill))
-
-                            RoundedRectangle(cornerRadius: 3)
-                                .frame(width: geometry.size.width * overallProgress, height: 4)
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: hasPausedDownloads ? [.orange.opacity(0.8), .orange] : [.accentColor.opacity(0.8), .accentColor],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .animation(.easeOut(duration: 0.3), value: overallProgress)
-                        }
-                    }
-                    .frame(height: 4)
+                    DownloadPhaseBar(phase: model.summary.phase, progress: model.summary.progress, height: 4)
                 }
             }
             .padding(.horizontal)
@@ -227,16 +204,15 @@ struct DownloadOverlaySheetContent: View {
         }
         .background(overlayBackgroundColor)
         .onAppear {
-            setupPauseStateObserver()
-            setupProgressObserver()
+            model.bind(to: activeDownloads)
+            speedObserver = downloadManager.$currentDownloadSpeed
+                .receive(on: DispatchQueue.main)
+                .sink { currentSpeed = $0 }
         }
-        .onDisappear {
-            cancellables.forEach { $0.cancel() }
+        .onChange(of: activeDownloads.map { $0.id }) { _ in
+            model.bind(to: activeDownloads)
         }
         .onChange(of: activeDownloads.count) { newCount in
-            setupPauseStateObserver()
-            setupProgressObserver()
-
             // Auto-dismiss once the last download is gone; re-check after the delay to avoid a dismiss race
             if newCount == 0 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -248,93 +224,18 @@ struct DownloadOverlaySheetContent: View {
         }
     }
 
-    private func setupPauseStateObserver() {
-        updatePauseState()
-    }
+    private var isPaused: Bool { model.summary.pausedCount > 0 }
 
-    private func updatePauseState() {
-        let downloadableItems = activeDownloads.filter {
-            $0.progress > 0 && $0.progress < 1.0
+    private var overlayStatusText: String {
+        let summary = model.summary
+        let percent = "\(Int(summary.progress * 100))%"
+
+        guard summary.phase == .downloading || summary.phase == .paused else {
+            return "\(summary.title) • \(percent)"
         }
-
-        if downloadableItems.isEmpty {
-            hasPausedDownloads = false
-        } else {
-            let pausedCount = downloadableItems.filter { $0.isPaused }.count
-            hasPausedDownloads = pausedCount > 0
-        }
-    }
-
-    private func setupProgressObserver() {
-        cancellables.removeAll()
-
-        downloadManager.$currentDownloadSpeed
-            .receive(on: DispatchQueue.main)
-            .sink { speed in
-                self.currentSpeed = speed
-            }
-            .store(in: &cancellables)
-
-        for download in activeDownloads {
-            Publishers.CombineLatest(
-                download.$progress,
-                download.$unpackageProgress
-            )
-            .throttle(for: .seconds(updateThrottle), scheduler: RunLoop.main, latest: true)
-            .sink { _, _ in
-                updateOverallProgress()
-            }
-            .store(in: &cancellables)
-
-            Publishers.CombineLatest(
-                download.$bytesDownloaded,
-                download.$totalBytes
-            )
-            .throttle(for: .seconds(updateThrottle), scheduler: RunLoop.main, latest: true)
-            .sink { _, _ in
-                updateTotalSizes()
-            }
-            .store(in: &cancellables)
-
-            Publishers.CombineLatest3(
-                download.$isPaused,
-                download.$progress,
-                download.$isActive
-            )
-            .throttle(for: .seconds(updateThrottle), scheduler: RunLoop.main, latest: true)
-            .sink { _, _, _ in
-                updatePauseState()
-            }
-            .store(in: &cancellables)
-        }
-
-        updateOverallProgress()
-        updateTotalSizes()
-        updatePauseState()
-    }
-
-    private func updateOverallProgress() {
-        guard !activeDownloads.isEmpty else {
-            overallProgress = 0
-            return
-        }
-
-        let totalProgress = activeDownloads.reduce(0.0) { total, download in
-            return total + download.overallProgress
-        }
-
-        overallProgress = totalProgress / Double(activeDownloads.count)
-    }
-
-    private func updateTotalSizes() {
-        let total = activeDownloads.reduce(Int64(0)) { result, download in
-            if download.totalBytes > 0 {
-                return result + download.totalBytes
-            }
-            return result
-        }
-
-        totalDownloadSize = total
+        return model.bytesExpected > 0
+            ? "\(percent) • \(formatSpeed(currentSpeed)) • \(model.bytesExpected.formattedByteCount)"
+            : "\(percent) • \(formatSpeed(currentSpeed))"
     }
 
     private func formatSpeed(_ bytesPerSecond: Int64) -> String {

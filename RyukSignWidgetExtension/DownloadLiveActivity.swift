@@ -67,6 +67,63 @@ private func formatAppNames(_ names: [String], maxLength: Int = 40) -> String {
 	return result
 }
 
+private extension DownloadPhase {
+	var tint: Color {
+		switch self {
+		case .queued: return .secondary
+		case .downloading: return .blue
+		case .paused: return .orange
+		case .importing: return .purple
+		case .completed: return .green
+		}
+	}
+
+	var label: String {
+		switch self {
+		case .queued: return "Queued"
+		case .downloading: return "Downloading"
+		case .paused: return "Paused"
+		case .importing: return "Importing"
+		case .completed: return "Done"
+		}
+	}
+}
+
+private struct PhaseBadge: View {
+	let state: DownloadActivityAttributes.ContentState
+	var size: CGFloat = 24
+	var lineWidth: CGFloat = 2
+
+	@ViewBuilder var body: some View {
+		switch state.resolvedPhase {
+		case .paused:
+			Button(intent: ResumeDownloadsIntent()) { ring }.buttonStyle(.plain)
+		case .downloading:
+			Button(intent: PauseDownloadsIntent()) { ring }.buttonStyle(.plain)
+		default:
+			ring
+		}
+	}
+
+	private var ring: some View {
+		let phase = state.resolvedPhase
+		return ZStack {
+			Circle()
+				.stroke(phase.tint.opacity(0.3), lineWidth: lineWidth)
+
+			Circle()
+				.trim(from: 0, to: phase == .completed ? 1 : state.overallProgress)
+				.stroke(phase.tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+				.rotationEffect(.degrees(-90))
+
+			Image(systemName: phase.icon)
+				.font(.system(size: size * 0.45))
+				.foregroundColor(phase.tint)
+		}
+		.frame(width: size, height: size)
+	}
+}
+
 struct DownloadLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: DownloadActivityAttributes.self) { context in
@@ -88,120 +145,42 @@ struct DownloadLiveActivity: Widget {
               .truncationMode(.tail)
               .multilineTextAlignment(.center)
 
-            // Icon + Progress + Speed
             HStack(spacing: 8) {
-              if context.state.isPaused {
-                Button(intent: ResumeDownloadsIntent()) {
-                  ZStack {
-                    Circle()
-                      .stroke(Color.orange.opacity(0.3), lineWidth: 2)
-                      .frame(width: 24, height: 24)
-
-                    Circle()
-                      .trim(from: 0, to: context.state.overallProgress)
-                      .stroke(Color.orange, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                      .frame(width: 24, height: 24)
-                      .rotationEffect(.degrees(-90))
-
-                    Image(systemName: "pause.fill")
-                      .font(.system(size: 12))
-                      .foregroundColor(.orange)
-                  }
-                }
-                .buttonStyle(.plain)
-              } else if context.state.isCompleted {
-                ZStack {
-                  Circle()
-                    .stroke(Color.green.opacity(0.3), lineWidth: 2)
-                    .frame(width: 24, height: 24)
-
-                  Circle()
-                    .trim(from: 0, to: 1.0)
-                    .stroke(Color.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .frame(width: 24, height: 24)
-                    .rotationEffect(.degrees(-90))
-
-                  Image(systemName: "checkmark")
-                    .font(.system(size: 12))
-                    .foregroundColor(.green)
-                }
-              } else {
-                Button(intent: PauseDownloadsIntent()) {
-                  ZStack {
-                    Circle()
-                      .stroke(Color.blue.opacity(0.3), lineWidth: 2)
-                      .frame(width: 24, height: 24)
-
-                    Circle()
-                      .trim(from: 0, to: context.state.overallProgress)
-                      .stroke(Color.blue, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                      .frame(width: 24, height: 24)
-                      .rotationEffect(.degrees(-90))
-
-                    Image(systemName: "arrow.down")
-                      .font(.system(size: 12))
-                      .foregroundColor(.blue)
-                  }
-                }
-                .buttonStyle(.plain)
-              }
+              PhaseBadge(state: context.state)
 
               ProgressView(value: context.state.overallProgress)
-                .tint(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .blue))
+                .tint(context.state.resolvedPhase.tint)
                 .frame(maxWidth: .infinity)
                 .scaleEffect(x: 1, y: 1.5, anchor: .center)
 
-              if context.state.isCompleted {
-                Text("Done")
-                  .font(.caption)
-                  .foregroundColor(.green)
-                  .fontWeight(.semibold)
-              } else if context.state.isPaused {
-                Text("Paused")
-                  .font(.caption)
-                  .foregroundColor(.orange)
-                  .fontWeight(.semibold)
-              } else {
+              if context.state.resolvedPhase == .downloading {
                 Text(formatSpeed(context.state.bytesPerSecond))
                   .font(.caption)
                   .foregroundColor(.secondary)
                   .monospacedDigit()
+              } else {
+                Text(context.state.resolvedPhase.label)
+                  .font(.caption)
+                  .fontWeight(.semibold)
+                  .foregroundColor(context.state.resolvedPhase.tint)
               }
             }
 
-            // Download sizes
-            HStack(spacing: 4) {
-              Text(formatBytes(context.state.totalBytesDownloaded))
-                .font(.caption2)
-                .foregroundColor(.secondary)
-              Text("/")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-              Text(formatBytes(context.state.totalBytesExpected))
-                .font(.caption2)
-                .foregroundColor(.secondary)
+            if context.state.resolvedPhase == .downloading || context.state.resolvedPhase == .paused {
+              HStack(spacing: 4) {
+                Text(formatBytes(context.state.totalBytesDownloaded))
+                Text("/")
+                Text(formatBytes(context.state.totalBytesExpected))
+              }
+              .font(.caption2)
+              .foregroundColor(.secondary)
             }
 
-            // Bottom: percent + file count with X/Y format
-            if context.state.isCompleted {
-              Text(context.state.totalDownloads > 1
-                ? "100% • \(context.state.totalDownloads)/\(context.state.totalDownloads)"
-                : "100%")
-                .font(.caption)
-                .foregroundColor(.green)
-            } else if context.state.isPaused {
-              Text(context.state.totalDownloads > 1
-                ? "\(Int(context.state.overallProgress * 100))% • \(context.state.currentDownload)/\(context.state.totalDownloads)"
-                : "\(Int(context.state.overallProgress * 100))%")
-                .font(.caption)
-                .foregroundColor(.orange)
-            } else {
-              Text(context.state.totalDownloads > 1
-                ? "\(Int(context.state.overallProgress * 100))% • \(context.state.currentDownload)/\(context.state.totalDownloads)"
-                : "\(Int(context.state.overallProgress * 100))%")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
+            Text(context.state.totalDownloads > 1
+              ? "\(context.state.resolvedPhase.label) \(Int(context.state.overallProgress * 100))% • \(context.state.currentDownload)/\(context.state.totalDownloads)"
+              : "\(context.state.resolvedPhase.label) \(Int(context.state.overallProgress * 100))%")
+              .font(.caption)
+              .foregroundColor(context.state.resolvedPhase.tint)
           }
           .padding(.horizontal, 8)
         }
@@ -215,18 +194,18 @@ struct DownloadLiveActivity: Widget {
         HStack(spacing: 0) {
           ZStack {
             Circle()
-              .stroke(context.state.isCompleted ? Color.green.opacity(0.3) : (context.state.isPaused ? Color.orange.opacity(0.3) : Color.blue.opacity(0.3)), lineWidth: 2)
+              .stroke(context.state.resolvedPhase.tint.opacity(0.3), lineWidth: 2)
               .frame(width: 20, height: 20)
 
             Circle()
               .trim(from: 0, to: context.state.overallProgress)
-              .stroke(context.state.isCompleted ? Color.green : (context.state.isPaused ? Color.orange : Color.blue), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+              .stroke(context.state.resolvedPhase.tint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
               .frame(width: 20, height: 20)
               .rotationEffect(.degrees(-90))
 
-            Image(systemName: context.state.isCompleted ? "checkmark" : (context.state.isPaused ? "pause.fill" : "arrow.down"))
+            Image(systemName: context.state.resolvedPhase.icon)
               .font(.system(size: 10))
-              .foregroundColor(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .blue))
+              .foregroundColor(context.state.resolvedPhase.tint)
           }
 
           Text(" ")
@@ -235,48 +214,41 @@ struct DownloadLiveActivity: Widget {
 
       } compactTrailing: {
         // Compact trailing (right side of notch)
-        if context.state.isCompleted {
+        if context.state.resolvedPhase == .completed {
           HStack(spacing: 2) {
             Image(systemName: "checkmark.circle.fill")
-              .font(.caption2)
-              .foregroundColor(.green)
             Text("Done")
-              .font(.caption2)
               .fontWeight(.semibold)
-              .foregroundColor(.green)
           }
-        } else if context.state.isPaused {
-          Text("\(Int(context.state.overallProgress * 100))%")
-            .font(.caption2)
-            .fontWeight(.semibold)
-            .foregroundColor(.orange)
+          .font(.caption2)
+          .foregroundColor(.green)
         } else {
           Text("\(Int(context.state.overallProgress * 100))%")
             .font(.caption2)
             .fontWeight(.semibold)
-            .foregroundColor(.blue)
+            .foregroundColor(context.state.resolvedPhase.tint)
         }
 
       } minimal: {
         // Minimal UI (when multiple activities are active)
         ZStack {
           Circle()
-            .stroke(context.state.isCompleted ? Color.green.opacity(0.3) : (context.state.isPaused ? Color.orange.opacity(0.3) : Color.blue.opacity(0.3)), lineWidth: 2)
+            .stroke(context.state.resolvedPhase.tint.opacity(0.3), lineWidth: 2)
             .frame(width: 18, height: 18)
 
           Circle()
             .trim(from: 0, to: context.state.overallProgress)
-            .stroke(context.state.isCompleted ? Color.green : (context.state.isPaused ? Color.orange : Color.blue), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            .stroke(context.state.resolvedPhase.tint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
             .frame(width: 18, height: 18)
             .rotationEffect(.degrees(-90))
 
-          Image(systemName: context.state.isCompleted ? "checkmark" : (context.state.isPaused ? "pause.fill" : "arrow.down"))
+          Image(systemName: context.state.resolvedPhase.icon)
             .font(.system(size: 9))
-            .foregroundColor(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .blue))
+            .foregroundColor(context.state.resolvedPhase.tint)
         }
       }
       .widgetURL(URL(string: "feather://downloads"))
-      .keylineTint(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .blue))
+      .keylineTint(context.state.resolvedPhase.tint)
     }
   }
 
@@ -309,63 +281,8 @@ struct DownloadLiveActivityView: View {
 
   var body: some View {
     VStack(spacing: 10) {
-      // Top section: Icon, title, and percentage
       HStack(spacing: 10) {
-        if context.state.isPaused {
-          Button(intent: ResumeDownloadsIntent()) {
-            ZStack {
-              Circle()
-                .stroke(Color.orange.opacity(0.3), lineWidth: 3)
-                .frame(width: 28, height: 28)
-
-              Circle()
-                .trim(from: 0, to: context.state.overallProgress)
-                .stroke(Color.orange, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .frame(width: 28, height: 28)
-                .rotationEffect(.degrees(-90))
-
-              Image(systemName: "pause.fill")
-                .font(.caption)
-                .foregroundColor(.orange)
-            }
-          }
-          .buttonStyle(.plain)
-        } else if context.state.isCompleted {
-          ZStack {
-            Circle()
-              .stroke(Color.green.opacity(0.3), lineWidth: 3)
-              .frame(width: 28, height: 28)
-
-            Circle()
-              .trim(from: 0, to: 1.0)
-              .stroke(Color.green, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-              .frame(width: 28, height: 28)
-              .rotationEffect(.degrees(-90))
-
-            Image(systemName: "checkmark")
-              .font(.caption)
-              .foregroundColor(.green)
-          }
-        } else {
-          Button(intent: PauseDownloadsIntent()) {
-            ZStack {
-              Circle()
-                .stroke(Color.blue.opacity(0.3), lineWidth: 3)
-                .frame(width: 28, height: 28)
-
-              Circle()
-                .trim(from: 0, to: context.state.overallProgress)
-                .stroke(Color.blue, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .frame(width: 28, height: 28)
-                .rotationEffect(.degrees(-90))
-
-              Image(systemName: "arrow.down")
-                .font(.caption)
-                .foregroundColor(.blue)
-            }
-          }
-          .buttonStyle(.plain)
-        }
+        PhaseBadge(state: context.state, size: 28, lineWidth: 3)
 
         VStack(alignment: .leading, spacing: 2) {
           Text(formatAppNames(context.state.appNames, maxLength: 35))
@@ -374,65 +291,40 @@ struct DownloadLiveActivityView: View {
             .lineLimit(1)
             .truncationMode(.tail)
 
-          Text(context.state.isCompleted
-            ? (context.state.totalDownloads > 1 ? "Complete (\(context.state.totalDownloads)/\(context.state.totalDownloads))" : "Complete")
-            : (context.state.isPaused
-              ? (context.state.totalDownloads > 1 ? "Paused (\(context.state.currentDownload)/\(context.state.totalDownloads))" : "Paused")
-              : (context.state.totalDownloads > 1 ? "Overall Progress (\(context.state.currentDownload)/\(context.state.totalDownloads))" : "Download Progress")))
+          Text(context.state.totalDownloads > 1
+            ? "\(context.state.resolvedPhase.label) (\(context.state.currentDownload)/\(context.state.totalDownloads))"
+            : context.state.resolvedPhase.label)
             .font(.caption)
-            .foregroundColor(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .secondary))
+            .foregroundColor(context.state.resolvedPhase.tint)
         }
 
         Spacer()
 
-        if context.state.isCompleted {
-          HStack(spacing: 4) {
-            Image(systemName: "checkmark.circle.fill")
-              .font(.title3)
-              .foregroundColor(.green)
-            Text("Done")
-              .font(.title3)
-              .fontWeight(.bold)
-              .foregroundColor(.green)
-          }
-        } else if context.state.isPaused {
-          Text("\(Int(context.state.overallProgress * 100))%")
-            .font(.title3)
-            .fontWeight(.bold)
-            .foregroundColor(.orange)
-        } else {
-          Text("\(Int(context.state.overallProgress * 100))%")
-            .font(.title3)
-            .fontWeight(.bold)
-            .foregroundColor(.blue)
-        }
+        Text("\(Int(context.state.overallProgress * 100))%")
+          .font(.title3)
+          .fontWeight(.bold)
+          .foregroundColor(context.state.resolvedPhase.tint)
       }
 
-      // Progress bar with speed
       VStack(spacing: 4) {
         ProgressView(value: context.state.overallProgress)
-          .tint(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .blue))
+          .tint(context.state.resolvedPhase.tint)
 
         HStack {
-          if context.state.isCompleted {
-            Text("Completed")
-              .font(.caption2)
-              .foregroundColor(.green)
-              .fontWeight(.semibold)
-          } else if context.state.isPaused {
-            Text("Paused")
-              .font(.caption2)
-              .foregroundColor(.orange)
-              .fontWeight(.semibold)
-          } else {
+          if context.state.resolvedPhase == .downloading {
             Text(formatSpeed(context.state.bytesPerSecond))
               .font(.caption2)
               .foregroundColor(.secondary)
+          } else {
+            Text(context.state.resolvedPhase.label)
+              .font(.caption2)
+              .fontWeight(.semibold)
+              .foregroundColor(context.state.resolvedPhase.tint)
           }
 
           Spacer()
 
-          if !context.state.isCompleted && !context.state.isPaused, let completionDate = context.state.estimatedCompletionDate {
+          if context.state.resolvedPhase == .downloading, let completionDate = context.state.estimatedCompletionDate {
             HStack(spacing: 3) {
               Image(systemName: "clock")
               Text(timerInterval: Date()...completionDate, countsDown: true)
@@ -443,9 +335,11 @@ struct DownloadLiveActivityView: View {
 
           Spacer()
 
-          Text("\(formatBytes(context.state.totalBytesDownloaded)) / \(formatBytes(context.state.totalBytesExpected))")
-            .font(.caption2)
-            .foregroundColor(context.state.isCompleted ? .green : (context.state.isPaused ? .orange : .secondary))
+          if context.state.resolvedPhase == .downloading || context.state.resolvedPhase == .paused {
+            Text("\(formatBytes(context.state.totalBytesDownloaded)) / \(formatBytes(context.state.totalBytesExpected))")
+              .font(.caption2)
+              .foregroundColor(.secondary)
+          }
         }
       }
     }

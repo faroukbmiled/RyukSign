@@ -41,6 +41,7 @@ struct DownloadButtonView: View {
 	let app: ASRepository.App
 	@ObservedObject private var downloadManager = DownloadManager.shared
 	@State private var downloadProgress: Double = 0
+	@State private var downloadPhase: DownloadPhase = .queued
 	@State private var cancellable: AnyCancellable?
 
 	@State private var installedApp: InstalledAppInfo? = nil
@@ -110,18 +111,14 @@ struct DownloadButtonView: View {
 		ZStack {
 			if let currentDownload = downloadManager.getDownload(by: app.currentUniqueId) {
 				ZStack {
-					Circle()
-						.trim(from: 0, to: downloadProgress)
-						.stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.3, lineCap: .round))
-						.rotationEffect(.degrees(-90))
-						.frame(width: 31, height: 31)
-						.animation(.smooth, value: downloadProgress)
-					Image(systemName: downloadProgress >= 0.75 ? "archivebox" : "square.fill")
-						.foregroundStyle(.tint)
+					DownloadPhaseRing(phase: downloadPhase, progress: downloadProgress, size: 31, lineWidth: 2.3)
+
+					Image(systemName: downloadPhase == .importing ? "archivebox" : "square.fill")
+						.foregroundStyle(downloadPhase.tint)
 						.font(.footnote).bold()
 				}
 				.onTapGesture {
-					if downloadProgress <= 0.75 {
+					if currentDownload.canCancel {
 						downloadManager.cancelDownload(currentDownload)
 					}
 				}
@@ -266,16 +263,22 @@ struct DownloadButtonView: View {
 			downloadProgress = 0
 			return
 		}
-		downloadProgress = download.overallProgress
-		let publisher = Publishers.CombineLatest(
+		syncProgress(from: download)
+		let publisher = Publishers.CombineLatest3(
 			download.$progress,
-			download.$unpackageProgress
+			download.$unpackageProgress,
+			download.$isPaused
 		)
-		cancellable = publisher.sink { _, _ in
-			downloadProgress = download.overallProgress
+		cancellable = publisher.sink { _, _, _ in
+			syncProgress(from: download)
 		}
 	}
 	
+	private func syncProgress(from download: Download) {
+		downloadProgress = download.phaseProgress
+		downloadPhase = download.phase
+	}
+
 	private func checkIfInstalled() {
         isCheckingInstalled = true
 
