@@ -24,7 +24,7 @@ struct SigningOptionsView: View {
 					values: Options.PPQProtection.allCases
 				)
 			} footer: {
-				Text(.localized("Default keeps the original bundle identifier unchanged. Ryuk transforms it (ryuk prefix, keyword replacement, PPQ suffix) to help prevent your Apple ID from being flagged by Apple. When using a signing service you can ignore this."))
+				Text(.localized("Feather appends a random string to the app's bundle identifier. Ryuk also rewrites the identifier (ryuk prefix, keyword replacement) before appending it. Both help prevent your Apple ID from being flagged by Apple, so only disable this when using a signing service."))
 			}
 		}
 

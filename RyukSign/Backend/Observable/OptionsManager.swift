@@ -138,7 +138,7 @@ struct Options: Codable, Equatable {
 		injectPath: .executable_path,
 		injectFolder: .frameworks,
 		ppqString: "AN0X1",
-		ppqProtection: .ryuk,
+		ppqProtection: .disabled,
 		dynamicProtection: false,
 		identifiers: [:],
 		displayNames: [:],
@@ -228,14 +228,16 @@ struct Options: Codable, Equatable {
 	}
 
 	enum PPQProtection: String, Codable, CaseIterable, LocalizedDescribable {
-		/// Keep the original bundle identifier (no transformation)
+		case disabled
+		/// Feather method: append ppqString to the untouched identifier
 		case `default`
 		/// Ryuk method: prefix with "ryuk", replace known keywords, append ppqString
 		case ryuk = "Ryuk"
 
 		var localizedDescription: String {
 			switch self {
-			case .default: .localized("Original")
+			case .disabled: .localized("Disabled")
+			case .default: "Feather"
 			case .ryuk: "Ryuk"
 			}
 		}

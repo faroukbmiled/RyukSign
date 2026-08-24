@@ -22116,6 +22116,89 @@
         }
       }
     },
+    "Feather appends a random string to the app's bundle identifier. Ryuk also rewrites the identifier (ryuk prefix, keyword replacement) before appending it. Both help prevent your Apple ID from being flagged by Apple, so only disable this when using a signing service." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يضيف وضع Feather سلسلة عشوائية إلى معرّف حزمة التطبيق. أما Ryuk فيعيد كتابة المعرّف أيضًا (بادئة ryuk واستبدال الكلمات المفتاحية) قبل إضافة السلسلة. كلاهما يساعد على منع الإبلاغ عن Apple ID الخاص بك من قِبل Apple، لذا لا تعطّل هذا إلا عند استخدام خدمة توقيع."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather přidá k identifikátoru balíčku aplikace náhodný řetězec. Ryuk identifikátor navíc přepíše (předpona ryuk, nahrazení klíčových slov) a teprve pak řetězec přidá. Obojí pomáhá zabránit označení vašeho Apple ID ze strany Apple, takže tuto možnost vypněte jen při použití podepisovací služby."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather hängt eine zufällige Zeichenfolge an die Bundle-ID der App an. Ryuk schreibt die Bundle-ID zusätzlich um (ryuk-Präfix, Ersetzen bekannter Schlüsselwörter), bevor die Zeichenfolge angehängt wird. Beides hilft zu verhindern, dass deine Apple-ID von Apple markiert wird, deaktiviere es daher nur, wenn du einen Signierdienst verwendest."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather appends a random string to the app's bundle identifier. Ryuk also rewrites the identifier (ryuk prefix, keyword replacement) before appending it. Both help prevent your Apple ID from being flagged by Apple, so only disable this when using a signing service."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather añade una cadena aleatoria al identificador del paquete de la app. Ryuk además reescribe el identificador (prefijo ryuk, sustitución de palabras clave) antes de añadirla. Ambos ayudan a evitar que Apple marque tu Apple ID, así que desactívalo solo si usas un servicio de firma."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather ajoute une chaîne aléatoire à l'identifiant de bundle de l'app. Ryuk réécrit en plus l'identifiant (préfixe ryuk, remplacement de mots-clés) avant de l'ajouter. Les deux aident à éviter que votre identifiant Apple soit signalé par Apple, ne le désactivez donc que si vous utilisez un service de signature."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather menambahkan string acak ke bundle identifier aplikasi. Ryuk juga menulis ulang identifier tersebut (awalan ryuk, penggantian kata kunci) sebelum menambahkannya. Keduanya membantu mencegah Apple ID Anda ditandai oleh Apple, jadi nonaktifkan hanya saat memakai layanan penandatanganan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather aggiunge una stringa casuale al bundle identifier dell'app. Ryuk riscrive anche l'identifier (prefisso ryuk, sostituzione di parole chiave) prima di aggiungerla. Entrambi aiutano a evitare che il tuo ID Apple venga segnalato da Apple, quindi disattivalo solo se usi un servizio di firma."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather dopisuje losowy ciąg znaków do identyfikatora pakietu aplikacji. Ryuk dodatkowo przepisuje identyfikator (przedrostek ryuk, zamiana słów kluczowych), zanim go dopisze. Oba warianty pomagają uniknąć oznaczenia Twojego Apple ID przez Apple, więc wyłącz tę opcję tylko przy korzystaniu z usługi podpisywania."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather добавляет случайную строку к идентификатору пакета приложения. Ryuk дополнительно переписывает идентификатор (префикс ryuk, замена ключевых слов) перед добавлением строки. Оба варианта помогают избежать пометки вашего Apple ID со стороны Apple, поэтому отключайте это только при использовании сервиса подписи."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather, uygulamanın paket tanımlayıcısına rastgele bir dize ekler. Ryuk ise dizeyi eklemeden önce tanımlayıcıyı da yeniden yazar (ryuk ön eki, anahtar sözcük değiştirme). Her ikisi de Apple Kimliğinizin Apple tarafından işaretlenmesini önlemeye yardımcı olur, bu yüzden yalnızca bir imzalama hizmeti kullanırken devre dışı bırakın."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather thêm một chuỗi ngẫu nhiên vào bundle identifier của ứng dụng. Ryuk còn viết lại identifier (tiền tố ryuk, thay thế từ khóa) trước khi thêm chuỗi. Cả hai đều giúp tránh việc Apple ID của bạn bị Apple gắn cờ, vì vậy chỉ tắt khi bạn dùng dịch vụ ký."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feather 会在应用的 Bundle ID 后追加一段随机字符串。Ryuk 则会先重写 Bundle ID（ryuk 前缀、关键词替换）再追加。两者都有助于避免你的 Apple ID 被 Apple 标记，因此仅在使用签名服务时才关闭。"
+          }
+        }
+      }
+    },
     "Featured" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -54,8 +54,11 @@ extension Options {
 			return mapped
 		}
 
-		guard ppqProtection == .ryuk else { return nil }
-		return "\(Options._ppqTransform(identifier)).\(ppqString)"
+		switch ppqProtection {
+		case .disabled: return nil
+		case .default: return "\(identifier).\(ppqString)"
+		case .ryuk: return "\(Options._ppqTransform(identifier)).\(ppqString)"
+		}
 	}
 
 	private static func _ppqTransform(_ identifier: String) -> String {
