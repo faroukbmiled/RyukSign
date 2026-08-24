@@ -360,17 +360,10 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 		let ipa = try await download(from: url)
 
 		phase = .importing
-		try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, Error>) in
-			FR.handlePackageFile(ipa) { error in
-				if let error { c.resume(throwing: error) } else { c.resume() }
-			}
+		let imported = try await withCheckedThrowingContinuation { (c: CheckedContinuation<AppInfoPresentable, Error>) in
+			FR.handlePackageFile(ipa) { c.resume(with: $0) }
 		}
 		try? FileManager.default.removeItem(at: ipa)
-
-		guard let imported = newestApp(Imported.fetchRequest()) else {
-			throw NSError(domain: "SelfUpdate", code: -2,
-						  userInfo: [NSLocalizedDescriptionKey: String.localized("Import failed.")])
-		}
 
 		// A self-update must not leave its temp import/signed entries in the Library, whatever the outcome.
 		var scratch: [AppInfoPresentable] = [imported]
@@ -495,12 +488,6 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 			if status == 429 { return .localized("The updater is busy. Try again in a moment.") }
 			return .localized("The update couldn't be prepared. Please try again.")
 		}
-	}
-
-	private func newestApp<T: NSManagedObject>(_ request: NSFetchRequest<T>) -> T? {
-		request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
-		request.fetchLimit = 1
-		return (try? Storage.shared.context.fetch(request))?.first
 	}
 
 	// MARK: - Download

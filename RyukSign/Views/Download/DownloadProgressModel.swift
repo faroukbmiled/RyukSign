@@ -18,6 +18,7 @@ extension Download {
 			$isActive.map { _ in }.eraseToAnyPublisher(),
 			$isPaused.map { _ in }.eraseToAnyPublisher(),
 			$isImporting.map { _ in }.eraseToAnyPublisher(),
+			$isSigning.map { _ in }.eraseToAnyPublisher(),
 		]).eraseToAnyPublisher()
 	}
 }

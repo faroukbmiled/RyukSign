@@ -62,8 +62,8 @@ enum WebManagerRouter {
 		Task { @MainActor in
 			switch dest {
 			case .library:
-				FR.handlePackageFile(url) { error in
-					if let error {
+				FR.handlePackageFile(url) { result in
+					if case .failure(let error) = result {
 						Logger.misc.error("Transfer import failed: \(error.localizedDescription)")
 					}
 					try? FileManager.default.removeItem(at: url)

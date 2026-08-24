@@ -12,6 +12,8 @@ import NimbleViews
 struct SigningOptionsView: View {
 	@Binding var options: Options
 	var temporaryOptions: Options?
+
+	@AppStorage(AutoSignManager.enabledKey) private var _autoSign: Bool = false
 	
 	// MARK: Body
 	var body: some View {
@@ -164,6 +166,25 @@ struct SigningOptionsView: View {
 			Text(.localized("By default, localized titles for the app won't be changed, however this option overrides it."))
 		}
 		
+		if (temporaryOptions == nil) {
+			NBSection(.localized("Pre Signing")) {
+				_toggle(
+					.localized("Auto Sign"),
+					systemImage: "wand.and.rays",
+					isOn: $_autoSign
+				)
+			} footer: {
+				VStack(alignment: .leading, spacing: 6) {
+					Text(.localized("Signs every downloaded or imported app the moment it lands, using these options and your selected certificate, then removes the unsigned copy. Install After Signing applies here too."))
+
+					if _autoSign, !AutoSignManager.canSign {
+						Text(.localized("No certificate is selected. Import one in Settings, otherwise auto sign will fail."))
+							.foregroundStyle(.orange)
+					}
+				}
+			}
+		}
+
 		NBSection(.localized("Post Signing")) {
             _toggle(
                 .localized("Install After Signing"),

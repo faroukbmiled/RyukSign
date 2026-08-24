@@ -12,7 +12,7 @@ import SwiftUI
 import IDeviceSwift
 
 final class ArchiveHandler: NSObject {
-	@ObservedObject var viewModel: InstallerStatusViewModel
+	let viewModel: InstallerStatusViewModel
 
 	private let _fileManager = FileManager.default
 	private let _uuid = UUID().uuidString
@@ -66,7 +66,7 @@ final class ArchiveHandler: NSObject {
 				}
 			}
 
-			guard let payloadUrl = await self._payloadUrl else {
+			guard let payloadUrl = self._payloadUrl else {
 				throw SigningFileHandlerError.appNotFound
 			}
 

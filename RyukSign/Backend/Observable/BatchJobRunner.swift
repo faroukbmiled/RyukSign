@@ -210,6 +210,7 @@ final class BatchJobRunner: ObservableObject {
 			let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, Error>, Never>) in
 				_installContinuation = continuation
 				installer.start { [weak self] outcome in
+					if case .success(.cancelled) = outcome { self?._skipRequested = true }
 					self?._resumeInstall(outcome.map { _ in () })
 				}
 			}

@@ -91,6 +91,9 @@ struct RyukSignApp: App {
                     }
                 }
             }
+            .overlay(alignment: .bottom) {
+                InstallQueuePill()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
                 DispatchQueue.main.async {
                     UIAlertController.showAlertWithOk(
@@ -104,7 +107,7 @@ struct RyukSignApp: App {
                     UIApplication.topViewController()?.view.window?.overrideUserInterfaceStyle = style
                 }
 
-                UIApplication.topViewController()?.view.window?.tintColor = UIColor(Color(hex: UserDefaults.standard.string(forKey: "Feather.userTintColor") ?? "#B496DC"))
+                UIApplication.topViewController()?.view.window?.tintColor = UIColor(Color.userTint)
             }
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {

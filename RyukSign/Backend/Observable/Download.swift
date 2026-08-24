@@ -18,8 +18,10 @@ class Download: Identifiable, @unchecked Sendable {
 	@Published var isActive: Bool = false
 	@Published var isPaused: Bool = false
 	@Published var isImporting: Bool = false
+	@Published var isSigning: Bool = false
 
 	var phase: DownloadPhase {
+		if isSigning { return .signing }
 		if isImporting { return .importing }
 		if unpackageProgress >= 1.0 { return .completed }
 		if onlyArchiving || progress >= 1.0 { return .importing }
@@ -32,7 +34,7 @@ class Download: Identifiable, @unchecked Sendable {
 		case .queued: return 0
 		case .downloading, .paused: return progress
 		case .importing: return unpackageProgress
-		case .completed: return 1
+		case .signing, .completed: return 1
 		}
 	}
 
@@ -89,15 +91,18 @@ struct DownloadProgressSummary: Equatable {
 	let downloadingCount: Int
 	let pausedCount: Int
 	let importingCount: Int
+	let signingCount: Int
 
 	init(_ downloads: [Download]) {
 		let byPhase = Dictionary(grouping: downloads, by: \.phase)
 		let pending = (byPhase[.downloading] ?? []) + (byPhase[.queued] ?? []) + (byPhase[.paused] ?? [])
 		let importing = byPhase[.importing] ?? []
+		let signing = byPhase[.signing] ?? []
 
 		downloadingCount = byPhase[.downloading]?.count ?? 0
 		pausedCount = byPhase[.paused]?.count ?? 0
 		importingCount = importing.count
+		signingCount = signing.count
 
 		if !pending.isEmpty {
 			phase = downloadingCount == 0 && pausedCount > 0 ? .paused : .downloading
@@ -108,9 +113,9 @@ struct DownloadProgressSummary: Equatable {
 			} else {
 				progress = Self.average(pending.map(\.phaseProgress))
 			}
-		} else if !importing.isEmpty {
-			phase = .importing
-			progress = Self.average(importing.map(\.phaseProgress))
+		} else if !importing.isEmpty || !signing.isEmpty {
+			phase = importing.isEmpty ? .signing : .importing
+			progress = Self.average((importing + signing).map(\.phaseProgress))
 		} else {
 			phase = downloads.isEmpty ? .queued : .completed
 			progress = downloads.isEmpty ? 0 : 1

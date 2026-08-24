@@ -16,6 +16,7 @@ import OSLog
 final class AppInstaller: ObservableObject {
 	enum Outcome {
 		case installed
+		case cancelled
 		case exported(URL?)
 	}
 
@@ -35,6 +36,8 @@ final class AppInstaller: ObservableObject {
 	private var _statusObserver: AnyCancellable?
 	private var _completion: ((Result<Outcome, Error>) -> Void)?
 	private var _hasFinished = false
+	private var _declineObserver: NSObjectProtocol?
+	private var _declineCheck: DispatchWorkItem?
 
 	var fallbackPageURL: URL? { _server?.pageEndpoint }
 
@@ -50,6 +53,8 @@ final class AppInstaller: ObservableObject {
 
 	deinit {
 		_progressTask?.cancel()
+		_declineCheck?.cancel()
+		if let _declineObserver { NotificationCenter.default.removeObserver(_declineObserver) }
 	}
 
 	func start(completion: @escaping (Result<Outcome, Error>) -> Void) {
@@ -72,6 +77,7 @@ final class AppInstaller: ObservableObject {
 	func stop() {
 		_hasFinished = true
 		_completion = nil
+		_disarmDeclineWatch()
 		_statusObserver = nil
 		_progressTask?.cancel()
 		_progressTask = nil
@@ -117,7 +123,7 @@ final class AppInstaller: ObservableObject {
 		let useShareSheet = _useShareSheet
 
 		return try await Task.detached(priority: .userInitiated) {
-			let handler = await ArchiveHandler(app: app, viewModel: viewModel)
+			let handler = ArchiveHandler(app: app, viewModel: viewModel)
 			try await handler.move()
 			let package = try await handler.archive()
 
@@ -153,8 +159,11 @@ final class AppInstaller: ObservableObject {
 		switch status {
 		case .ready where _installationMethod == 0:
 			_openInstall(_serverMethod == 0 ? _server?.iTunesLink : _server?.iTunesLinkExternal)
+		case .sendingManifest:
+			_armDeclineWatch()
 		case .sendingPayload:
 			isPresentingFallbackPage = false
+			_disarmDeclineWatch()
 		case .installing where _installationMethod == 0:
 			_startProgressPolling()
 		case .completed(let result):
@@ -189,9 +198,47 @@ final class AppInstaller: ObservableObject {
 		}
 	}
 
+	/// Declining iOS's prompt never reports back, so focus returning with no payload request means cancelled.
+	private func _armDeclineWatch() {
+		guard _declineObserver == nil else { return }
+
+		_declineObserver = NotificationCenter.default.addObserver(
+			forName: UIApplication.didBecomeActiveNotification,
+			object: nil,
+			queue: .main
+		) { [weak self] _ in
+			self?._scheduleDeclineCheck(after: 2)
+		}
+
+		_scheduleDeclineCheck(after: 60)
+	}
+
+	private func _scheduleDeclineCheck(after delay: TimeInterval) {
+		_declineCheck?.cancel()
+
+		let work = DispatchWorkItem { [weak self] in
+			guard let self, case .sendingManifest = self.viewModel.status else { return }
+			self._finish(.success(.cancelled))
+		}
+
+		_declineCheck = work
+		DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+	}
+
+	private func _disarmDeclineWatch() {
+		_declineCheck?.cancel()
+		_declineCheck = nil
+
+		if let _declineObserver {
+			NotificationCenter.default.removeObserver(_declineObserver)
+		}
+		_declineObserver = nil
+	}
+
 	private func _finish(_ result: Result<Outcome, Error>) {
 		guard !_hasFinished else { return }
 		_hasFinished = true
+		_disarmDeclineWatch()
 		_statusObserver = nil
 
 		let completion = _completion

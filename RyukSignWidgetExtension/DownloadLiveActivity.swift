@@ -73,7 +73,7 @@ private extension DownloadPhase {
 		case .queued: return .secondary
 		case .downloading: return .blue
 		case .paused: return .orange
-		case .importing: return .purple
+		case .importing, .signing: return .purple
 		case .completed: return .green
 		}
 	}
@@ -84,6 +84,7 @@ private extension DownloadPhase {
 		case .downloading: return "Downloading"
 		case .paused: return "Paused"
 		case .importing: return "Importing"
+		case .signing: return "Signing"
 		case .completed: return "Done"
 		}
 	}

@@ -13,7 +13,12 @@ enum DownloadPhase: String, Codable, Hashable {
 	case downloading
 	case paused
 	case importing
+	case signing
 	case completed
+
+	var isProcessing: Bool {
+		self == .importing || self == .signing
+	}
 
 	var icon: String {
 		switch self {
@@ -21,6 +26,7 @@ enum DownloadPhase: String, Codable, Hashable {
 		case .downloading: return "arrow.down"
 		case .paused: return "pause.fill"
 		case .importing: return "shippingbox.fill"
+		case .signing: return "signature"
 		case .completed: return "checkmark"
 		}
 	}

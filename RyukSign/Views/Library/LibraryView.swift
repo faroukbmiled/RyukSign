@@ -16,7 +16,6 @@ struct LibraryView: View {
     
     @State private var _selectedInfoAppPresenting: AnyApp?
     @State private var _selectedSigningAppPresenting: AnyApp?
-    @State private var _selectedInstallAppPresenting: AnyApp?
     @State private var _isImportingPresenting = false
     @State private var _isDownloadingPresenting = false
     @State private var _alertDownloadString: String = "" // for _isDownloadingPresenting
@@ -120,11 +119,6 @@ struct LibraryView: View {
                 .sheet(item: $_selectedInfoAppPresenting) { app in
                     LibraryInfoView(app: app.base)
                 }
-                .sheet(item: $_selectedInstallAppPresenting) { app in
-                    InstallPreviewView(app: app.base, isSharing: app.archive)
-                        .presentationDetents([.height(200)])
-                        .presentationDragIndicator(.visible)
-                }
                 .fullScreenCover(item: $_batchRequest) { request in
                     BatchSignView(apps: request.apps, mode: request.mode)
                 }
@@ -137,11 +131,6 @@ struct LibraryView: View {
                 }
                 .alert(.localized("Import from URL"), isPresented: $_isDownloadingPresenting) {
                     urlImportAlert
-                }
-                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("Feather.installApp"))) { _ in
-                    if let latest = _signedApps.first {
-                        _selectedInstallAppPresenting = AnyApp(base: latest)
-                    }
                 }
                 .onChange(of: _editMode) { mode in
                     if mode == .inactive {
@@ -234,7 +223,6 @@ struct LibraryView: View {
                     app: app,
                     selectedInfoAppPresenting: $_selectedInfoAppPresenting,
                     selectedSigningAppPresenting: $_selectedSigningAppPresenting,
-                    selectedInstallAppPresenting: $_selectedInstallAppPresenting,
                     selectedAppUUIDs: $_selectedAppUUIDs,
                     isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
                     onSelectMore: { _beginSelection(with: app) }
@@ -266,7 +254,6 @@ struct LibraryView: View {
                     app: app,
                     selectedInfoAppPresenting: $_selectedInfoAppPresenting,
                     selectedSigningAppPresenting: $_selectedSigningAppPresenting,
-                    selectedInstallAppPresenting: $_selectedInstallAppPresenting,
                     selectedAppUUIDs: $_selectedAppUUIDs,
                     isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
                     onSelectMore: { _beginSelection(with: app) }
@@ -329,6 +316,7 @@ struct LibraryView: View {
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(.bar)
+        .reportsBottomBarHeight()
     }
 
     @ViewBuilder

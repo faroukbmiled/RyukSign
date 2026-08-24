@@ -106,14 +106,22 @@ struct DownloadButtonView: View {
 			return false
 		}
 	}
-	
+
+	private var _phaseSymbol: String {
+		switch downloadPhase {
+		case .importing: return "archivebox"
+		case .signing: return "signature"
+		default: return "square.fill"
+		}
+	}
+
 	var body: some View {
 		ZStack {
 			if let currentDownload = downloadManager.getDownload(by: app.currentUniqueId) {
 				ZStack {
 					DownloadPhaseRing(phase: downloadPhase, progress: downloadProgress, size: 31, lineWidth: 2.3)
 
-					Image(systemName: downloadPhase == .importing ? "archivebox" : "square.fill")
+					Image(systemName: _phaseSymbol)
 						.foregroundStyle(downloadPhase.tint)
 						.font(.footnote).bold()
 				}

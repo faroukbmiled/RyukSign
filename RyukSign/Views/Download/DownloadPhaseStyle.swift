@@ -14,7 +14,7 @@ extension DownloadPhase {
 		case .queued: return .secondary
 		case .downloading: return .accentColor
 		case .paused: return .orange
-		case .importing: return .purple
+		case .importing, .signing: return .userTintDeep
 		case .completed: return .green
 		}
 	}
@@ -29,7 +29,18 @@ extension DownloadPhase {
 		case .downloading: return .localized("Downloading")
 		case .paused: return .localized("Paused")
 		case .importing: return .localized("Importing")
+		case .signing: return .localized("Signing")
 		case .completed: return .localized("Completed")
+		}
+	}
+}
+
+extension DownloadPhase {
+	var processingDetail: String? {
+		switch self {
+		case .importing: return .localized("Unpacking...")
+		case .signing: return .localized("Signing...")
+		default: return nil
 		}
 	}
 }
@@ -38,7 +49,7 @@ extension Download {
 	var canCancel: Bool {
 		switch phase {
 		case .queued, .downloading, .paused: return true
-		case .importing, .completed: return false
+		case .importing, .signing, .completed: return false
 		}
 	}
 }
@@ -51,6 +62,7 @@ extension DownloadProgressSummary {
 		if downloadingCount > 0 { parts.append(.localized("%lld downloading", arguments: downloadingCount)) }
 		if pausedCount > 0 { parts.append(.localized("%lld paused", arguments: pausedCount)) }
 		if importingCount > 0 { parts.append(.localized("%lld importing", arguments: importingCount)) }
+		if signingCount > 0 { parts.append(.localized("%lld signing", arguments: signingCount)) }
 		return parts.isEmpty ? .localized("Preparing...") : parts.joined(separator: ", ")
 	}
 }

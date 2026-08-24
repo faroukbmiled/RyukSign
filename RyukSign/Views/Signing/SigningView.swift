@@ -196,7 +196,7 @@ extension SigningView {
 				// Keep the sheet open so the user can fix and retry.
 				_isSigning = false
 				Toast.error(error.localizedDescription, duration: .sticky)
-			case .success:
+			case .success(let signed):
 				_isSigning = false
 				Toast.success(.localized("Signed successfully"), systemImage: "checkmark.seal.fill")
 
@@ -209,9 +209,7 @@ extension SigningView {
 					}
 
 					if _temporaryOptions.post_installAppAfterSigned {
-						DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-							NotificationCenter.default.post(name: Notification.Name("Feather.installApp"), object: nil)
-						}
+						InstallQueue.shared.enqueue(signed)
 					}
 
 					dismiss()

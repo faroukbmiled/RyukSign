@@ -10,6 +10,15 @@
 
 import SwiftUI
 
+/// Published so floating chrome elsewhere can sit clear of whichever bottom bar is up.
+final class BottomBarMetrics: ObservableObject {
+	static let shared = BottomBarMetrics()
+
+	@Published var height: CGFloat = 0
+
+	private init() {}
+}
+
 struct SelectionBarAction: Identifiable {
 	let id = UUID()
 	let title: String
@@ -54,10 +63,23 @@ struct SelectionActionBar: View {
 		.shadow(color: .black.opacity(0.18), radius: 14, y: 4)
 		.padding(.horizontal, 12)
 		.padding(.bottom, 6)
+		.reportsBottomBarHeight()
 	}
 }
 
 extension View {
+	/// Apply to any bottom bar so floating chrome can move out of its way.
+	func reportsBottomBarHeight() -> some View {
+		background(
+			GeometryReader { proxy in
+				Color.clear
+					.onAppear { BottomBarMetrics.shared.height = proxy.size.height }
+					.onChange(of: proxy.size.height) { BottomBarMetrics.shared.height = $0 }
+					.onDisappear { BottomBarMetrics.shared.height = 0 }
+			}
+		)
+	}
+
 	/// Overlays a floating selection action bar pinned above the bottom safe area.
 	@ViewBuilder
 	func selectionActionBar(isActive: Bool, actions: [SelectionBarAction]) -> some View {

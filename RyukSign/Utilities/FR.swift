@@ -17,7 +17,7 @@ enum FR {
 	static func handlePackageFile(
 		_ ipa: URL,
 		download: Download? = nil,
-		completion: @escaping (Error?) -> Void
+		completion: @escaping (Result<AppInfoPresentable, Error>) -> Void
 	) {
 		Task.detached {
 			let handler = AppFileHandler(file: ipa, download: download)
@@ -26,15 +26,15 @@ enum FR {
 				try await handler.copy()
 				try await handler.extract()
 				try await handler.move()
-				try await handler.addToDatabase()
+				let app = try await handler.addToDatabase()
 				try? await handler.clean()
 				await MainActor.run {
-					completion(nil)
+					completion(.success(app))
 				}
 			} catch {
 				try? await handler.clean()
 				await MainActor.run {
-					completion(error)
+					completion(.failure(error))
 				}
 			}
 		}

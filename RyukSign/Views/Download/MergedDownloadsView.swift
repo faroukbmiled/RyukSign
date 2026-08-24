@@ -148,7 +148,7 @@ struct MergedDownloadsView: View {
                 let totalBytesDownloaded = downloads.reduce(Int64(0)) { $0 + $1.bytesDownloaded }
                 let totalBytesExpected = downloads.reduce(Int64(0)) { $0 + $1.totalBytes }
 
-                if summary.phase != .importing, totalBytesExpected > 0 {
+                if !summary.phase.isProcessing, totalBytesExpected > 0 {
                     HStack(spacing: 4) {
                         Text(totalBytesDownloaded.formattedByteCount)
                         Text("of")

@@ -26,7 +26,6 @@ struct LibraryCellView: View {
 	var app: AppInfoPresentable
 	@Binding var selectedInfoAppPresenting: AnyApp?
 	@Binding var selectedSigningAppPresenting: AnyApp?
-	@Binding var selectedInstallAppPresenting: AnyApp?
 	@Binding var selectedAppUUIDs: Set<String>
 	var isHighlighted: Bool = false
 	var onSelectMore: (() -> Void)?
@@ -187,17 +186,17 @@ extension LibraryCellView {
 				}
 			}
 			Button(.localized("Install"), systemImage: "square.and.arrow.down") {
-				selectedInstallAppPresenting = AnyApp(base: app)
+				InstallQueue.shared.enqueue(app)
 			}
 			Button(.localized("Re-sign"), systemImage: "signature") {
 				selectedSigningAppPresenting = AnyApp(base: app)
 			}
 			Button(.localized("Export"), systemImage: "square.and.arrow.up") {
-				selectedInstallAppPresenting = AnyApp(base: app, archive: true)
+				InstallQueue.shared.enqueue(app, exporting: true)
 			}
 		} else {
 			Button(.localized("Install"), systemImage: "square.and.arrow.down") {
-				selectedInstallAppPresenting = AnyApp(base: app)
+				InstallQueue.shared.enqueue(app)
 			}
 			Button(.localized("Sign"), systemImage: "signature") {
 				selectedSigningAppPresenting = AnyApp(base: app)
@@ -211,7 +210,7 @@ extension LibraryCellView {
 			if app.isSigned {
 				Button {
 					NBHaptic.tap()
-					selectedInstallAppPresenting = AnyApp(base: app)
+					InstallQueue.shared.enqueue(app)
 				} label: {
 					FRExpirationPillView(
 						title: .localized("Install"),

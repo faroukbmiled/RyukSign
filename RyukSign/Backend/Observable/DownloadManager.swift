@@ -32,12 +32,13 @@ class DownloadManager: NSObject, ObservableObject {
 		downloads.filter { !$0.onlyArchiving && ($0.isActive || $0.progress > 0) && $0.progress < 1.0 && !$0.isPaused }
 	}
 
-	var importingDownloads: [Download] {
-		downloads.filter { $0.phase == .importing }
+	/// Unpacking or auto signing. Both hold the keep-alive open.
+	var processingDownloads: [Download] {
+		downloads.filter { $0.phase == .importing || $0.phase == .signing }
 	}
 
 	var hasUnfinishedWork: Bool {
-		downloads.contains { $0.isActive || $0.isImporting || ($0.progress > 0 && $0.progress < 1.0) }
+		downloads.contains { $0.isActive || $0.isImporting || $0.isSigning || ($0.progress > 0 && $0.progress < 1.0) }
 	}
 
 	var _backgroundSession: URLSession!
@@ -236,7 +237,7 @@ class DownloadManager: NSObject, ObservableObject {
 			download.isPaused && download.progress > 0 && download.progress < 1.0
 		}
 
-		if downloadActivity != nil && !hasActiveDownloads && !hasPausedDownloads && importingDownloads.isEmpty {
+		if downloadActivity != nil && !hasActiveDownloads && !hasPausedDownloads && processingDownloads.isEmpty {
 			dismissLiveActivityImmediately()
 			completedDownloadNames = []
 			isActivityShowingCompletion = false
@@ -328,7 +329,7 @@ class DownloadManager: NSObject, ObservableObject {
 
 		if isAppInBackground {
 			updateMergedProgressNotification()
-		} else if activeNetworkDownloads.isEmpty && importingDownloads.isEmpty {
+		} else if activeNetworkDownloads.isEmpty && processingDownloads.isEmpty {
 			endProgressTimer()
 		}
 	}
@@ -384,7 +385,7 @@ class DownloadManager: NSObject, ObservableObject {
 		guard !activeDownloads.isEmpty || !pausedDownloads.isEmpty else {
 			UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["merged_download_progress"])
 
-			guard importingDownloads.isEmpty else {
+			guard processingDownloads.isEmpty else {
 				updateLiveActivity(activeDownloads: [])
 				return
 			}
@@ -576,10 +577,10 @@ class DownloadManager: NSObject, ObservableObject {
 		}
 
 		DispatchQueue.global().async {
-			FR.handlePackageFile(url, download: download) { err in
-				if let error = err {
-					let generator = UINotificationFeedbackGenerator()
-					generator.notificationOccurred(.error)
+			FR.handlePackageFile(url, download: download) { result in
+				switch result {
+				case .failure(let error):
+					UINotificationFeedbackGenerator().notificationOccurred(.error)
 
 					if let completion = completion {
 						// Caller owns the error UI; don't also fire the generic delegate alert.
@@ -590,43 +591,14 @@ class DownloadManager: NSObject, ObservableObject {
 							message: error.localizedDescription
 						)
 					}
-				} else {
+
+					DispatchQueue.main.async { self.finishImport(of: download, succeeded: false) }
+				case .success(let app):
 					DispatchQueue.main.async {
 						self.objectWillChange.send()
 						download.unpackageProgress = 1.0
 						completion?(nil)
-					}
-				}
-
-				download.isActive = false
-
-				DispatchQueue.main.async {
-					self.endImport(for: download)
-
-					// Drop from activity tracking only once archiving completes (not on download finish).
-					if err == nil {
-						self.completedDownloadNames.append(download.fileName)
-						self.allActivityDownloads.removeValue(forKey: download.id)
-						self.finishedDownloadingIDs.remove(download.id)
-					}
-
-					// Snapshot before removing this one.
-					let remainingActiveDownloads = self.downloads.filter { dl in
-						dl.id != download.id && (dl.isActive || (dl.progress > 0 && dl.progress < 1.0) || (dl.unpackageProgress > 0 && dl.unpackageProgress < 1.0))
-					}
-					let isLastDownload = remainingActiveDownloads.isEmpty
-
-					if let index = self.getDownloadIndex(by: download.id) {
-						self.downloads.remove(at: index)
-					}
-
-					if isLastDownload {
-						// Background archiving needs no completion state; foreground keeps it until reopened.
-						if self.isAppInBackground {
-							self.dismissLiveActivityImmediately()
-						} else {
-							self.endLiveActivity()
-						}
+						self.autoSignOrFinish(app, for: download)
 					}
 				}
 			}
@@ -774,10 +746,10 @@ class DownloadManager: NSObject, ObservableObject {
 			self.beginImport(for: dl)
 		}
 
-		FR.handlePackageFile(url, download: dl) { err in
-			if let error = err {
-				let generator = UINotificationFeedbackGenerator()
-				generator.notificationOccurred(.error)
+		FR.handlePackageFile(url, download: dl) { result in
+			switch result {
+			case .failure(let error):
+				UINotificationFeedbackGenerator().notificationOccurred(.error)
 
 				if self.isAppInBackground {
 					self.sendCompletionNotification(for: dl, status: "❌ Import failed: \(error.localizedDescription)")
@@ -787,48 +759,84 @@ class DownloadManager: NSObject, ObservableObject {
 						message: error.localizedDescription
 					)
 				}
-			} else {
+
+				DispatchQueue.main.async { self.finishImport(of: dl, succeeded: false) }
+			case .success(let app):
 				DispatchQueue.main.async {
 					self.objectWillChange.send()
 					dl.unpackageProgress = 1.0
+					self.autoSignOrFinish(app, for: dl)
 				}
+			}
+		}
+	}
 
-				if self.isAppInBackground {
-					self.sendCompletionNotification(for: dl, status: "✅ Added to Library")
+	private func autoSignOrFinish(_ app: AppInfoPresentable, for download: Download) {
+		guard AutoSignManager.isEnabled else {
+			if isAppInBackground { sendCompletionNotification(for: download, status: "✅ Added to Library") }
+			finishImport(of: download, succeeded: true)
+			return
+		}
+
+		endImport(for: download)
+		objectWillChange.send()
+		download.isSigning = true
+
+		Task { @MainActor in
+			switch await AutoSignManager.shared.sign(app) {
+			case .success:
+				self.report(for: download, status: "✅ Signed") {
+					Toast.success(.localized("Signed successfully"), systemImage: "checkmark.seal.fill")
+				}
+			case .failure(let error):
+				// Keep the import so it can still be signed by hand.
+				self.report(for: download, status: "❌ Signing failed") {
+					Toast.error(error.localizedDescription, duration: .sticky)
 				}
 			}
 
-			dl.isActive = false
+			self.objectWillChange.send()
+			download.isSigning = false
+			self.finishImport(of: download, succeeded: true)
+		}
+	}
 
-			DispatchQueue.main.async {
-				DownloadManager.shared.endImport(for: dl)
+	private func report(for download: Download, status: String, toast: () -> Void) {
+		if isAppInBackground {
+			sendCompletionNotification(for: download, status: status)
+		} else {
+			toast()
+		}
+	}
 
-				// Drop from activity tracking only once archiving completes (not on download finish).
-				if err == nil {
-					DownloadManager.shared.completedDownloadNames.append(dl.fileName)
-					DownloadManager.shared.allActivityDownloads.removeValue(forKey: dl.id)
-					DownloadManager.shared.finishedDownloadingIDs.remove(dl.id)
-				}
+	private func finishImport(of download: Download, succeeded: Bool) {
+		download.isActive = false
+		endImport(for: download)
 
-				// Snapshot before removing this one.
-				let remainingActiveDownloads = DownloadManager.shared.downloads.filter { download in
-					download.id != dl.id && (download.isActive || (download.progress > 0 && download.progress < 1.0) || (download.unpackageProgress > 0 && download.unpackageProgress < 1.0))
-				}
-				let isLastDownload = remainingActiveDownloads.isEmpty
+		// Drop from activity tracking only once archiving completes (not on download finish).
+		if succeeded {
+			completedDownloadNames.append(download.fileName)
+			allActivityDownloads.removeValue(forKey: download.id)
+			finishedDownloadingIDs.remove(download.id)
+		}
 
-				if let index = DownloadManager.shared.getDownloadIndex(by: dl.id) {
-					DownloadManager.shared.downloads.remove(at: index)
-				}
+		// Snapshot before removing this one.
+		let isLastDownload = !downloads.contains { other in
+			other.id != download.id &&
+			(other.isActive || other.isSigning || (other.progress > 0 && other.progress < 1.0) || (other.unpackageProgress > 0 && other.unpackageProgress < 1.0))
+		}
 
-				if isLastDownload {
-					// Background archiving needs no completion state; foreground keeps it until reopened.
-					if DownloadManager.shared.isAppInBackground {
-						DownloadManager.shared.dismissLiveActivityImmediately()
-					} else {
-						DownloadManager.shared.endLiveActivity()
-					}
-				}
-			}
+		if let index = getDownloadIndex(by: download.id) {
+			downloads.remove(at: index)
+		}
+
+		guard isLastDownload else { return }
+
+		// Background archiving needs no completion state; foreground keeps it until reopened.
+		if isAppInBackground {
+			dismissLiveActivityImmediately()
+		} else {
+			endLiveActivity()
 		}
 	}
 }

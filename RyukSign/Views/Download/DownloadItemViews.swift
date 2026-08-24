@@ -121,8 +121,8 @@ struct DownloadItemView: View {
 
                 Spacer()
 
-                if model.phase == .importing {
-                    Text(.localized("Unpacking..."))
+                if let detail = model.phase.processingDetail {
+                    Text(detail)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else if model.showsByteCount {

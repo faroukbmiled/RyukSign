@@ -185,7 +185,8 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 		}
 	}
 
-	func addToDatabase() async throws {
+	@discardableResult
+	func addToDatabase() async throws -> AppInfoPresentable {
 		let app = try await _directory()
 
 		guard let appUrl = _fileManager.getPath(in: app, for: "app") else {
@@ -238,6 +239,13 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 		}
 
 		_didAddToDatabase = true
+
+		// The library row has to be read on the context's own queue.
+		guard let imported = await MainActor.run(body: { Storage.shared.app(withUuid: _uuid) }) else {
+			throw _error(.database, reason: "The app was saved but could not be read back from the library.")
+		}
+
+		return imported
 	}
 
 	private func _directory() async throws -> URL {
