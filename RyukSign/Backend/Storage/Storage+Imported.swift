@@ -29,6 +29,7 @@ extension Storage {
         new.uuid = uuid
         new.source = source
         new.date = Date()
+        new.sortIndex = nextImportedSortIndex()
 
         new.originalIdentifier = appIdentifier
         new.identifier = appIdentifier
@@ -41,5 +42,15 @@ extension Storage {
         saveContext()
         generator.impactOccurred()
         completion(nil)
+    }
+
+    // Below the current lowest so new apps land at the top
+    func nextImportedSortIndex() -> Int32 {
+        let request: NSFetchRequest<Imported> = Imported.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "sortIndex", ascending: true)]
+        request.fetchLimit = 1
+
+        let lowest = (try? context.fetch(request))?.first?.sortIndex ?? 1
+        return lowest - 1
     }
 }

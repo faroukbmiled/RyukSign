@@ -36,13 +36,13 @@ struct LibraryView: View {
     // MARK: Fetch
     @FetchRequest(
         entity: Signed.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \Signed.date, ascending: false)],
+        sortDescriptors: [NSSortDescriptor(keyPath: \Signed.sortIndex, ascending: true)],
         animation: .snappy
     ) private var _signedApps: FetchedResults<Signed>
-    
+
     @FetchRequest(
         entity: Imported.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \Imported.date, ascending: false)],
+        sortDescriptors: [NSSortDescriptor(keyPath: \Imported.sortIndex, ascending: true)],
         animation: .snappy
     ) private var _importedApps: FetchedResults<Imported>
     
@@ -230,9 +230,10 @@ struct LibraryView: View {
                 .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
                 .id(app.uuid)
             }
+            .onMove(perform: _searchText.isEmpty ? _moveSignedApps : nil)
         }
     }
-    
+
     // MARK: Imported Apps Section
     @ViewBuilder
     private var importedAppsSection: some View {
@@ -261,9 +262,10 @@ struct LibraryView: View {
                 .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
                 .id(app.uuid)
             }
+            .onMove(perform: _searchText.isEmpty ? _moveImportedApps : nil)
         }
     }
-    
+
     // MARK: Empty State View
     @ViewBuilder
     private var emptyStateView: some View {
@@ -416,6 +418,29 @@ extension LibraryView {
         _batchRequest = BatchRequest(apps: apps, mode: mode)
         _selectedAppUUIDs.removeAll()
         _editMode = .inactive
+    }
+}
+
+// MARK: - Extension: Reorder
+extension LibraryView {
+    private func _moveSignedApps(from source: IndexSet, to destination: Int) {
+        var apps = filteredSignedApps
+        apps.move(fromOffsets: source, toOffset: destination)
+
+        for (index, app) in apps.enumerated() {
+            app.sortIndex = Int32(index)
+        }
+        Storage.shared.saveContext()
+    }
+
+    private func _moveImportedApps(from source: IndexSet, to destination: Int) {
+        var apps = filteredImportedApps
+        apps.move(fromOffsets: source, toOffset: destination)
+
+        for (index, app) in apps.enumerated() {
+            app.sortIndex = Int32(index)
+        }
+        Storage.shared.saveContext()
     }
 }
 

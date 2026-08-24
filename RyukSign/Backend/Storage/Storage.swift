@@ -27,6 +27,7 @@ final class Storage: ObservableObject {
 		_loadPersistentStoreAggressively()
 		container.viewContext.automaticallyMergesChangesFromParent = true
 		container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+		_migrateSortIndexIfNeeded()
 	}
 	
 	var context: NSManagedObjectContext {
@@ -77,6 +78,27 @@ final class Storage: ObservableObject {
 				}
 			}
 		}
+	}
+
+	// Backfills sortIndex from the old date-desc order so manual reordering starts stable
+	private func _migrateSortIndexIfNeeded() {
+		let key = "feather.sortIndexMigrated"
+		guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+		let signedRequest: NSFetchRequest<Signed> = Signed.fetchRequest()
+		signedRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Signed.date, ascending: false)]
+		if let apps = try? context.fetch(signedRequest) {
+			for (index, app) in apps.enumerated() { app.sortIndex = Int32(index) }
+		}
+
+		let importedRequest: NSFetchRequest<Imported> = Imported.fetchRequest()
+		importedRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Imported.date, ascending: false)]
+		if let apps = try? context.fetch(importedRequest) {
+			for (index, app) in apps.enumerated() { app.sortIndex = Int32(index) }
+		}
+
+		saveContext()
+		UserDefaults.standard.set(true, forKey: key)
 	}
 
 	private func _destroyStore(at url: URL?) {

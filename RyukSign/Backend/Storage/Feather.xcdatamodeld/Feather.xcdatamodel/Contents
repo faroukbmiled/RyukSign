@@ -25,6 +25,7 @@
         <attribute name="identifier" attributeType="String"/>
         <attribute name="originalIdentifier" attributeType="String"/>
         <attribute name="name" attributeType="String"/>
+        <attribute name="sortIndex" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="source" optional="YES" attributeType="URI"/>
         <attribute name="uuid" attributeType="String"/>
         <attribute name="version" attributeType="String"/>
@@ -36,6 +37,7 @@
         <attribute name="identifier" attributeType="String"/>
         <attribute name="originalIdentifier" attributeType="String"/>
         <attribute name="name" attributeType="String"/>
+        <attribute name="sortIndex" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="source" optional="YES" attributeType="URI"/>
         <attribute name="uuid" attributeType="String"/>
         <attribute name="version" attributeType="String"/>

@@ -32,6 +32,7 @@ extension Storage {
         new.source = source
         new.date = Date()
         new.certificate = certificate
+        new.sortIndex = nextSignedSortIndex()
 
         // Identifier before PPQ protection / modifications
         new.originalIdentifier = originalAppIdentifier ?? appIdentifier
@@ -44,5 +45,15 @@ extension Storage {
         saveContext()
         generator.impactOccurred()
         completion(new)
+    }
+
+    // Below the current lowest so new apps land at the top
+    func nextSignedSortIndex() -> Int32 {
+        let request: NSFetchRequest<Signed> = Signed.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "sortIndex", ascending: true)]
+        request.fetchLimit = 1
+
+        let lowest = (try? context.fetch(request))?.first?.sortIndex ?? 1
+        return lowest - 1
     }
 }
