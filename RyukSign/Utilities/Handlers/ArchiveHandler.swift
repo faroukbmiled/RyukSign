@@ -71,12 +71,14 @@ final class ArchiveHandler: NSObject {
 			}
 
 			let ipaUrl = self._uniqueWorkDir.appendingPathComponent("Archive.ipa")
+			let gate = ProgressGate()
 
 			try AppArchiver.zip(
 				payload: payloadUrl,
 				to: ipaUrl,
 				compression: ZipCompression.allCases[ArchiveHandler.getCompressionLevel()],
 				progress: { progress in
+					guard gate.admit(progress) else { return }
 					Task { @MainActor in
 						self.viewModel.packageProgress = progress
 					}
@@ -106,5 +108,26 @@ final class ArchiveHandler: NSObject {
 	
 	static func getCompressionLevel() -> Int {
 		UserDefaults.standard.integer(forKey: "Feather.compressionLevel")
+	}
+}
+
+// MARK: - Coalescing
+/// Zip reports once per entry and an app bundle holds thousands of them; hopping to the main
+/// actor for every one of them stalls SwiftUI for the whole archive.
+final class ProgressGate {
+	private let _lock = NSLock()
+	private var _last = -1.0
+	private let _step: Double
+
+	init(step: Double = 0.01) {
+		self._step = step
+	}
+
+	func admit(_ value: Double) -> Bool {
+		_lock.lock()
+		defer { _lock.unlock() }
+		guard value >= 1 || value - _last >= _step else { return false }
+		_last = value
+		return true
 	}
 }

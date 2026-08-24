@@ -17,6 +17,7 @@ struct BatchSignView: View {
 	/// Resolving walks each app bundle, so it happens once instead of on every render.
 	@State private var _autoInject: [String: [TweakInjectionSpec]] = [:]
 	@State private var _selectedCertificate: Int
+	@State private var _resignsSigned = false
 	@State private var _runner: BatchJobRunner?
 
 	// MARK: Fetch
@@ -96,6 +97,20 @@ struct BatchSignView: View {
 					Text(.localized("These apply to every app in the batch."))
 				}
 
+				if _offersPassthrough {
+					NBSection(.localized("Already Signed")) {
+						Picker(.localized("Already Signed"), selection: $_resignsSigned) {
+							Text(mode.installs ? .localized("Install Only") : .localized("Skip")).tag(false)
+							Text(.localized("Sign Again")).tag(true)
+						}
+						.pickerStyle(.segmented)
+						.labelsHidden()
+						.listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+					} footer: {
+						Text(_alreadySignedFooter)
+					}
+				}
+
 				NBSection(.localized("Apps"), secondary: apps.count.description) {
 					ForEach(apps, id: \.uuid) { app in
 						_appRow(for: app)
@@ -144,48 +159,67 @@ struct BatchSignView: View {
 
 	@ViewBuilder
 	private func _appRow(for app: AppInfoPresentable) -> some View {
-		let resolved = _resolved(for: app)
-		let identifier = resolved.appIdentifier ?? app.identifier
+		if _isPassthrough(app) {
+			_appLabel(for: app)
+		} else {
+			NavigationLink {
+				BatchAppOptionsView(
+					app: app,
+					identifierSuggestion: _provisioningIdentifier(),
+					options: _binding(for: app),
+					appIcon: _icon(for: app),
+					onReset: { _reset(app) }
+				)
+			} label: {
+				_appLabel(for: app)
+			}
+		}
+	}
+
+	@ViewBuilder
+	private func _appLabel(for app: AppInfoPresentable) -> some View {
+		let passthrough = _isPassthrough(app)
+		let resolved = passthrough ? _options : _resolved(for: app)
+		let identifier = passthrough ? app.identifier : (resolved.appIdentifier ?? app.identifier)
 		let isRenamed = identifier != app.identifier
-		let isCustomized = app.uuid.map { _overrides[$0] != nil } ?? false
-		let icon = app.uuid.flatMap { _icons[$0] }
+		let isCustomized = !passthrough && (app.uuid.map { _overrides[$0] != nil } ?? false)
+		let icon = passthrough ? nil : app.uuid.flatMap { _icons[$0] }
 
-		NavigationLink {
-			BatchAppOptionsView(
-				app: app,
-				identifierSuggestion: _provisioningIdentifier(),
-				options: _binding(for: app),
-				appIcon: _icon(for: app),
-				onReset: { _reset(app) }
-			)
-		} label: {
-			HStack(spacing: NBSpacing.row) {
-				if let icon {
-					Image(uiImage: icon)
-						.appIconStyle(size: 44)
-				} else {
-					FRAppIconView(app: app, size: 44)
-				}
+		HStack(spacing: NBSpacing.row) {
+			if let icon {
+				Image(uiImage: icon)
+					.appIconStyle(size: 44)
+			} else {
+				FRAppIconView(app: app, size: 44)
+			}
 
-				VStack(alignment: .leading, spacing: 2) {
-					Text(resolved.appName ?? app.name ?? .localized("Unknown"))
-						.font(.headline)
+			VStack(alignment: .leading, spacing: 2) {
+				Text((passthrough ? app.name : resolved.appName ?? app.name) ?? .localized("Unknown"))
+					.font(.headline)
 
-					if isRenamed, let original = app.identifier {
-						Text(original)
-							.font(.caption)
-							.foregroundStyle(.tertiary)
-							.strikethrough()
-							.lineLimit(1)
-					}
-
-					Text(identifier ?? .localized("Unknown"))
+				if isRenamed, let original = app.identifier {
+					Text(original)
 						.font(.caption)
-						.foregroundStyle(isRenamed ? Color.accentColor : .secondary)
+						.foregroundStyle(.tertiary)
+						.strikethrough()
 						.lineLimit(1)
 				}
-				.frame(maxWidth: .infinity, alignment: .leading)
 
+				Text(identifier ?? .localized("Unknown"))
+					.font(.caption)
+					.foregroundStyle(isRenamed ? Color.accentColor : .secondary)
+					.lineLimit(1)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+
+			if passthrough {
+				Text(mode.installs ? .localized("Install Only") : .localized("Skipped"))
+					.font(.caption.weight(.medium))
+					.foregroundStyle(.secondary)
+					.padding(.horizontal, 8)
+					.padding(.vertical, 3)
+					.background(Color(.tertiarySystemFill), in: Capsule())
+			} else {
 				if _injectionCount(resolved) > 0 {
 					Label(_injectionCount(resolved).description, systemImage: "syringe")
 						.font(.caption)
@@ -199,8 +233,35 @@ struct BatchSignView: View {
 						.foregroundStyle(.secondary)
 				}
 			}
-			.padding(.vertical, 2)
 		}
+		.padding(.vertical, 2)
+		.opacity(passthrough ? 0.6 : 1)
+	}
+
+	private var _alreadySigned: [AppInfoPresentable] {
+		apps.filter { $0.isSigned }
+	}
+
+	/// Only worth offering when the batch still has something to do without the signed apps.
+	private var _offersPassthrough: Bool {
+		guard mode.signs, !_alreadySigned.isEmpty else { return false }
+		return mode.installs || _alreadySigned.count < apps.count
+	}
+
+	private var _skipsSigning: Bool { _offersPassthrough && !_resignsSigned }
+
+	private var _appsToSign: [AppInfoPresentable] {
+		_skipsSigning ? apps.filter { !$0.isSigned } : apps
+	}
+
+	private func _isPassthrough(_ app: AppInfoPresentable) -> Bool {
+		_skipsSigning && app.isSigned
+	}
+
+	private var _alreadySignedFooter: String {
+		mode.installs
+			? .localized("%lld selected apps are already signed. They install straight away unless you sign them again.", arguments: _alreadySigned.count)
+			: .localized("%lld selected apps are already signed. They are left untouched unless you sign them again.", arguments: _alreadySigned.count)
 	}
 
 	private func _resolved(for app: AppInfoPresentable) -> Options {
@@ -270,7 +331,8 @@ struct BatchSignView: View {
 	}
 
 	private var _actionTitle: String {
-		mode == .signAndInstall ? .localized("Sign & Install") : .localized("Start Signing")
+		guard mode == .signAndInstall else { return .localized("Start Signing") }
+		return _appsToSign.isEmpty ? .localized("Install") : .localized("Sign & Install")
 	}
 
 	// MARK: Summary
@@ -289,15 +351,34 @@ struct BatchSignView: View {
 			}
 			.padding(.top, 8)
 
-			Text(String.localized("Sign %lld Apps", arguments: apps.count))
+			Text(_summaryTitle)
 				.font(.title3.weight(.semibold))
+
+			if let caption = _summaryCaption {
+				Text(caption)
+					.font(.footnote)
+					.foregroundStyle(.secondary)
+			}
 		}
 		.frame(maxWidth: .infinity)
 	}
 
+	private var _summaryTitle: String {
+		_appsToSign.isEmpty
+			? .localized("Install %lld Apps", arguments: apps.count)
+			: .localized("Sign %lld Apps", arguments: _appsToSign.count)
+	}
+
+	private var _summaryCaption: String? {
+		guard _skipsSigning, !_appsToSign.isEmpty else { return nil }
+		return mode.installs
+			? .localized("%lld already signed, installing directly", arguments: _alreadySigned.count)
+			: .localized("%lld already signed, skipped", arguments: _alreadySigned.count)
+	}
+
 	private func _start() {
 		guard
-			_selectedCert() != nil || _options.signingOption != .default
+			_appsToSign.isEmpty || _selectedCert() != nil || _options.signingOption != .default
 		else {
 			UIAlertController.showAlertWithOk(
 				title: .localized("No Certificate"),
@@ -314,7 +395,8 @@ struct BatchSignView: View {
 			options: _options,
 			overrides: _overrides,
 			icons: _icons,
-			certificate: _selectedCert()
+			certificate: _selectedCert(),
+			resignsSigned: !_skipsSigning
 		)
 	}
 }

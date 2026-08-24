@@ -218,8 +218,12 @@ final class AppInstaller: ObservableObject {
 
 				Logger.misc.info("Install progress for \(bundleID): \(raw)")
 
+				let value = hasStarted ? min(1.0, max(0.0, (raw - 0.6) / 0.3)) : 0.0
+
 				await MainActor.run {
-					viewModel.installProgress = hasStarted ? min(1.0, max(0.0, (raw - 0.6) / 0.3)) : 0.0
+					if viewModel.installProgress != value {
+						viewModel.installProgress = value
+					}
 				}
 
 				// Progress dropping back to zero after it started means installd is done.

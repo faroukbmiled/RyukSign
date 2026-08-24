@@ -14,6 +14,7 @@ struct BatchItem: Identifiable {
 		case queued
 		case working
 		case signed
+		case alreadySigned
 		case installed
 		case failed(String)
 		case skipped
@@ -62,6 +63,7 @@ final class BatchJobRunner: ObservableObject {
 	private let _overrides: [String: Options]
 	private let _icons: [String: UIImage]
 	private let _certificate: CertificatePair?
+	private let _resignsSigned: Bool
 	private var _cancelled = false
 	private var _skipRequested = false
 	private var _started = false
@@ -73,7 +75,8 @@ final class BatchJobRunner: ObservableObject {
 		options: Options,
 		overrides: [String: Options] = [:],
 		icons: [String: UIImage] = [:],
-		certificate: CertificatePair?
+		certificate: CertificatePair?,
+		resignsSigned: Bool = true
 	) {
 		self.items = apps.map(BatchItem.init)
 		self.mode = mode
@@ -81,13 +84,20 @@ final class BatchJobRunner: ObservableObject {
 		self._overrides = overrides
 		self._icons = icons
 		self._certificate = certificate
+		self._resignsSigned = resignsSigned
 		self.phase = mode.signs ? .signing : .installing
 	}
 
 	var isFinished: Bool { phase == .finished }
 
 	var succeeded: Int {
-		items.filter { $0.state == (mode.installs ? .installed : .signed) }.count
+		items.filter { item in
+			switch item.state {
+			case .installed: true
+			case .signed, .alreadySigned: !mode.installs
+			default: false
+			}
+		}.count
 	}
 
 	var failed: Int {
@@ -100,6 +110,15 @@ final class BatchJobRunner: ObservableObject {
 	func run() async {
 		guard !_started else { return }
 		_started = true
+
+		// One assertion for the whole queue per-app ones drop to zero between apps and let iOS suspend us
+		let keepAlive = BackgroundTaskManager(
+			taskName: "Batch",
+			expirationTitle: .localized("Batch continuing"),
+			expirationBody: .localized("The remaining apps will continue when you reopen the app")
+		)
+		keepAlive.start()
+		defer { keepAlive.stop() }
 
 		if mode.signs {
 			await _signAll()
@@ -138,9 +157,16 @@ final class BatchJobRunner: ObservableObject {
 			guard !_cancelled else { return }
 
 			currentIndex = index
-			items[index].state = .working
 
 			let app = items[index].app
+
+			guard _resignsSigned || !app.isSigned else {
+				items[index].state = .alreadySigned
+				continue
+			}
+
+			items[index].state = .working
+
 			let options = _overrides[items[index].id] ?? _options.resolved(for: app)
 			let icon = _icons[items[index].id]
 
@@ -170,7 +196,10 @@ final class BatchJobRunner: ObservableObject {
 		for index in items.indices {
 			guard !_cancelled else { return }
 			// Still queued means install-only; anything else never produced a package.
-			guard items[index].state == .signed || items[index].state == .queued else { continue }
+			switch items[index].state {
+			case .signed, .alreadySigned, .queued: break
+			default: continue
+			}
 
 			currentIndex = index
 			items[index].state = .working

@@ -30,7 +30,6 @@ struct BatchProgressView: View {
 					}
 				}
 			}
-			.animation(.smooth, value: runner.currentIndex)
 			.toolbar {
 				if runner.isFinished || runner.isCancelled {
 					NBToolbarButton(.localized("Done"), style: .text, placement: .topBarTrailing) {
@@ -83,15 +82,28 @@ struct BatchProgressView: View {
 				.font(.subheadline)
 				.foregroundStyle(.secondary)
 				.multilineTextAlignment(.center)
+				.lineLimit(1)
+				.minimumScaleFactor(0.8)
+				.frame(maxWidth: .infinity)
 		}
 		.frame(maxWidth: .infinity)
 		.padding(.bottom, 8)
 	}
 
+	/// Signed apps only count as settled while signing; the install pass has to move them again.
 	private var _fraction: Double {
 		guard !runner.items.isEmpty else { return 0 }
-		let settled = runner.items.filter { $0.state != .queued && $0.state != .working }.count
-		return runner.isFinished ? 1 : Double(settled) / Double(runner.items.count)
+		guard !runner.isFinished else { return 1 }
+
+		let settled = runner.items.filter { item in
+			switch item.state {
+			case .queued, .working: false
+			case .signed, .alreadySigned: runner.phase == .signing
+			default: true
+			}
+		}.count
+
+		return Double(settled) / Double(runner.items.count)
 	}
 
 	private var _accent: Color {
@@ -127,29 +139,37 @@ struct BatchProgressView: View {
 
 	// MARK: Rows
 
+	/// The layout stays identical across states only the trailing accessory and the second line
+	/// swap, otherwise every phase change re lays out the whole list.
 	@ViewBuilder
 	private func _row(for item: BatchItem) -> some View {
+		let isInstalling = runner.phase == .installing && item.state == .working
+
 		HStack(spacing: NBSpacing.row) {
 			FRAppIconView(app: item.installable, size: 44)
 
-			if let installer = runner.currentInstaller, item.state == .working, runner.phase == .installing {
-				BatchInstallRowView(
-					name: item.installable.name ?? .localized("Unknown"),
-					installer: installer,
-					onSkip: runner.skipCurrentInstall
-				)
-			} else {
-				VStack(alignment: .leading, spacing: 2) {
-					Text(item.installable.name ?? .localized("Unknown"))
-						.font(.headline)
+			VStack(alignment: .leading, spacing: 4) {
+				Text(item.installable.name ?? .localized("Unknown"))
+					.font(.headline)
+					.lineLimit(1)
 
+				if isInstalling, let installer = runner.currentInstaller {
+					BatchInstallStatusView(installer: installer)
+				} else {
 					Text(_subtitle(for: item))
 						.font(.subheadline)
 						.foregroundStyle(_isFailed(item) ? Color.red : .secondary)
 						.lineLimit(2)
 				}
-				.frame(maxWidth: .infinity, alignment: .leading)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
 
+			if isInstalling {
+				Button(.localized("Skip"), action: runner.skipCurrentInstall)
+					.font(.subheadline.weight(.medium))
+					.buttonStyle(.bordered)
+					.controlSize(.small)
+			} else {
 				_stateIcon(for: item)
 			}
 		}
@@ -166,6 +186,7 @@ struct BatchProgressView: View {
 		case .queued: .localized("Queued")
 		case .working: runner.phase == .signing ? .localized("Signing") : .localized("Installing")
 		case .signed: .localized("Signed")
+		case .alreadySigned: .localized("Already Signed")
 		case .installed: .localized("Installed")
 		case .failed(let message): message
 		case .skipped: .localized("Skipped")
@@ -183,6 +204,9 @@ struct BatchProgressView: View {
 		case .signed:
 			Image(systemName: runner.mode.installs ? "signature" : "checkmark.circle.fill")
 				.foregroundStyle(runner.mode.installs ? Color.accentColor : .green)
+		case .alreadySigned:
+			Image(systemName: "checkmark.seal.fill")
+				.foregroundStyle(.secondary)
 		case .installed:
 			Image(systemName: "checkmark.circle.fill")
 				.foregroundStyle(.green)
@@ -196,34 +220,20 @@ struct BatchProgressView: View {
 	}
 }
 
-// MARK: - View: Active install row
-private struct BatchInstallRowView: View {
-	let name: String
+// MARK: - View: Active install status
+/// Owns the installer observation so package and upload progress redraw this line alone
+/// instead of the whole queue.
+private struct BatchInstallStatusView: View {
 	@ObservedObject var installer: AppInstaller
 	@ObservedObject var viewModel: InstallerStatusViewModel
-	let onSkip: () -> Void
 
-	init(name: String, installer: AppInstaller, onSkip: @escaping () -> Void) {
-		self.name = name
+	init(installer: AppInstaller) {
 		self.installer = installer
 		self.viewModel = installer.viewModel
-		self.onSkip = onSkip
 	}
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 6) {
-			HStack {
-				Text(name)
-					.font(.headline)
-
-				Spacer()
-
-				Button(.localized("Skip"), action: onSkip)
-					.font(.subheadline.weight(.medium))
-					.buttonStyle(.bordered)
-					.controlSize(.small)
-			}
-
 			ProgressView(value: viewModel.overallProgress)
 				.animation(.smooth, value: viewModel.overallProgress)
 
@@ -231,6 +241,7 @@ private struct BatchInstallRowView: View {
 				.font(.subheadline)
 				.foregroundStyle(.secondary)
 				.labelStyle(.titleAndIcon)
+				.lineLimit(1)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.sheet(isPresented: $installer.isPresentingFallbackPage) {
