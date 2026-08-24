@@ -44,7 +44,7 @@ enum FR {
 		using options: Options,
 		icon: UIImage?,
 		certificate: CertificatePair?,
-		completion: @escaping (Error?) -> Void
+		completion: @escaping (Result<Signed, Error>) -> Void
 	) {
 		Task.detached {
 			let log = SigningLog.shared
@@ -67,15 +67,20 @@ enum FR {
 				try await handler.copy()
 				try await handler.modify()
 				try? await handler.clean()
+
+				guard let signed = handler.signedApp else {
+					throw SigningFileHandlerError.appNotFound
+				}
+
 				log.success(.localized("Signed successfully"))
 				await MainActor.run {
-					completion(nil)
+					completion(.success(signed))
 				}
 			} catch {
 				try? await handler.clean()
 				log.error(error.localizedDescription)
 				await MainActor.run {
-					completion(error)
+					completion(.failure(error))
 				}
 			}
 		}

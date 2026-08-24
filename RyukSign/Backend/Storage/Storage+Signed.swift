@@ -22,7 +22,7 @@ extension Storage {
         appIcon: String? = nil,
         appDescription: String? = nil,
 
-        completion: @escaping (Error?) -> Void
+        completion: @escaping (Signed) -> Void
     ) {
         let generator = UIImpactFeedbackGenerator(style: .light)
 
@@ -43,6 +43,6 @@ extension Storage {
 
         saveContext()
         generator.impactOccurred()
-        completion(nil)
+        completion(new)
     }
 }

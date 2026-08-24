@@ -380,15 +380,10 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 		var options = OptionsManager.shared.options
 		options.appIdentifier = Bundle.main.bundleIdentifier
 		options.appVersion = release.version
-		try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, Error>) in
-			FR.signPackageFile(imported, using: options, icon: nil, certificate: certificate) { error in
-				if let error { c.resume(throwing: error) } else { c.resume() }
+		let signed = try await withCheckedThrowingContinuation { (c: CheckedContinuation<Signed, Error>) in
+			FR.signPackageFile(imported, using: options, icon: nil, certificate: certificate) { result in
+				c.resume(with: result)
 			}
-		}
-
-		guard let signed = newestApp(Signed.fetchRequest()) else {
-			throw NSError(domain: "SelfUpdate", code: -3,
-						  userInfo: [NSLocalizedDescriptionKey: String.localized("Signing failed.")])
 		}
 		scratch.append(signed)
 

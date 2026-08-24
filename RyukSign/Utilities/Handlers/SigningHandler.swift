@@ -32,6 +32,7 @@ final class SigningHandler: NSObject {
 	private var _originalBundleIdentifier: String?
 	private var _appDescription: String?
 	private var _didAddToDatabase = false
+	private(set) var signedApp: Signed?
 	
 	init(app: AppInfoPresentable, options: Options = OptionsManager.shared.options) {
 		self._app = app
@@ -182,7 +183,7 @@ final class SigningHandler: NSObject {
 			return
 		}
 
-		await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+		signedApp = await withCheckedContinuation { (continuation: CheckedContinuation<Signed, Never>) in
 			let bundle = Bundle(url: appUrl)
 
 			Storage.shared.addSigned(
@@ -194,9 +195,9 @@ final class SigningHandler: NSObject {
 				appVersion: bundle?.version,
 				appIcon: bundle?.iconFileName,
 				appDescription: _appDescription
-			) { _ in
+			) { signed in
 				Logger.signing.info("[\(self._uuid)] Added to database (original ID: \(self._originalBundleIdentifier ?? "nil"), current ID: \(bundle?.bundleIdentifier ?? "nil"))")
-				continuation.resume()
+				continuation.resume(returning: signed)
 			}
 		}
 

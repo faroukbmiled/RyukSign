@@ -25,6 +25,7 @@ struct LibraryView: View {
     @State private var _selectedAppUUIDs: Set<String> = []
     @State private var _editMode: EditMode = .inactive
     @State private var _showDeleteConfirmation = false
+    @State private var _batchRequest: BatchRequest?
 
     @State private var _searchText = ""
     @State private var _selectedScope: Scope = .all
@@ -101,22 +102,18 @@ struct LibraryView: View {
                     }
 
                     ToolbarItem(placement: .topBarTrailing) {
-                        if _editMode.isEditing {
-                            Button(role: .destructive) {
-                                if !_selectedAppUUIDs.isEmpty {
-                                    _showDeleteConfirmation = true
-                                }
-                            } label: {
-                                Label(.localized("Delete"), systemImage: "trash")
-                            }
-                            .disabled(_selectedAppUUIDs.isEmpty)
-                        } else {
+                        if !_editMode.isEditing {
                             Menu {
                                 importMenuActions
                             } label: {
                                 Image(systemName: "plus")
                             }
                         }
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    if _editMode.isEditing {
+                        selectionActionBar
                     }
                 }
                 .environment(\.editMode, $_editMode)
@@ -128,6 +125,9 @@ struct LibraryView: View {
                         .presentationDetents([.height(200)])
                         .presentationDragIndicator(.visible)
                         .compatPresentationRadius(21)
+                }
+                .fullScreenCover(item: $_batchRequest) { request in
+                    BatchSignView(apps: request.apps, mode: request.mode)
                 }
                 .fullScreenCover(item: $_selectedSigningAppPresenting) { app in
                     SigningView(app: app.base)
@@ -237,7 +237,8 @@ struct LibraryView: View {
                     selectedSigningAppPresenting: $_selectedSigningAppPresenting,
                     selectedInstallAppPresenting: $_selectedInstallAppPresenting,
                     selectedAppUUIDs: $_selectedAppUUIDs,
-                    isHighlighted: app.uuid == tabSelection.highlightedAppUUID
+                    isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
+                    onSelectMore: { _beginSelection(with: app) }
                 )
                 .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
                 .id(app.uuid)
@@ -268,7 +269,8 @@ struct LibraryView: View {
                     selectedSigningAppPresenting: $_selectedSigningAppPresenting,
                     selectedInstallAppPresenting: $_selectedInstallAppPresenting,
                     selectedAppUUIDs: $_selectedAppUUIDs,
-                    isHighlighted: app.uuid == tabSelection.highlightedAppUUID
+                    isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
+                    onSelectMore: { _beginSelection(with: app) }
                 )
                 .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
                 .id(app.uuid)
@@ -292,6 +294,62 @@ struct LibraryView: View {
         }
     }
     
+    // MARK: Selection Action Bar
+    @ViewBuilder
+    private var selectionActionBar: some View {
+        let selection = selectedApps()
+        let canSign = selection.contains { !$0.isSigned }
+        let canInstall = !selection.isEmpty && selection.allSatisfy { $0.isSigned }
+
+        HStack(spacing: 10) {
+            if canInstall {
+                _actionButton(.localized("Install"), systemImage: "square.and.arrow.down") {
+                    _startBatch(.install)
+                }
+            } else {
+                _actionButton(.localized("Sign"), systemImage: "signature", isDisabled: !canSign) {
+                    _startBatch(.sign)
+                }
+                _actionButton(.localized("Sign & Install"), systemImage: "square.and.arrow.down.on.square", isDisabled: !canSign) {
+                    _startBatch(.signAndInstall)
+                }
+            }
+
+            Button(role: .destructive) {
+                _showDeleteConfirmation = true
+            } label: {
+                Image(systemName: "trash")
+                    .font(.body.weight(.medium))
+                    .frame(height: 34)
+                    .padding(.horizontal, 14)
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .disabled(_selectedAppUUIDs.isEmpty)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+        .background(.bar)
+    }
+
+    @ViewBuilder
+    private func _actionButton(
+        _ title: String,
+        systemImage: String,
+        isDisabled: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.medium))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .frame(height: 34)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(isDisabled || _selectedAppUUIDs.isEmpty)
+    }
+
     // MARK: Import Menu Actions
     @ViewBuilder
     private var importMenuActions: some View {
@@ -340,15 +398,44 @@ struct LibraryView: View {
     }
 }
 
-// MARK: - Extension: Bulk Delete
+// MARK: - Extension: Batch
 extension LibraryView {
-    private func bulkDeleteSelectedApps() {
-        let selectedApps = getAllApps().filter { app in
+    struct BatchRequest: Identifiable {
+        let id = UUID()
+        let apps: [AppInfoPresentable]
+        let mode: BatchJobRunner.Mode
+    }
+
+    private func selectedApps() -> [AppInfoPresentable] {
+        getAllApps().filter { app in
             guard let uuid = app.uuid else { return false }
             return _selectedAppUUIDs.contains(uuid)
         }
+    }
 
-        for app in selectedApps {
+    private func _beginSelection(with app: AppInfoPresentable) {
+        guard let uuid = app.uuid else { return }
+
+        withAnimation {
+            _editMode = .active
+            _selectedAppUUIDs = [uuid]
+        }
+    }
+
+    private func _startBatch(_ mode: BatchJobRunner.Mode) {
+        let apps = selectedApps()
+        guard !apps.isEmpty else { return }
+
+        _batchRequest = BatchRequest(apps: apps, mode: mode)
+        _selectedAppUUIDs.removeAll()
+        _editMode = .inactive
+    }
+}
+
+// MARK: - Extension: Bulk Delete
+extension LibraryView {
+    private func bulkDeleteSelectedApps() {
+        for app in selectedApps() {
             Storage.shared.deleteApp(for: app)
         }
 

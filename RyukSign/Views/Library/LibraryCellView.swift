@@ -29,6 +29,7 @@ struct LibraryCellView: View {
 	@Binding var selectedInstallAppPresenting: AnyApp?
 	@Binding var selectedAppUUIDs: Set<String>
 	var isHighlighted: Bool = false
+	var onSelectMore: (() -> Void)?
 	
 	// MARK: Selections
 	private var _isSelected: Bool {
@@ -94,6 +95,11 @@ struct LibraryCellView: View {
 				Divider()
 				_contextActionsExtra(for: app)
 				Divider()
+				if let onSelectMore {
+					Button(.localized("Select"), systemImage: "checkmark.circle") {
+						onSelectMore()
+					}
+				}
 				_actions(for: app)
 			}
 		}
