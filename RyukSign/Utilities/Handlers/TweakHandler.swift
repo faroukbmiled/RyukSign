@@ -143,7 +143,7 @@ class TweakHandler {
 				folder: _options.injectFolder
 			)
 			for name in names {
-				SigningLog.shared.info(.localized("Injected %@", arguments: name))
+				SigningLog.shared.info(.localized("Injected %@", arguments: name), category: "inject")
 			}
 		}
 
@@ -154,8 +154,8 @@ class TweakHandler {
 				do {
 					try await _processSpecFile(file, spec: spec, baseTmpDir: baseTmpDir)
 				} catch {
-					SigningLog.shared.error(.localized("Failed to inject %@", arguments: file.fileName))
-					FileLogger.error("Tweak \"\(spec.displayName)\" file \(file.fileName) failed: \(error.localizedDescription)", category: "inject")
+					SigningLog.shared.error(.localized("Failed to inject %@", arguments: file.fileName), category: "inject")
+					SigningLog.shared.info(">>> \(error.localizedDescription)", category: "inject")
 				}
 			}
 		}
@@ -175,13 +175,13 @@ class TweakHandler {
 		// App extensions are placed in PlugIns/ and signed with the app, not injected.
 		if file.fileType == .appex || stagedFile.pathExtension.lowercased() == "appex" {
 			try _handleAppex(at: stagedFile)
-			SigningLog.shared.info(.localized("Placed extension %@", arguments: file.fileName))
+			SigningLog.shared.info(.localized("Placed extension %@", arguments: file.fileName), category: "inject")
 			return
 		}
 
 		let names = try await _runJob(urls: [stagedFile], baseTmpDir: baseTmpDir, path: path, folder: folder)
 		_injectIntoTargets(dylibNames: names, targeting: file.config.targeting, path: path, folder: folder)
-		SigningLog.shared.info(.localized("Injected %@", arguments: file.fileName))
+		SigningLog.shared.info(.localized("Injected %@", arguments: file.fileName), category: "inject")
 	}
 
 	// MARK: - App extensions (.appex)

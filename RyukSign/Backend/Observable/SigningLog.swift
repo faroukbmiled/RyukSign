@@ -29,9 +29,9 @@ final class SigningLog: ObservableObject {
 		}
 	}
 
-	func info(_ message: String) { _append(.info, message) }
-	func success(_ message: String) { _append(.success, message) }
-	func error(_ message: String) { _append(.error, message) }
+	func info(_ message: String, category: String = "sign") { _append(.info, message, category: category) }
+	func success(_ message: String, category: String = "sign") { _append(.success, message, category: category) }
+	func error(_ message: String, category: String = "sign") { _append(.error, message, category: category) }
 
 	func exportText() -> String {
 		let formatter = ISO8601DateFormatter()
@@ -41,16 +41,19 @@ final class SigningLog: ObservableObject {
 		}.joined(separator: "\n")
 	}
 
-	private func _append(_ level: LogKind, _ rawMessage: String) {
+	private func _append(_ level: LogKind, _ rawMessage: String, category: String) {
 		let classified = LogParser.classify(rawMessage, level: level)
+		guard !classified.text.trimmingCharacters(in: .whitespaces).isEmpty else { return }
 
 		if classified.kind == .error {
-			FileLogger.error(classified.text, category: "sign")
+			FileLogger.error(classified.text, category: category)
 		} else {
-			FileLogger.log(classified.text, category: "sign")
+			// Re-add the ">>>" marker so re-parsing the file classifies detail lines the same way.
+			let logged = classified.kind == .detail ? ">>> \(classified.text)" : classified.text
+			FileLogger.log(logged, category: category)
 		}
 
-		let entry = LogEntry(date: Date(), category: nil, message: classified.text, kind: classified.kind)
+		let entry = LogEntry(date: Date(), category: category, message: classified.text, kind: classified.kind)
 
 		_queue.async {
 			self._pending.append(entry)

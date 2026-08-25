@@ -9,23 +9,6 @@ import UIKit
 
 enum LogKind {
 	case info, success, error, detail
-
-	var tint: UIColor {
-		switch self {
-		case .info, .detail: .secondaryLabel
-		case .success: .systemGreen
-		case .error: .systemRed
-		}
-	}
-
-	var textColor: UIColor {
-		switch self {
-		case .info: .label
-		case .success: .systemGreen
-		case .error: .systemRed
-		case .detail: .secondaryLabel
-		}
-	}
 }
 
 struct LogEntry: Identifiable {
@@ -82,13 +65,14 @@ enum LogParser {
 	static func parseFile(_ raw: String, limit: Int? = nil) -> [LogEntry] {
 		var lines = raw.split(separator: "\n", omittingEmptySubsequences: true)
 		if let limit, lines.count > limit { lines = Array(lines.suffix(limit)) }
-		return lines.reversed().map { line in
+		return lines.reversed().compactMap { line in
 			let line = String(line)
 			guard
 				let firstSpace = line.firstIndex(of: " "),
 				let date = _iso.date(from: String(line[..<firstSpace]))
 			else {
 				let c = classify(line)
+				guard !c.text.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
 				return LogEntry(date: nil, category: nil, message: c.text, kind: c.kind)
 			}
 
@@ -100,6 +84,7 @@ enum LogParser {
 			}
 
 			let c = classify(rest)
+			guard !c.text.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
 			return LogEntry(date: date, category: category, message: c.text, kind: c.kind)
 		}
 	}
@@ -108,7 +93,8 @@ enum LogParser {
 enum LogFormat {
 	private static let _stamp: DateFormatter = {
 		let f = DateFormatter()
-		f.setLocalizedDateFormatFromTemplate("MMMdjms")
+		f.locale = Locale(identifier: "en_US_POSIX")
+		f.dateFormat = "HH:mm:ss"
 		return f
 	}()
 
@@ -118,10 +104,12 @@ enum LogFormat {
 
 	static func color(forCategory category: String) -> UIColor {
 		switch category.lowercased() {
-		case "sign": .systemBlue
-		case "analyze": .systemOrange
-		case "inject": .systemPurple
-		default: .secondaryLabel
+		case "sign": UIColor(red: 0.40, green: 0.64, blue: 1.00, alpha: 1)
+		case "analyze": UIColor(red: 1.00, green: 0.69, blue: 0.30, alpha: 1)
+		case "inject": UIColor(red: 0.78, green: 0.58, blue: 1.00, alpha: 1)
+		case "install": UIColor(red: 0.35, green: 0.80, blue: 0.76, alpha: 1)
+		case "update": UIColor(red: 1.00, green: 0.55, blue: 0.72, alpha: 1)
+		default: UIColor(red: 0.65, green: 0.65, blue: 0.70, alpha: 1)
 		}
 	}
 }

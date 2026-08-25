@@ -16,12 +16,13 @@ struct LogsHistoryView: View {
 	var body: some View {
 		NBNavigationView(.localized("Activity Logs"), displayMode: .inline) {
 			LogConsoleView(entries: _entries, showCategory: true, onRefresh: _load)
-				.background(Color(uiColor: .systemBackground))
+				.background(Color(uiColor: LogConsoleView.consoleBackgroundColor))
+				.ignoresSafeArea(edges: .bottom)
 				.overlay {
 					if _entries.isEmpty {
 						Text(.localized("No logs yet"))
 							.font(.footnote)
-							.foregroundStyle(.secondary)
+							.foregroundStyle(.white.opacity(0.35))
 					}
 				}
 				.toolbar {
@@ -39,6 +40,9 @@ struct LogsHistoryView: View {
 					}
 				}
 				.onAppear(perform: _load)
+				.toolbarBackground(Color(uiColor: LogConsoleView.consoleBackgroundColor), for: .navigationBar)
+				.toolbarBackground(.visible, for: .navigationBar)
+				.toolbarColorScheme(.dark, for: .navigationBar)
 		}
 	}
 

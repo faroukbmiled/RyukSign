@@ -15,7 +15,7 @@ struct SigningLogView: View {
 	// MARK: Body
 	var body: some View {
 		NBNavigationView(.localized("Signing Logs"), displayMode: .inline) {
-			LogConsoleView(entries: _log.lines)
+			LogConsoleView(entries: _log.lines, showCategory: true, style: .transparent)
 				.background(Color(uiColor: .systemBackground))
 				.overlay {
 					if _log.lines.isEmpty {
