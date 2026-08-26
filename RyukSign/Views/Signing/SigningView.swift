@@ -65,7 +65,7 @@ struct SigningView: View {
 					identifierSuggestion: _provisioningIdentifier()
 				)
 				_cert()
-				SigningAdvancedView(app: app, options: $_temporaryOptions)
+				SigningAdvancedView(app: app, options: $_temporaryOptions, certificate: _selectedCert())
 				
 				// horrible
 				Rectangle()

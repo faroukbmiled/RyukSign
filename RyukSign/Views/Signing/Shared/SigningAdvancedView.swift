@@ -11,12 +11,28 @@ import NimbleViews
 struct SigningAdvancedView: View {
 	let app: AppInfoPresentable
 	@Binding var options: Options
+	/// Used only to flag entitlement entries the selected certificate's provisioning profile doesn't grant.
+	var certificate: CertificatePair? = nil
 	/// Off where properties are owned higher up, such as a batch sharing one set across every app.
 	var showsProperties: Bool = true
 
 	private var _activeInjectionCount: Int {
 		options.injectionFiles.count
 		+ (options.tweakInjections?.filter { $0.enabled }.count ?? 0)
+	}
+
+	/// Entries in the selected entitlements file that don't cleanly match the selected certificate's profile.
+	private var _entitlementsFlagCount: Int {
+		guard let fileURL = options.appEntitlementsFile else { return 0 }
+		let dict = (NSDictionary(contentsOf: fileURL) as? [String: Any]) ?? [:]
+		return EntitlementsDiff.flaggedCount(in: dict, against: EntitlementsDiff.grantedEntitlements(for: certificate))
+	}
+
+	/// How many things under Modify are customized, visible before the group is even expanded.
+	private var _modifyActivityCount: Int {
+		options.disInjectionFiles.count
+		+ options.removeFiles.count
+		+ (options.appEntitlementsFile != nil ? 1 : 0)
 	}
 
 	// MARK: Body
@@ -41,15 +57,22 @@ struct SigningAdvancedView: View {
 				} label: {
 					Label(.localized("Frameworks & PlugIns"), systemImage: "shippingbox")
 				}
-				#if NIGHTLY || DEBUG
 				NavigationLink {
-					SigningEntitlementsView(bindingValue: $options.appEntitlementsFile)
+					SigningEntitlementsView(bindingValue: $options.appEntitlementsFile, app: app, certificate: certificate)
 				} label: {
-					Label(.localized("Entitlements") + " (BETA)", systemImage: "checkmark.seal")
+					Label(.localized("Entitlements (Experimental)"), systemImage: options.appEntitlementsFile == nil ? "checkmark.seal" : "checkmark.seal.fill")
 				}
-				#endif
+				.badge(_entitlementsFlagCount)
 			} label: {
-				Label(.localized("Modify"), systemImage: "wrench.adjustable")
+				HStack {
+					Label(.localized("Modify"), systemImage: "wrench.adjustable")
+					if _modifyActivityCount > 0 {
+						Spacer()
+						Text("\(_modifyActivityCount)")
+							.font(.footnote)
+							.foregroundStyle(.secondary)
+					}
+				}
 			}
 
 			if showsProperties {

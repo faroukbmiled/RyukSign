@@ -15,6 +15,7 @@ struct BatchAppOptionsView: View {
 	let identifierSuggestion: String?
 	@Binding var options: Options
 	@Binding var appIcon: UIImage?
+	let certificate: CertificatePair?
 	let onReset: () -> Void
 
 	// MARK: Body
@@ -27,7 +28,7 @@ struct BatchAppOptionsView: View {
 				identifierSuggestion: identifierSuggestion
 			)
 
-			SigningAdvancedView(app: app, options: $options, showsProperties: false)
+			SigningAdvancedView(app: app, options: $options, certificate: certificate, showsProperties: false)
 
 			Section {
 			} footer: {

@@ -51,6 +51,15 @@ extension FileManager {
 		tweaksLibrary.appendingPathComponent(id)
 	}
 
+	/// Gives the Entitlements Manager library directory
+	var entitlementsLibrary: URL {
+		URL.documentsDirectory.appendingPathComponent("Entitlements")
+	}
+	/// Gives the Entitlements Manager library directory with an entry ID appending path
+	func entitlementsLibrary(_ id: String) -> URL {
+		entitlementsLibrary.appendingPathComponent(id)
+	}
+
 	/// Gives the Web Manager inbox directory (uploads land here before routing)
 	var webManagerInbox: URL {
 		URL.documentsDirectory.appendingPathComponent("WebManager")

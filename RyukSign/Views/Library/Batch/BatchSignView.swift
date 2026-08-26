@@ -168,6 +168,7 @@ struct BatchSignView: View {
 					identifierSuggestion: _provisioningIdentifier(),
 					options: _binding(for: app),
 					appIcon: _icon(for: app),
+					certificate: _selectedCert(),
 					onReset: { _reset(app) }
 				)
 			} label: {
