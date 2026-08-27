@@ -20,19 +20,27 @@ struct BatchAppOptionsView: View {
 
 	// MARK: Body
 	var body: some View {
-		NBList(app.name ?? .localized("Unknown")) {
-			SigningCustomizationView(
-				app: app,
-				options: $options,
-				appIcon: $appIcon,
-				identifierSuggestion: identifierSuggestion
-			)
+		ScrollViewReader { proxy in
+			NBList(app.name ?? .localized("Unknown")) {
+				SigningCustomizationView(
+					app: app,
+					options: $options,
+					appIcon: $appIcon,
+					identifierSuggestion: identifierSuggestion
+				)
 
-			SigningAdvancedView(app: app, options: $options, certificate: certificate, showsProperties: false)
+				SigningAdvancedView(
+					app: app,
+					options: $options,
+					certificate: certificate,
+					showsProperties: false,
+					scrollProxy: proxy
+				)
 
-			Section {
-			} footer: {
-				Text(.localized("The certificate and properties are set once for the whole batch."))
+				Section {
+				} footer: {
+					Text(.localized("The certificate and properties are set once for the whole batch."))
+				}
 			}
 		}
 		.toolbar {

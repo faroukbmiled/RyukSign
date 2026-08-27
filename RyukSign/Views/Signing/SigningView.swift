@@ -57,21 +57,28 @@ struct SigningView: View {
 	// MARK: Body
     var body: some View {
 		NBNavigationView("", displayMode: .inline) {
-			Form {
-				SigningCustomizationView(
-					app: app,
-					options: $_temporaryOptions,
-					appIcon: $appIcon,
-					identifierSuggestion: _provisioningIdentifier()
-				)
-				_cert()
-				SigningAdvancedView(app: app, options: $_temporaryOptions, certificate: _selectedCert())
-				
-				// horrible
-				Rectangle()
-					.foregroundStyle(.clear)
-					.frame(height: 30)
-					.listRowBackground(EmptyView())
+			ScrollViewReader { proxy in
+				Form {
+					SigningCustomizationView(
+						app: app,
+						options: $_temporaryOptions,
+						appIcon: $appIcon,
+						identifierSuggestion: _provisioningIdentifier()
+					)
+					_cert()
+					SigningAdvancedView(
+						app: app,
+						options: $_temporaryOptions,
+						certificate: _selectedCert(),
+						scrollProxy: proxy
+					)
+
+					// horrible
+					Rectangle()
+						.foregroundStyle(.clear)
+						.frame(height: 30)
+						.listRowBackground(EmptyView())
+				}
 			}
 			.disabled(_isSigning)
 			.animation(.smooth, value: _isSigning)

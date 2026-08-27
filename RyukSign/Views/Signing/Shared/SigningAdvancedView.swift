@@ -15,6 +15,9 @@ struct SigningAdvancedView: View {
 	var certificate: CertificatePair? = nil
 	/// Off where properties are owned higher up, such as a batch sharing one set across every app.
 	var showsProperties: Bool = true
+	var scrollProxy: ScrollViewProxy? = nil
+
+	@State private var _isModifyExpanded = false
 
 	private var _activeInjectionCount: Int {
 		options.injectionFiles.count
@@ -36,6 +39,8 @@ struct SigningAdvancedView: View {
 		+ options.infoPlistChangeCount
 	}
 
+	private static let _modifyID = "signing.advanced.modify"
+
 	// MARK: Body
 	var body: some View {
 		NBSection(.localized("Advanced")) {
@@ -46,7 +51,7 @@ struct SigningAdvancedView: View {
 			}
 			.badge(_activeInjectionCount)
 
-			DisclosureGroup {
+			DisclosureGroup(isExpanded: $_isModifyExpanded) {
 				NavigationLink {
 					SigningDylibView(app: app, options: $options.optional())
 				} label: {
@@ -79,6 +84,15 @@ struct SigningAdvancedView: View {
 						Text("\(_modifyActivityCount)")
 							.font(.footnote)
 							.foregroundStyle(.secondary)
+					}
+				}
+			}
+			.id(Self._modifyID)
+			.onChange(of: _isModifyExpanded) { expanded in
+				guard expanded else { return }
+				DispatchQueue.main.async {
+					withAnimation(.smooth) {
+						scrollProxy?.scrollTo(Self._modifyID, anchor: .top)
 					}
 				}
 			}
