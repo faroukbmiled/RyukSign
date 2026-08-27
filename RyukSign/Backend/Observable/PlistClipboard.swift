@@ -1,5 +1,5 @@
 //
-//  EntitlementsClipboard.swift
+//  PlistClipboard.swift
 //  RyukSign
 //
 //  Created by Ryuk
@@ -7,9 +7,9 @@
 
 import Foundation
 
-/// In-session clipboard for moving entries between files, this only needs to survive navigating between two editors.
-final class EntitlementsClipboard: ObservableObject {
-	static let shared = EntitlementsClipboard()
+/// In-session clipboard for moving entries between editors, this only needs to survive navigating between two screens.
+final class PlistClipboard: ObservableObject {
+	static let shared = PlistClipboard()
 
 	@Published private(set) var entries: [String: Any] = [:]
 

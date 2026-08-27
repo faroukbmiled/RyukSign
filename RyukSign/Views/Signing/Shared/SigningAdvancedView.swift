@@ -25,7 +25,7 @@ struct SigningAdvancedView: View {
 	private var _entitlementsFlagCount: Int {
 		guard let fileURL = options.appEntitlementsFile else { return 0 }
 		let dict = (NSDictionary(contentsOf: fileURL) as? [String: Any]) ?? [:]
-		return EntitlementsDiff.flaggedCount(in: dict, against: EntitlementsDiff.grantedEntitlements(for: certificate))
+		return PlistDiff.flaggedCount(in: dict, against: PlistDiff.grantedEntitlements(for: certificate))
 	}
 
 	/// How many things under Modify are customized, visible before the group is even expanded.
@@ -33,6 +33,7 @@ struct SigningAdvancedView: View {
 		options.disInjectionFiles.count
 		+ options.removeFiles.count
 		+ (options.appEntitlementsFile != nil ? 1 : 0)
+		+ options.infoPlistChangeCount
 	}
 
 	// MARK: Body
@@ -63,6 +64,13 @@ struct SigningAdvancedView: View {
 					Label(.localized("Entitlements (Experimental)"), systemImage: options.appEntitlementsFile == nil ? "checkmark.seal" : "checkmark.seal.fill")
 				}
 				.badge(_entitlementsFlagCount)
+
+				NavigationLink {
+					SigningInfoPlistView(app: app, options: $options)
+				} label: {
+					Label(.localized("Info.plist (Experimental)"), systemImage: options.infoPlistChangeCount == 0 ? "doc.text" : "doc.text.fill")
+				}
+				.badge(options.infoPlistChangeCount)
 			} label: {
 				HStack {
 					Label(.localized("Modify"), systemImage: "wrench.adjustable")

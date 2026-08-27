@@ -15,7 +15,6 @@ final class PremiumManager: ObservableObject {
 
 	enum PremiumError: LocalizedError {
 		case noDeviceID
-		case invalidDeviceID
 		case notActivated
 		case unavailable
 		case empty
@@ -24,7 +23,6 @@ final class PremiumManager: ObservableObject {
 		var errorDescription: String? {
 			switch self {
 			case .noDeviceID: return "Unable to retrieve device identifier. Please try again."
-			case .invalidDeviceID: return .localized("That doesn't look like a valid device ID.")
 			case .notActivated: return .localized("No premium access is registered for this device ID.")
 			case .unavailable: return .localized("Device recovery isn't available on the server yet.")
 			case .empty: return "Failed to fetch repository data from the provided URLs."
@@ -88,11 +86,6 @@ final class PremiumManager: ObservableObject {
 		defer { isWorking = false }
 
 		return try await _recover()
-	}
-
-	func adopt(deviceID: String) async throws -> Int {
-		guard RyukSignAPI.adoptDeviceUUID(deviceID) else { throw PremiumError.invalidDeviceID }
-		return try await recoverFromServer()
 	}
 
 	func reset() {

@@ -22,6 +22,8 @@ extension View {
 	func dismissableKeyboard() -> some View {
 		self
 			.scrollDismissesKeyboard(.interactively)
+			// A live responder at teardown leaves the keyboard window and its inset behind on whatever was underneath.
+			.onDisappear { UIApplication.shared.endEditing() }
 			.toolbar {
 				ToolbarItemGroup(placement: .keyboard) {
 					Spacer()

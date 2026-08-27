@@ -108,6 +108,10 @@ struct Options: Codable, Equatable {
 	var fixFilePicker: Bool
 	/// Resolved managed-tweak injections for this sign; per-sign working copy only. Optional so old saved options decode.
 	var tweakInjections: [TweakInjectionSpec]? = nil
+	/// Raw Info.plist overrides for this sign, kept as an XML plist blob so any value type survives.
+	var infoPlistOverrides: Data? = nil
+	/// Info.plist keys stripped from the bundle for this sign.
+	var infoPlistRemovals: [String]? = nil
 
 	// MARK: Experiments
 	
@@ -286,6 +290,8 @@ extension Options {
 		fixFilePicker = try c.decodeIfPresent(Bool.self, forKey: .fixFilePicker) ?? d.fixFilePicker
 		// try? so a stale per-sign blob drops instead of resetting the whole struct.
 		tweakInjections = try? c.decode([TweakInjectionSpec].self, forKey: .tweakInjections)
+		infoPlistOverrides = try? c.decode(Data.self, forKey: .infoPlistOverrides)
+		infoPlistRemovals = try? c.decode([String].self, forKey: .infoPlistRemovals)
 		experiment_supportLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_supportLiquidGlass) ?? d.experiment_supportLiquidGlass
 		experiment_disableLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_disableLiquidGlass) ?? d.experiment_disableLiquidGlass
 		experiment_replaceSubstrateWithEllekit = try c.decodeIfPresent(Bool.self, forKey: .experiment_replaceSubstrateWithEllekit) ?? d.experiment_replaceSubstrateWithEllekit

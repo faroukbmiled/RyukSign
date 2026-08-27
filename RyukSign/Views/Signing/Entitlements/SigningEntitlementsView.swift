@@ -17,7 +17,6 @@ struct SigningEntitlementsView: View {
 	var certificate: CertificatePair? = nil
 
 	@State private var _isImportPresenting = false
-	@State private var _isImportMergePresenting = false
 	@State private var _isRenamingPresenting = false
 	@State private var _fileToRename: EntitlementsFile?
 	@State private var _newName = ""
@@ -110,7 +109,7 @@ extension SigningEntitlementsView {
 				}
 			}
 		}
-		.badge(EntitlementsDiff.flaggedCount(in: _manager.load(file), against: _grantedEntitlements))
+		.badge(PlistDiff.flaggedCount(in: _manager.load(file), against: _grantedEntitlements))
 		.swipeActions(edge: .trailing) {
 			Button(role: .destructive) {
 				if isSelected { bindingValue = nil }
@@ -153,7 +152,7 @@ extension SigningEntitlementsView {
 // MARK: - Extension: Sources
 extension SigningEntitlementsView {
 	private var _grantedEntitlements: [String: Any]? {
-		EntitlementsDiff.grantedEntitlements(for: certificate)
+		PlistDiff.grantedEntitlements(for: certificate)
 	}
 
 	private var _certificateEntitlements: [String: Any]? {

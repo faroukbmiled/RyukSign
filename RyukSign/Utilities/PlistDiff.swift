@@ -1,5 +1,5 @@
 //
-//  EntitlementsDiff.swift
+//  PlistDiff.swift
 //  RyukSign
 //
 //  Created by Ryuk
@@ -7,27 +7,25 @@
 
 import Foundation
 
-/// Compares a set of entitlements against what a certificate's provisioning profile actually grants.
-enum EntitlementsDiff {
+/// Compares plist entries against a reference set, such as what a certificate's provisioning
+/// profile grants or an app's untouched Info.plist.
+enum PlistDiff {
 	enum Match {
-		/// Present in the profile with the same value.
-		case granted
-		/// The profile doesn't grant this key at all.
-		case notGranted
-		/// The profile grants this key, but with a different value.
-		case valueMismatch
+		case matches
+		case missing
+		case differs
 	}
 
-	static func match(key: String, value: Any, against granted: [String: Any]) -> Match {
-		guard let grantedValue = granted[key] else { return .notGranted }
-		return _equal(value, grantedValue) ? .granted : .valueMismatch
+	static func match(key: String, value: Any, against reference: [String: Any]) -> Match {
+		guard let referenceValue = reference[key] else { return .missing }
+		return _equal(value, referenceValue) ? .matches : .differs
 	}
 
-	/// Count of entries that don't cleanly match; `nil` granted (no certificate selected) flags nothing.
-	static func flaggedCount(in dict: [String: Any], against granted: [String: Any]?) -> Int {
-		guard let granted else { return 0 }
+	/// Count of entries that don't cleanly match; `nil` reference (no certificate selected) flags nothing.
+	static func flaggedCount(in dict: [String: Any], against reference: [String: Any]?) -> Int {
+		guard let reference else { return 0 }
 		return dict.reduce(into: 0) { count, entry in
-			if match(key: entry.key, value: entry.value, against: granted) != .granted { count += 1 }
+			if match(key: entry.key, value: entry.value, against: reference) != .matches { count += 1 }
 		}
 	}
 

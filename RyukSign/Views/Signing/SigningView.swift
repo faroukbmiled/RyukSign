@@ -124,10 +124,7 @@ struct SigningView: View {
 				) {
 					// Reset drops PPQ protection and every override, back to the app's own identity.
 					_temporaryOptions = OptionsManager.shared.options
-					_temporaryOptions.appName = nil
-					_temporaryOptions.appIdentifier = nil
-					_temporaryOptions.appVersion = nil
-					_temporaryOptions.tweakInjections = Options.autoInjectSpecs(for: app)
+					_temporaryOptions.resetPerApp(for: app)
 					appIcon = nil
 				}
 			}
@@ -141,6 +138,7 @@ struct SigningView: View {
 			}
 		}
 		.onAppear { _temporaryOptions = _temporaryOptions.resolved(for: app) }
+		.onDisappear { UIApplication.shared.endEditing() }
     }
 }
 

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import NimbleViews
-import UIKit.UIPasteboard
 
 // MARK: - View
 struct PremiumSettingsView: View {
@@ -16,8 +15,6 @@ struct PremiumSettingsView: View {
 
 	@State private var _isCustomLimit: Bool
 	@State private var _customLimit: String
-	@State private var _showDeviceIDPrompt = false
-	@State private var _deviceIDInput = ""
 	@State private var _showResetConfirmation = false
 	@State private var _errorMessage: String?
 
@@ -32,28 +29,10 @@ struct PremiumSettingsView: View {
 		NBList(.localized("Premium RyukSign"), displayMode: .inline) {
 			_statusSection
 			_filterSection
-			_deviceSection
 			_manageSection
 		}
 		.animation(.default, value: _prefs.mode)
 		.dismissableKeyboard()
-		.alert(String.localized("Use Another Device ID"), isPresented: $_showDeviceIDPrompt) {
-			TextField(.localized("Device ID"), text: $_deviceIDInput)
-				.textInputAutocapitalization(.characters)
-				.autocorrectionDisabled()
-				.font(.system(.body, design: .monospaced))
-
-			Button(String.localized("Restore")) {
-				_adoptDeviceID()
-			}
-			.disabled(_deviceIDInput.isEmpty)
-
-			Button(String.localized("Cancel"), role: .cancel) {
-				_deviceIDInput = ""
-			}
-		} message: {
-			Text(String.localized("Enter the device ID from your previous install to move premium access to this device."))
-		}
 		.alert(String.localized("Reset Premium?"), isPresented: $_showResetConfirmation) {
 			Button(String.localized("Reset"), role: .destructive) {
 				PremiumManager.shared.reset()
@@ -184,40 +163,6 @@ struct PremiumSettingsView: View {
 		)
 	}
 
-	// MARK: Device
-	@ViewBuilder
-	private var _deviceSection: some View {
-		NBSection(.localized("Device")) {
-			Button {
-				UIPasteboard.general.string = RyukSignAPI.deviceUUID
-				Toast.success(.localized("Device ID copied"))
-			} label: {
-				LabeledContent {
-					Image(systemName: "doc.on.doc")
-						.font(.footnote)
-				} label: {
-					Label(.localized("Device ID"), systemImage: "iphone")
-
-					Text(RyukSignAPI.deviceUUID ?? "—")
-						.font(.system(.caption, design: .monospaced))
-						.foregroundStyle(.secondary)
-						.lineLimit(1)
-						.truncationMode(.middle)
-				}
-			}
-
-			Button {
-				_deviceIDInput = ""
-				_showDeviceIDPrompt = true
-			} label: {
-				Label(.localized("Use Another Device ID"), systemImage: "arrow.triangle.2.circlepath")
-			}
-			.disabled(_premium.isWorking)
-		} footer: {
-			Text(String.localized("Your key is tied to this device ID. Keep a copy of it so premium access can be restored if this install is wiped."))
-		}
-	}
-
 	// MARK: Manage
 	@ViewBuilder
 	private var _manageSection: some View {
@@ -242,7 +187,7 @@ struct PremiumSettingsView: View {
 			}
 			.disabled(!_premium.isActive || _premium.isWorking)
 		} footer: {
-			Text(String.localized("Restoring re-adds the repositories your key unlocked, using the device ID above."))
+			Text(String.localized("Restoring re-adds the repositories your key unlocked on this device."))
 		}
 	}
 
@@ -251,20 +196,6 @@ struct PremiumSettingsView: View {
 		Task {
 			do {
 				let count = try await PremiumManager.shared.restore()
-				Toast.success(.localized("Restored %lld premium repositories", arguments: count))
-			} catch {
-				_errorMessage = error.localizedDescription
-			}
-		}
-	}
-
-	private func _adoptDeviceID() {
-		let identifier = _deviceIDInput
-		_deviceIDInput = ""
-
-		Task {
-			do {
-				let count = try await PremiumManager.shared.adopt(deviceID: identifier)
 				Toast.success(.localized("Restored %lld premium repositories", arguments: count))
 			} catch {
 				_errorMessage = error.localizedDescription

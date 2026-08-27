@@ -55,15 +55,6 @@ enum RyukSignAPI {
 		return uuid
 	}
 
-	@discardableResult
-	static func adoptDeviceUUID(_ uuid: String) -> Bool {
-		let trimmed = uuid.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-		guard UUID(uuidString: trimmed) != nil else { return false }
-
-		IdentityVault.write(.deviceUUID, trimmed)
-		return true
-	}
-
 	// MARK: - Premium State
 
 	static var isPremium: Bool {

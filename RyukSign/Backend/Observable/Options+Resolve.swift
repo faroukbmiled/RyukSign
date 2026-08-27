@@ -31,6 +31,17 @@ extension Options {
 		return options
 	}
 
+	/// Drops everything customized for one app: identity, entitlements selection, Info.plist edits and tweaks.
+	mutating func resetPerApp(for app: AppInfoPresentable) {
+		appName = nil
+		appIdentifier = nil
+		appVersion = nil
+		appEntitlementsFile = nil
+		infoPlistOverrides = nil
+		infoPlistRemovals = nil
+		tweakInjections = Options.autoInjectSpecs(for: app)
+	}
+
 	/// Saved options minus the per-app fields, so a batch cannot hand every app one identity.
 	static var batchBase: Options {
 		var options = OptionsManager.shared.options

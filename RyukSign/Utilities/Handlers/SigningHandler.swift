@@ -305,42 +305,12 @@ extension SigningHandler {
 	}
 
 	private func _modifyDict(using infoDictionary: NSMutableDictionary, with options: Options, to app: URL) async throws {
-		if options.fileSharing { infoDictionary.setObject(true, forKey: "UISupportsDocumentBrowser" as NSCopying) }
-		if options.itunesFileSharing { infoDictionary.setObject(true, forKey: "UIFileSharingEnabled" as NSCopying) }
-		if options.proMotion { infoDictionary.setObject(true, forKey: "CADisableMinimumFrameDurationOnPhone" as NSCopying) }
-		if options.gameMode { infoDictionary.setObject(true, forKey: "GCSupportsGameMode" as NSCopying)}
-		if options.ipadFullscreen { infoDictionary.setObject(true, forKey: "UIRequiresFullScreen" as NSCopying) }
-		if options.removeURLScheme { infoDictionary.removeObject(forKey: "CFBundleURLTypes") }
-		
-		if options.appAppearance != .default {
-			infoDictionary.setObject(options.appAppearance.rawValue, forKey: "UIUserInterfaceStyle" as NSCopying)
+		if options.infoPlistChangeCount > 0 {
+			SigningLog.shared.info(.localized("Applying custom Info.plist changes"))
 		}
-		if options.minimumAppRequirement != .default {
-			infoDictionary.setObject(options.minimumAppRequirement.rawValue, forKey: "MinimumOSVersion" as NSCopying)
-		}
-		
-		if options.experiment_disableLiquidGlass { infoDictionary.setObject(true, forKey: "UIDesignRequiresCompatibility" as NSCopying) }
-		if options.experiment_supportLiquidGlass { infoDictionary.setObject(false, forKey: "UIDesignRequiresCompatibility" as NSCopying) }
-		
-		// strip the device allowlist so the app isn't pinned to specific models
-		if infoDictionary["UISupportedDevices"] != nil {
-			infoDictionary.removeObject(forKey: "UISupportedDevices")
-		}
-		
-		// MARK: Prominant values
-		
-		if let customIdentifier = options.appIdentifier {
-			infoDictionary.setObject(customIdentifier, forKey: "CFBundleIdentifier" as NSCopying)
-		}
-		if let customName = options.appName {
-			infoDictionary.setObject(customName, forKey: "CFBundleDisplayName" as NSCopying)
-			infoDictionary.setObject(customName, forKey: "CFBundleName" as NSCopying)
-		}
-		if let customVersion = options.appVersion {
-			infoDictionary.setObject(customVersion, forKey: "CFBundleShortVersionString" as NSCopying)
-			infoDictionary.setObject(customVersion, forKey: "CFBundleVersion" as NSCopying)
-		}
-		
+
+		InfoPlistPlan.apply(options, to: infoDictionary)
+
 		try infoDictionary.write(to: app.appendingPathComponent("Info.plist"))
 	}
 	

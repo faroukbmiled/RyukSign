@@ -322,10 +322,7 @@ struct BatchSignView: View {
 		guard let uuid = app.uuid else { return }
 
 		var options = _options
-		options.appName = nil
-		options.appIdentifier = nil
-		options.appVersion = nil
-		options.tweakInjections = Options.autoInjectSpecs(for: app)
+		options.resetPerApp(for: app)
 
 		_overrides[uuid] = options
 		_icons.removeValue(forKey: uuid)
