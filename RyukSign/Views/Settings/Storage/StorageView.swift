@@ -72,6 +72,8 @@ struct StorageView: View {
 	@ObservedObject private var _manager = StorageManager.shared
 	@State private var _isClearing = false
 
+	@AppStorage(InstallCleanup.clearCacheKey) private var _clearCacheAfterInstall: Bool = false
+
 	// MARK: Body
 	var body: some View {
 		NBList(.localized("Storage")) {
@@ -91,6 +93,8 @@ struct StorageView: View {
 			} else {
 				_scanning
 			}
+
+			_automatic
 		}
 		.disabled(_isClearing)
 		.refreshable { _manager.refresh() }
@@ -111,6 +115,14 @@ private extension StorageView {
 			.frame(maxWidth: .infinity, alignment: .center)
 			.padding(.vertical, 12)
 			.listRowBackground(Color.clear)
+		}
+	}
+
+	var _automatic: some View {
+		NBSection(.localized("Automatic Cleanup")) {
+			Toggle(.localized("Clear Cache After Installing"), isOn: $_clearCacheAfterInstall)
+		} footer: {
+			Text(.localized("Frees cached icons and web data every time an install finishes. They rebuild as you browse."))
 		}
 	}
 

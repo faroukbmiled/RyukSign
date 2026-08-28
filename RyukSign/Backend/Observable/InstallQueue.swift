@@ -22,6 +22,8 @@ final class InstallQueue: ObservableObject {
 	@Published private(set) var isFinished = false
 	@Published var isSheetPresented = false
 
+	private var _installed: [AppInfoPresentable] = []
+
 	private init() {}
 
 	var current: AnyApp? { apps.indices.contains(index) ? apps[index] : nil }
@@ -83,6 +85,7 @@ final class InstallQueue: ObservableObject {
 				UIActivityViewController.show(activityItems: [package])
 			}
 		case .success:
+			if let app = installer?.app { _installed.append(app) }
 			// Let the finished ring land before the next app takes over.
 			DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?._advance() }
 		case .failure(let error):
@@ -134,5 +137,9 @@ final class InstallQueue: ObservableObject {
 		apps.removeAll()
 		index = 0
 		isFinished = false
+
+		let installed = _installed
+		_installed.removeAll()
+		InstallCleanup.run(for: installed)
 	}
 }

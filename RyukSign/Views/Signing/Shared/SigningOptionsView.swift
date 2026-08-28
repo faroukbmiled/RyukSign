@@ -14,6 +14,7 @@ struct SigningOptionsView: View {
 	var temporaryOptions: Options?
 
 	@AppStorage(AutoSignManager.enabledKey) private var _autoSign: Bool = false
+	@AppStorage(InstallCleanup.deleteKey) private var _deleteAfterInstall: Bool = false
 	
 	// MARK: Body
 	var body: some View {
@@ -198,8 +199,22 @@ struct SigningOptionsView: View {
 				isOn: $options.post_deleteAppAfterSigned,
 				temporaryValue: temporaryOptions?.post_deleteAppAfterSigned
 			)
+
+			if temporaryOptions == nil {
+				_toggle(
+					.localized("Delete After Installing"),
+					systemImage: "trash.fill",
+					isOn: $_deleteAfterInstall
+				)
+			}
 		} footer: {
-			Text(.localized("This will delete your imported application after signing, to save on using unneeded space."))
+			VStack(alignment: .leading, spacing: 6) {
+				Text(.localized("This will delete your imported application after signing, to save on using unneeded space."))
+
+				if temporaryOptions == nil {
+					Text(.localized("Delete After Installing drops the signed app from your library once it finishes installing. It stays installed on your device."))
+				}
+			}
 		}
 		
 		NBSection(.localized("Experiments")) {

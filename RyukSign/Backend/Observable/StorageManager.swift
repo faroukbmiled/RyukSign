@@ -175,8 +175,15 @@ final class StorageManager: ObservableObject {
 	}
 }
 
-// MARK: - Manager extension: temp purging
+// MARK: - Manager extension: purging
 extension StorageManager {
+	nonisolated static func purgeCaches() {
+		URLCache.shared.removeAllCachedResponses()
+		HTTPCookieStorage.shared.removeCookies(since: .distantPast)
+		(ImagePipeline.shared.configuration.dataCache as? DataCache)?.removeAll()
+		ImagePipeline.shared.configuration.imageCache?.removeAll()
+	}
+
 	nonisolated static func purgeTemporary() {
 		StorageScanner.purge(contentsOf: FileManager.default.temporaryDirectory)
 	}
@@ -282,10 +289,7 @@ private enum StorageScanner {
 	static func clear(_ category: StorageCategory, _ library: LibrarySnapshot) {
 		switch category {
 		case .caches:
-			URLCache.shared.removeAllCachedResponses()
-			HTTPCookieStorage.shared.removeCookies(since: .distantPast)
-			(ImagePipeline.shared.configuration.dataCache as? DataCache)?.removeAll()
-			ImagePipeline.shared.configuration.imageCache?.removeAll()
+			StorageManager.purgeCaches()
 		case .logs:
 			FileLogger.clear()
 		case .temporary:
