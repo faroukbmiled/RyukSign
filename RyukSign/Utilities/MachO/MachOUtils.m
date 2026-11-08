@@ -8,6 +8,7 @@
 #import "MachOUtils.h"
 
 #define SDK_VERSION_26_0_0 0x1A0000
+#define SDK_VERSION_27_1_0 0x1B0100
 
 /// https://github.com/LiveContainer/LiveContainer/commit/3a029b6bb36c11cc05784a8840d41c7e46af1540
 /// this is licensed under Apache-2.0, bundled when compiled.
@@ -46,7 +47,8 @@ NSString *LCPatchMachOFixupARM64eSlice(const char *path) {
 	return nil;
 }
 
-static NSString *PatchMachOAtOffset(void *mapped, size_t fileSize, off_t offset, uint32_t index) {
+/// `raiseOnly` leaves a slice already built against `sdk` or newer untouched.
+static NSString *PatchMachOAtOffset(void *mapped, size_t fileSize, off_t offset, uint32_t index, uint32_t sdk, BOOL raiseOnly) {
 	uint8_t *base = (uint8_t *)mapped + offset;
 	
 	if ((size_t)(offset + sizeof(struct mach_header_64)) > fileSize) {
@@ -68,8 +70,11 @@ static NSString *PatchMachOAtOffset(void *mapped, size_t fileSize, off_t offset,
 		
 		if (cmd->cmd == LC_BUILD_VERSION) {
 			struct build_version_command *bvc = (struct build_version_command *)cmd;
-			bvc->sdk = SDK_VERSION_26_0_0;
-			return [NSString stringWithFormat:@"Slice %u: Patched LC_BUILD_VERSION to SDK 26.0", index];
+			if (raiseOnly && bvc->sdk >= sdk) {
+				return [NSString stringWithFormat:@"Slice %u: LC_BUILD_VERSION already at SDK %u.%u", index, bvc->sdk >> 16, (bvc->sdk >> 8) & 0xFF];
+			}
+			bvc->sdk = sdk;
+			return [NSString stringWithFormat:@"Slice %u: Patched LC_BUILD_VERSION to SDK %u.%u", index, sdk >> 16, (sdk >> 8) & 0xFF];
 		}
 		
 		cmd = (struct load_command *)((uint8_t *)cmd + cmd->cmdsize);
@@ -78,7 +83,7 @@ static NSString *PatchMachOAtOffset(void *mapped, size_t fileSize, off_t offset,
 	return [NSString stringWithFormat:@"Slice %u: LC_BUILD_VERSION not found", index];
 }
 
-NSString *LCPatchMachOForSDK26(const char *path) {
+static NSString *PatchMachOSDK(const char *path, uint32_t sdk, BOOL raiseOnly) {
 	int fd = open(path, O_RDWR, 0600);
 	if(fd < 0) {
 		return [NSString stringWithFormat:@"Failed to open %s: %s", path, strerror(errno)];
@@ -101,11 +106,11 @@ NSString *LCPatchMachOForSDK26(const char *path) {
 		
 		for (uint32_t i = 0; i < nfat; i++) {
 			uint32_t offset = OSSwapBigToHostInt32(archs[i].offset);
-			NSString *sliceResult = PatchMachOAtOffset(map, s.st_size, offset, i);
+			NSString *sliceResult = PatchMachOAtOffset(map, s.st_size, offset, i, sdk, raiseOnly);
 			[result appendFormat:@"%@\n", sliceResult];
 		}
 	} else if (magic == MH_MAGIC_64) {
-		NSString *mainResult = PatchMachOAtOffset(map, s.st_size, 0, 0);
+		NSString *mainResult = PatchMachOAtOffset(map, s.st_size, 0, 0, sdk, raiseOnly);
 		[result appendFormat:@"%@\n", mainResult];
 	} else {
 		munmap(map, s.st_size);
@@ -116,4 +121,13 @@ NSString *LCPatchMachOForSDK26(const char *path) {
 	munmap(map, s.st_size);
 	close(fd);
 	return result;
+}
+
+NSString *LCPatchMachOForSDK26(const char *path) {
+	return PatchMachOSDK(path, SDK_VERSION_26_0_0, NO);
+}
+
+/// The iPhone Duo letterboxes apps built against an SDK older than 27.1.
+NSString *LCPatchMachOForIPhoneDuo(const char *path) {
+	return PatchMachOSDK(path, SDK_VERSION_27_1_0, YES);
 }

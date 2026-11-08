@@ -75853,6 +75853,255 @@
           }
         }
       }
+    },
+    "Enable iPhone Duo Support" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفعيل دعم iPhone Duo"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Povolit podporu iPhone Duo"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo-Unterstützung aktivieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable iPhone Duo Support"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activar compatibilidad con iPhone Duo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activer la prise en charge de l’iPhone Duo"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktifkan Dukungan iPhone Duo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva supporto iPhone Duo"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Włącz obsługę iPhone Duo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включить поддержку iPhone Duo"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo Desteğini Etkinleştir"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bật hỗ trợ iPhone Duo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用 iPhone Duo 支持"
+          }
+        }
+      }
+    },
+    "Patching for iPhone Duo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التعديل لـ iPhone Duo"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úprava pro iPhone Duo"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird für iPhone Duo angepasst"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patching for iPhone Duo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parcheando para iPhone Duo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modification pour l’iPhone Duo"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menambal untuk iPhone Duo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica per iPhone Duo"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modyfikowanie dla iPhone Duo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Изменение для iPhone Duo"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo için yamalanıyor"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang vá cho iPhone Duo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在为 iPhone Duo 修补"
+          }
+        }
+      }
+    },
+    "iPhone Duo Support marks apps as built for iOS 27.1 so the unfolded iPhone Duo shows them full screen instead of in a phone-sized column. It also turns on Liquid Glass unless Disable Liquid Glass is on." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُعلِّم دعم iPhone Duo التطبيقات على أنها مبنية لـ iOS 27.1 ليعرضها iPhone Duo المفتوح بملء الشاشة بدلًا من عمود بحجم الهاتف. كما يفعّل Liquid Glass ما لم يكن خيار تعطيل Liquid Glass مفعّلًا."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podpora iPhone Duo označí aplikace jako sestavené pro iOS 27.1, takže je rozložený iPhone Duo zobrazí na celé obrazovce místo ve sloupci o velikosti telefonu. Zároveň zapne Liquid Glass, pokud není zapnuto Zakázat Liquid Glass."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo-Unterstützung kennzeichnet Apps als für iOS 27.1 erstellt, damit das aufgeklappte iPhone Duo sie im Vollbild statt in einer Spalte in Telefongröße anzeigt. Außerdem wird Liquid Glass aktiviert, sofern Liquid Glass deaktivieren nicht eingeschaltet ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo Support marks apps as built for iOS 27.1 so the unfolded iPhone Duo shows them full screen instead of in a phone-sized column. It also turns on Liquid Glass unless Disable Liquid Glass is on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La compatibilidad con iPhone Duo marca las apps como compiladas para iOS 27.1 para que el iPhone Duo desplegado las muestre a pantalla completa en lugar de en una columna del tamaño de un teléfono. También activa Liquid Glass salvo que Desactivar Liquid Glass esté activado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La prise en charge de l’iPhone Duo marque les apps comme compilées pour iOS 27.1 afin que l’iPhone Duo déplié les affiche en plein écran plutôt que dans une colonne de la taille d’un téléphone. Elle active aussi Liquid Glass, sauf si Désactiver Liquid Glass est activé."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dukungan iPhone Duo menandai app sebagai dibuat untuk iOS 27.1 agar iPhone Duo yang terbuka menampilkannya layar penuh, bukan dalam kolom seukuran ponsel. Opsi ini juga mengaktifkan Liquid Glass kecuali Nonaktifkan Liquid Glass menyala."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il supporto iPhone Duo contrassegna le app come compilate per iOS 27.1, così l’iPhone Duo aperto le mostra a schermo intero invece che in una colonna delle dimensioni di un telefono. Attiva anche Liquid Glass, a meno che Disattiva Liquid Glass sia attivo."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obsługa iPhone Duo oznacza aplikacje jako zbudowane dla iOS 27.1, dzięki czemu rozłożony iPhone Duo wyświetla je na pełnym ekranie zamiast w kolumnie wielkości telefonu. Włącza też Liquid Glass, chyba że włączono Wyłącz Liquid Glass."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поддержка iPhone Duo помечает приложения как собранные для iOS 27.1, чтобы раскрытый iPhone Duo показывал их на весь экран, а не в колонке размером с телефон. Также включает Liquid Glass, если не включено «Отключить Liquid Glass»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo Desteği, uygulamaları iOS 27.1 için derlenmiş olarak işaretler; böylece açık iPhone Duo onları telefon boyutunda bir sütun yerine tam ekran gösterir. Liquid Glass'ı Devre Dışı Bırak açık değilse Liquid Glass'ı da etkinleştirir."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hỗ trợ iPhone Duo đánh dấu ứng dụng là được xây dựng cho iOS 27.1 để iPhone Duo khi mở hiển thị toàn màn hình thay vì trong một cột cỡ điện thoại. Tùy chọn này cũng bật Liquid Glass trừ khi Tắt Liquid Glass đang bật."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone Duo 支持会将 App 标记为针对 iOS 27.1 构建，使展开的 iPhone Duo 以全屏显示，而不是显示在手机大小的栏中。除非开启了“停用 Liquid Glass”，它还会启用 Liquid Glass。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
