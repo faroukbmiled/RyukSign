@@ -148,25 +148,22 @@ enum FR {
 	}
 	
 	static func downloadSSLCertificates(
-		from urlString: String,
-		completion: @escaping (Bool) -> Void
+		from urlString: String = SSLCertificateUpdater.defaultPackURL.absoluteString,
+		showFeedback: Bool = true,
+		completion: @escaping (Bool) -> Void = { _ in }
 	) {
-		let generator = UINotificationFeedbackGenerator()
-		generator.prepare()
-		
-		NBFetchService().fetch(from: urlString) { (result: Result<ServerView.ServerPackModel, Error>) in
-			switch result {
-			case .success(let pack):
-				do {
-					try FileManager.forceWrite(content: pack.key, to: "server.pem")
-					try FileManager.forceWrite(content: [pack.cert, pack.ca].joined(separator: "\n"), to: "server.crt")
-					try FileManager.forceWrite(content: pack.info.domains.commonName, to: "commonName.txt")
-					generator.notificationOccurred(.success)
-					completion(true)
-				} catch {
-					completion(false)
+		Task { @MainActor in
+			do {
+				guard let url = URL(string: urlString) else {
+					throw URLError(.badURL)
 				}
-			case .failure(_):
+				try await SSLCertificateUpdater.shared.download(from: url)
+				if showFeedback {
+					UINotificationFeedbackGenerator().notificationOccurred(.success)
+				}
+				completion(true)
+			} catch {
+				Logger.misc.error("Failed to refresh SSL certificates: \(error.localizedDescription, privacy: .public)")
 				completion(false)
 			}
 		}

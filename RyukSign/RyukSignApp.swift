@@ -380,6 +380,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, DownloadManager.ErrorDelegat
 		StorageManager.purgeStaleTemporary()
 		InstallCleanup.flush()
 		_addDefaultCertificates()
+		FR.downloadSSLCertificates(showFeedback: false)
 		_registerBackgroundTasks()
 
 		// Idempotent, no-op after first run.
