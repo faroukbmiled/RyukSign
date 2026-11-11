@@ -38,6 +38,11 @@ final class AppUpdateChecker: ObservableObject {
         signedApps: FetchedResults<Signed>,
         importedApps: FetchedResults<Imported>
     ) async {
+        // Core Data objects aren't thread-safe: snapshot them here, scan only the values off-main.
+        let installed = await MainActor.run {
+            InstalledAppsIndex(signedApps: signedApps, importedApps: importedApps)
+        }
+
         await Task.detached(priority: .userInitiated) {
             var newCache: [String: Bool] = [:]
             var updatesSet = Set<String>()
@@ -48,21 +53,17 @@ final class AppUpdateChecker: ObservableObject {
 
             for source in sources {
                 for app in source.apps {
-                    let hasUpdate = self.computeUpdate(
-                        app: app,
-                        signedApps: signedApps,
-                        importedApps: importedApps
+                    let installedApp = self.findInstalledApp(for: app, in: installed)
+                    let hasUpdate = self.hasUpdate(
+                        installedVersion: installedApp?.version,
+                        sourceVersion: app.currentVersion
                     ) && !ignored.contains(app.id ?? "")
 
                     newCache[app.currentUniqueId] = hasUpdate
 
                     if hasUpdate {
                         updatesSet.insert(app.currentUniqueId)
-                        if let installedApp = self.findInstalledApp(
-                            for: app,
-                            signedApps: signedApps,
-                            importedApps: importedApps
-                        ) {
+                        if let installedApp {
                             uniqueApps.insert(installedApp.uuid)
                         }
                     }
@@ -82,25 +83,6 @@ final class AppUpdateChecker: ObservableObject {
         }.value
     }
 
-    private func computeUpdate(
-        app: ASRepository.App,
-        signedApps: FetchedResults<Signed>,
-        importedApps: FetchedResults<Imported>
-    ) -> Bool {
-        guard let installed = findInstalledApp(
-            for: app,
-            signedApps: signedApps,
-            importedApps: importedApps
-        ) else {
-            return false
-        }
-        
-        return hasUpdate(
-            installedVersion: installed.version,
-            sourceVersion: app.currentVersion
-        )
-    }
-    
     func clearCache() {
         cacheQueue.async(flags: .barrier) { [weak self] in
             self?.updateCache.removeAll()
@@ -112,59 +94,29 @@ final class AppUpdateChecker: ObservableObject {
         signedApps: FetchedResults<Signed>,
         importedApps: FetchedResults<Imported>
     ) -> (version: String?, uuid: String)? {
+        findInstalledApp(for: app, in: InstalledAppsIndex(signedApps: signedApps, importedApps: importedApps))
+    }
+
+    func findInstalledApp(
+        for app: ASRepository.App,
+        in installed: InstalledAppsIndex
+    ) -> (version: String?, uuid: String)? {
         let appBundleId = app.id ?? ""
         let appNameLower = app.currentName.lowercased()
-        
+
         guard !appBundleId.isEmpty || !appNameLower.isEmpty else { return nil }
 
-        func identifiersMatch(_ sourceId: String, _ storedId: String?, _ originalId: String?) -> Bool {
-            if let originalId = originalId, sourceId == originalId { return true }
-            if let storedId = storedId, sourceId == storedId { return true }
-            return false
-        }
-        
-        var allMatchingVersions: [String] = []
-        var matchingUUID: String = ""
+        guard let match = installed.matches(bundleId: appBundleId, nameLower: appNameLower),
+              !match.versions.isEmpty
+        else { return nil }
 
-        for s in signedApps {
-            let identifierMatch = !appBundleId.isEmpty &&
-                identifiersMatch(appBundleId, s.identifier, s.originalIdentifier)
-            let nameMatch = (s.name ?? "").lowercased() == appNameLower
-            
-            if identifierMatch || nameMatch {
-                if let version = s.version {
-                    allMatchingVersions.append(version)
-                }
-                if matchingUUID.isEmpty {
-                    matchingUUID = s.uuid ?? ""
-                }
-            }
-        }
-        
-        for i in importedApps {
-            let identifierMatch = !appBundleId.isEmpty &&
-                identifiersMatch(appBundleId, i.identifier, i.originalIdentifier)
-            let nameMatch = (i.name ?? "").lowercased() == appNameLower
-            
-            if identifierMatch || nameMatch {
-                if let version = i.version {
-                    allMatchingVersions.append(version)
-                }
-                if matchingUUID.isEmpty {
-                    matchingUUID = i.uuid ?? ""
-                }
-            }
-        }
-        
-        guard !allMatchingVersions.isEmpty else { return nil }
-
-        let highestVersion = allMatchingVersions.max { v1, v2 in
+        let highestVersion = match.versions.max { v1, v2 in
             return !isNewerVersion(v1, than: v2)
         }
-        
-        return (highestVersion, matchingUUID)
+
+        return (highestVersion, match.uuid)
     }
-    
+
     func hasUpdate(installedVersion: String?, sourceVersion: String?) -> Bool {
         guard let currentVersion = installedVersion,
               let newVersion = sourceVersion else { return false }
@@ -235,5 +187,67 @@ final class AppUpdateChecker: ObservableObject {
         
         self.appsWithUpdates = updatesSet
         self.updateCount = uniqueApps.count
+    }
+}
+
+// MARK: - Installed Apps Index
+/// Value snapshot of the installed apps, keyed by identifier and lowercased name for O(1) matching.
+struct InstalledAppsIndex {
+    private struct Entry {
+        let version: String?
+        let uuid: String?
+    }
+
+    private var entries: [Entry] = []
+    private var byIdentifier: [String: [Int]] = [:]
+    private var byName: [String: [Int]] = [:]
+
+    init(signedApps: FetchedResults<Signed>, importedApps: FetchedResults<Imported>) {
+        entries.reserveCapacity(signedApps.count + importedApps.count)
+
+        for s in signedApps {
+            add(identifier: s.identifier, originalIdentifier: s.originalIdentifier, name: s.name, version: s.version, uuid: s.uuid)
+        }
+        for i in importedApps {
+            add(identifier: i.identifier, originalIdentifier: i.originalIdentifier, name: i.name, version: i.version, uuid: i.uuid)
+        }
+    }
+
+    private mutating func add(identifier: String?, originalIdentifier: String?, name: String?, version: String?, uuid: String?) {
+        let index = entries.count
+        entries.append(Entry(version: version, uuid: uuid))
+
+        if let originalIdentifier {
+            byIdentifier[originalIdentifier, default: []].append(index)
+        }
+        if let identifier, identifier != originalIdentifier {
+            byIdentifier[identifier, default: []].append(index)
+        }
+        byName[(name ?? "").lowercased(), default: []].append(index)
+    }
+
+    /// Versions of every matching installed app and the uuid of the first match, in install-list order.
+    func matches(bundleId: String, nameLower: String) -> (versions: [String], uuid: String)? {
+        var indices = Set<Int>()
+        if !bundleId.isEmpty, let ids = byIdentifier[bundleId] {
+            indices.formUnion(ids)
+        }
+        if let ids = byName[nameLower] {
+            indices.formUnion(ids)
+        }
+        guard !indices.isEmpty else { return nil }
+
+        var versions: [String] = []
+        var uuid = ""
+        for index in indices.sorted() {
+            let entry = entries[index]
+            if let version = entry.version {
+                versions.append(version)
+            }
+            if uuid.isEmpty {
+                uuid = entry.uuid ?? ""
+            }
+        }
+        return (versions, uuid)
     }
 }
