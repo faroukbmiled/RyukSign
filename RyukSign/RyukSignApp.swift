@@ -116,6 +116,10 @@ struct RyukSignApp: App {
                     }
                 }
             }
+            // Folding or unfolding the iPhone Duo resizes the window.
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in
+                DuoDisplay.refreshSupportedOrientations()
+            }
             .task {
                 await selfUpdate.checkOnLaunch()
             }
@@ -391,8 +395,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, DownloadManager.ErrorDelegat
 		return true
 	}
 	
+	// Replaces the Info.plist orientations: phones stay portrait, except the
+	// unfolded iPhone Duo, whose inner display is used both ways up.
+	func application(
+		_ application: UIApplication,
+		supportedInterfaceOrientationsFor window: UIWindow?
+	) -> UIInterfaceOrientationMask {
+		DuoDisplay.supportedOrientations(for: window)
+	}
+
 	// MARK: - DownloadManager.ErrorDelegate
-	
+
 	func showUIErrorMessage(title: String, message: String) {
 		DispatchQueue.main.async {
 			UIAlertController.showErrorWithCopy(
