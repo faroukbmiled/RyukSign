@@ -73,6 +73,8 @@ struct StorageView: View {
 	@State private var _isClearing = false
 
 	@AppStorage(InstallCleanup.clearCacheKey) private var _clearCacheAfterInstall: Bool = false
+	@AppStorage(InstallCleanup.oldVersionsKey) private var _oldVersions: String = OldVersionCleanup.ask.rawValue
+	@AppStorage(InstallCleanup.oldVersionsScopeKey) private var _oldVersionsScope: String = OldVersionScope.both.rawValue
 
 	// MARK: Body
 	var body: some View {
@@ -95,6 +97,7 @@ struct StorageView: View {
 			}
 
 			_automatic
+			_previousVersions
 		}
 		.disabled(_isClearing)
 		.refreshable { _manager.refresh() }
@@ -123,6 +126,23 @@ private extension StorageView {
 			Toggle(.localized("Clear Cache After Installing"), isOn: $_clearCacheAfterInstall)
 		} footer: {
 			Text(.localized("Frees cached icons and web data every time an install finishes. They rebuild as you browse."))
+		}
+	}
+
+	var _previousVersions: some View {
+		NBSection(.localized("Previous Versions")) {
+			Picker(.localized("After Installing a Newer Version"), selection: $_oldVersions) {
+				ForEach(OldVersionCleanup.allCases) { option in
+					Text(option.label).tag(option.rawValue)
+				}
+			}
+			Picker(.localized("Delete From Old Versions"), selection: $_oldVersionsScope) {
+				ForEach(OldVersionScope.allCases) { option in
+					Text(option.label).tag(option.rawValue)
+				}
+			}
+		} footer: {
+			Text(.localized("Signed copies are the signed apps in your library; imported copies are the original IPAs. Only versions older than the one just installed are affected."))
 		}
 	}
 
