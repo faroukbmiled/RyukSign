@@ -119,6 +119,8 @@ struct Options: Codable, Equatable {
 	var experiment_supportLiquidGlass: Bool
 	/// Modifies app to disable liquid glass
 	var experiment_disableLiquidGlass: Bool
+	/// Marks the app as built for SDK 27.1 so the iPhone Duo shows it full screen
+	var experiment_supportIPhoneDuo: Bool
 	/// Modifies application to use ElleKit instead of CydiaSubstrate
 	var experiment_replaceSubstrateWithEllekit: Bool
 	
@@ -165,6 +167,7 @@ struct Options: Codable, Equatable {
 		
 		experiment_supportLiquidGlass: false,
 		experiment_disableLiquidGlass: false,
+		experiment_supportIPhoneDuo: false,
 		experiment_replaceSubstrateWithEllekit: false,
 		
 		// MARK: Post Modifications
@@ -294,6 +297,7 @@ extension Options {
 		infoPlistRemovals = try? c.decode([String].self, forKey: .infoPlistRemovals)
 		experiment_supportLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_supportLiquidGlass) ?? d.experiment_supportLiquidGlass
 		experiment_disableLiquidGlass = try c.decodeIfPresent(Bool.self, forKey: .experiment_disableLiquidGlass) ?? d.experiment_disableLiquidGlass
+		experiment_supportIPhoneDuo = try c.decodeIfPresent(Bool.self, forKey: .experiment_supportIPhoneDuo) ?? d.experiment_supportIPhoneDuo
 		experiment_replaceSubstrateWithEllekit = try c.decodeIfPresent(Bool.self, forKey: .experiment_replaceSubstrateWithEllekit) ?? d.experiment_replaceSubstrateWithEllekit
 		post_installAppAfterSigned = try c.decodeIfPresent(Bool.self, forKey: .post_installAppAfterSigned) ?? d.post_installAppAfterSigned
 		post_deleteAppAfterSigned = try c.decodeIfPresent(Bool.self, forKey: .post_deleteAppAfterSigned) ?? d.post_deleteAppAfterSigned

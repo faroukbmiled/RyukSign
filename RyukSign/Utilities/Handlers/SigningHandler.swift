@@ -117,6 +117,12 @@ final class SigningHandler: NSObject {
 			try await _locateMachosAndChangeToSDK26(for: movedAppPath)
 		}
 
+		// After Liquid Glass, so its SDK 26.0 never lowers the Duo's 27.1.
+		if _options.experiment_supportIPhoneDuo {
+			SigningLog.shared.info(.localized("Patching for iPhone Duo"))
+			try await _locateMachosAndChangeForIPhoneDuo(for: movedAppPath)
+		}
+
 		let hasTweakSpecs = !(_options.tweakInjections ?? []).filter { $0.enabled }.isEmpty
 		if _options.experiment_replaceSubstrateWithEllekit {
 			SigningLog.shared.info(.localized("Injecting tweaks"))
@@ -487,6 +493,12 @@ extension SigningHandler {
 	private func _locateMachosAndChangeToSDK26(for app: URL) async throws {
 		if let url = Bundle(url: app)?.executableURL {
 			LCPatchMachOForSDK26(app.appendingPathComponent(url.relativePath).relativePath)
+		}
+	}
+
+	private func _locateMachosAndChangeForIPhoneDuo(for app: URL) async throws {
+		if let url = Bundle(url: app)?.executableURL {
+			LCPatchMachOForIPhoneDuo(app.appendingPathComponent(url.relativePath).relativePath)
 		}
 	}
 	

@@ -238,8 +238,18 @@ struct SigningOptionsView: View {
 				isOn: $options.experiment_supportLiquidGlass,
 				temporaryValue: temporaryOptions?.experiment_supportLiquidGlass
 			).disabled(options.experiment_disableLiquidGlass)
+
+			_toggle(
+				.localized("Enable iPhone Duo Support"),
+				systemImage: "rectangle.split.2x1",
+				isOn: $options.experiment_supportIPhoneDuo,
+				temporaryValue: temporaryOptions?.experiment_supportIPhoneDuo
+			)
 		} footer: {
-			Text(.localized("This option force converts apps to try to use the new liquid glass redesign iOS 26 introduced, this may not work for all applications due to differing frameworks."))
+			VStack(alignment: .leading, spacing: 6) {
+				Text(.localized("This option force converts apps to try to use the new liquid glass redesign iOS 26 introduced, this may not work for all applications due to differing frameworks."))
+				Text(.localized("iPhone Duo Support marks apps as built for iOS 27.1 so the unfolded iPhone Duo shows them full screen instead of in a phone-sized column. It also turns on Liquid Glass unless Disable Liquid Glass is on."))
+			}
 		}
 	}
 	
