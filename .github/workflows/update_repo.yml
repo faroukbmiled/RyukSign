@@ -18,7 +18,7 @@ jobs:
 
       - name: Update app-repo.json
         run: |
-          ./update-repo.sh
+          ./scripts/update-repo.sh
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9

@@ -8,7 +8,7 @@ RyukSign is an on-device app signer and installer for iOS, derived from [Feather
 
 > **RyukSign is a fork of [Feather](https://github.com/claration/Feather) by [claration](https://github.com/claration).** All upstream work and attribution is preserved; see [Acknowledgements](#acknowledgements) and [Credits](#credits).
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="Images/Image-dark.png"><source media="(prefers-color-scheme: light)" srcset="Images/Image-light.png"><img alt="RyukSign" src="Images/Image-light.png"></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/images/Image-dark.png"><source media="(prefers-color-scheme: light)" srcset=".github/images/Image-light.png"><img alt="RyukSign" src=".github/images/Image-light.png"></picture></p>
 
 ## Features
 
@@ -59,7 +59,7 @@ Visit [RyukSign releases](https://github.com/faroukbmiled/RyukSign/releases) and
 
 ## Building from source
 
-RyukSign uses Xcode 16 (synchronized groups, `objectVersion 77`) and Swift Package Manager plus git submodules. See [CONTRIBUTING.md](./CONTRIBUTING.md). In short:
+RyukSign uses Xcode 27 (synchronized groups, `objectVersion 77`) and Swift Package Manager plus git submodules. See [CONTRIBUTING.md](.github/CONTRIBUTING.md). In short:
 
 ```bash
 git clone --recursive https://github.com/faroukbmiled/RyukSign.git
@@ -72,7 +72,7 @@ Signing identity is not committed in a usable form — set your own team / enabl
 
 ## Contributing
 
-Read the [contribution requirements](./CONTRIBUTING.md) for more information.
+Read the [contribution requirements](.github/CONTRIBUTING.md) for more information.
 
 ## Acknowledgements
 
