@@ -11,7 +11,7 @@ import NimbleViews
 
 // MARK: - View
 struct FilesCompressionView: View {
-	@AppStorage("Feather.compressionLevel") private var _compressionLevel: Int = ZipCompression.DefaultCompression.rawValue
+	@AppStorage(ArchiveHandler.compressionKey) private var _compressionLevel: Int = ZipCompression.DefaultCompression.rawValue
 	@AppStorage("Feather.useShareSheetForArchiving") private var _useShareSheet: Bool = false
 	@AppStorage(ArchiveBackend.storageKey) private var _backend: Int = ArchiveBackend.zip.rawValue
 	@AppStorage("RyukSign.useLastExportLocation") private var _useLastExportLocation: Bool = false
@@ -22,7 +22,7 @@ struct FilesCompressionView: View {
 			Section {
 				Picker(.localized("Compression Level"), systemImage: "archivebox", selection: $_compressionLevel) {
 					ForEach(ZipCompression.allCases, id: \.rawValue) { level in
-						Text(level.label).tag(level)
+						Text(level.label).tag(level.rawValue)
 					}
 				}
 				Picker(.localized("Compression Engine"), systemImage: "shippingbox", selection: $_backend) {

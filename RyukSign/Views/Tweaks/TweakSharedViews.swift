@@ -2,7 +2,7 @@
 //  TweakSharedViews.swift
 //  RyukSign
 //
-//  Reusable controls shared by the Tweak Manager and the per-sign tweak config.
+//  Created by Ryuk
 //
 
 import SwiftUI
@@ -11,8 +11,7 @@ import CoreData
 
 // MARK: - Targeting picker
 
-// Picks extension targeting. With `availableExtensions` (sign time), "Selected" lists the
-// real appex names; nil (library level) defers the choice to sign time.
+// `availableExtensions` is nil at library level, which defers the choice to sign time.
 struct TweakTargetingPicker: View {
 	@Binding var targeting: ExtensionTargeting
 	let availableExtensions: [String]?
@@ -95,7 +94,6 @@ struct TweakTargetingPicker: View {
 struct TweakConfigFields: View {
 	@Binding var config: TweakInjectConfig
 	let availableExtensions: [String]?
-	// Hide targeting for artifacts that don't inject (e.g. bundles).
 	var showTargeting: Bool = true
 
 	var body: some View {
@@ -132,7 +130,6 @@ struct TweakConfigFields: View {
 
 // MARK: - Library tweak row (shared by the tab + folder views)
 
-// Tweak row → detail view, with swipe/context actions injected so the owner drives its sheets.
 struct TweakLibraryRow: View {
 	let tweak: ManagedTweak
 	var onShare: () -> Void
@@ -175,7 +172,7 @@ struct TweakLibraryRow: View {
 
 // MARK: - Folder picker (move target)
 
-// Picks a destination folder; `onPick` gets the folder id (nil = uncategorized).
+// `onPick` gets nil for no folder.
 struct TweakFolderPickerView: View {
 	@Environment(\.dismiss) private var dismiss
 	@ObservedObject private var manager = TweakManager.shared

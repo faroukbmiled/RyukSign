@@ -2,8 +2,7 @@
 //  TweaksView.swift
 //  RyukSign
 //
-//  The Tweak Manager: a library of reusable tweaks with versions and
-//  auto-inject rules.
+//  Created by Ryuk
 //
 
 import SwiftUI
@@ -29,7 +28,7 @@ struct TweakLibraryList: View {
 	@State private var _query = ""
 	@AppStorage("Feather.tweakSort") private var _sortRaw = ItemSortOption.dateNewest.rawValue
 
-	// One sheet/alert modifier each — multiple on the same view shadow each other.
+	// One sheet and one alert modifier: several on the same view shadow each other.
 	@State private var _sheet: Sheet?
 	@State private var _alert: ActiveAlert?
 	@State private var _folderNameField = ""
@@ -81,7 +80,6 @@ struct TweakLibraryList: View {
 	private var _allFiltered: [ManagedTweak] {
 		manager.tweaks.filter(_matches).sorted(by: _sort.comparator())
 	}
-	// Root sections exclude tweaks filed in folders (those show only in their folder).
 	private var _autoTweaks: [ManagedTweak] { _allFiltered.filter { $0.hasAutoRule && $0.folderId == nil } }
 	private var _uncategorized: [ManagedTweak] { _allFiltered.filter { !$0.hasAutoRule && $0.folderId == nil } }
 	private var _folders: [TweakFolder] {
@@ -95,6 +93,9 @@ struct TweakLibraryList: View {
 		case .dateOldest: 	return a.dateAdded < b.dateAdded
 		case .sizeLargest: 	return manager.tweakCount(inFolder: a.id) > manager.tweakCount(inFolder: b.id)
 		}
+	}
+	private var _hasGroups: Bool {
+		(!_folders.isEmpty && !_isEditing) || !_autoTweaks.isEmpty
 	}
 	private var _isSearching: Bool { !_query.trimmingCharacters(in: .whitespaces).isEmpty }
 	private var _visibleSelectableIds: Set<UUID> {
@@ -229,7 +230,6 @@ struct TweakLibraryList: View {
 				? String.localized("Imported %@", arguments: urls[0].lastPathComponent)
 				: String.localized("Imported %lld tweaks", arguments: addedIds.count)
 			Toast.success(message, systemImage: "wrench.and.screwdriver.fill")
-			// Offer to file the new tweaks if folders exist.
 			if !manager.folders.isEmpty {
 				_show(.move(addedIds))
 			}
@@ -294,8 +294,7 @@ extension TweakLibraryList {
 					}
 				}
 			}
-			// Move/Share/Save/Delete live in the floating SelectionActionBar (a
-			// `.bottomBar` item is hidden behind the native tab bar).
+			// Bulk actions live in SelectionActionBar; a .bottomBar item hides behind the tab bar.
 			ToolbarItem(placement: .topBarTrailing) {
 				Button(.localized("Done")) {
 					_isEditing = false
@@ -304,8 +303,7 @@ extension TweakLibraryList {
 				.fontWeight(.semibold)
 			}
 		} else {
-			// Stay mounted (disabled when empty) rather than added/removed — inserting a
-			// toolbar item mid-animation drops the tap landing on it that frame.
+			// Kept mounted: inserting a toolbar item mid-animation drops the tap on it.
 			ToolbarItem(placement: .topBarLeading) {
 				Button(.localized("Select")) { _isEditing = true }
 					.disabled(manager.tweaks.isEmpty)
@@ -354,8 +352,7 @@ extension TweakLibraryList {
 	}
 
 	private func _performDelete(_ ids: Set<UUID>) {
-		// Leave edit mode first, then delete in one batch — avoids diffing the list
-		// against a shrinking array mid-animation (list-diff crash).
+		// Leaving edit mode before the batch delete avoids a list diff crash.
 		_selection.removeAll()
 		_isEditing = false
 		manager.deleteTweaks(ids)
@@ -450,7 +447,6 @@ extension TweakLibraryList {
 	@ViewBuilder
 	var _listContent: some View {
 		if _isSearching {
-			// Search flattens everything, including tweaks inside folders.
 			NBSection(.localized("Results"), secondary: "\(_allFiltered.count)") {
 				ForEach(_allFiltered) { _row(for: $0) }
 				if _allFiltered.isEmpty {
@@ -474,12 +470,17 @@ extension TweakLibraryList {
 				}
 			}
 
-			NBSection(.localized("Tweaks"), secondary: "\(_uncategorized.count)") {
-				ForEach(_uncategorized) { _row(for: $0) }
-				if _uncategorized.isEmpty {
-					Text(verbatim: .localized("Nothing here. Tweaks you add land here unless filed in a folder."))
-						.font(.footnote)
-						.foregroundColor(.disabled())
+			if _hasGroups {
+				if !_uncategorized.isEmpty {
+					NBSection(.localized("Other"), secondary: "\(_uncategorized.count)") {
+						ForEach(_uncategorized) { _row(for: $0) }
+					}
+				}
+			} else {
+				NBSection(.localized("Library"), secondary: "\(_uncategorized.count)") {
+					ForEach(_uncategorized) { _row(for: $0) }
+				} footer: {
+					Text(.localized("Tap a tweak to choose when and where it injects."))
 				}
 			}
 		}

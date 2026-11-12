@@ -29,16 +29,15 @@ extension Storage {
 	func deleteApps(_ apps: [AppInfoPresentable]) {
 		guard !apps.isEmpty else { return }
 
-		for app in apps {
-			if let url = getUuidDirectory(for: app) {
-				try? FileManager.default.removeItem(at: url)
-			}
-			if let object = app as? NSManagedObject {
-				context.delete(object)
-			}
+		let directories = apps.compactMap(getUuidDirectory(for:))
+		for case let object as NSManagedObject in apps {
+			context.delete(object)
 		}
 
+		// Records first, so a kill can only leave stray files, never entries without files.
 		saveContext()
+		guard !context.hasChanges else { return }
+		directories.forEach { try? FileManager.default.removeItem(at: $0) }
 	}
 	
 	func getCertificate(from app: AppInfoPresentable) -> CertificatePair? {

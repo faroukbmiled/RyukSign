@@ -278,17 +278,7 @@ struct SourcesView: View {
 	@ViewBuilder
 	private var emptyStateView: some View {
 		if _filteredSources.isEmpty {
-			NBContentUnavailable(
-				.localized("No Repositories"),
-				systemImage: "globe.desk.fill",
-				description: .localized("Get started by adding your first repository.")
-			) {
-				Button {
-					_isAddingPresenting = true
-				} label: {
-					NBButton(.localized("Add Source"), style: .text)
-				}
-			}
+			NoRepositoriesView { _isAddingPresenting = true }
 		}
 	}
 
@@ -416,5 +406,21 @@ struct SourcesView: View {
 			}
 		}
 		return false
+	}
+}
+
+struct NoRepositoriesView: View {
+	let onAdd: () -> Void
+
+	var body: some View {
+		NBContentUnavailable(
+			.localized("No Repositories"),
+			systemImage: "globe.desk.fill",
+			description: .localized("Get started by adding your first repository.")
+		) {
+			Button(action: onAdd) {
+				NBButton(.localized("Add Source"), style: .text)
+			}
+		}
 	}
 }

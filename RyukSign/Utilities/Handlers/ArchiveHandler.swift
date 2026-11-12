@@ -45,7 +45,10 @@ final class ArchiveHandler: NSObject {
 		_payloadUrl = payloadUrl
 	}
 	
-	func archive() async throws -> URL {
+	// Installs go over localhost, so compressing them only costs time.
+	func archive(forExport: Bool = false) async throws -> URL {
+		let compression = forExport ? Self.compressionLevel : .NoCompression
+
 		// Keep archiving alive in the background.
 		await MainActor.run {
 			if self.backgroundTaskManager == nil {
@@ -58,7 +61,7 @@ final class ArchiveHandler: NSObject {
 			}
 		}
 
-		return try await Task.detached(priority: .background) { [self] in
+		return try await Task.detached(priority: .userInitiated) { [self] in
 			defer {
 				Task { @MainActor in
 					self.backgroundTaskManager?.stop()
@@ -76,7 +79,7 @@ final class ArchiveHandler: NSObject {
 			try AppArchiver.zip(
 				payload: payloadUrl,
 				to: ipaUrl,
-				compression: ZipCompression.allCases[ArchiveHandler.getCompressionLevel()],
+				compression: compression,
 				progress: { progress in
 					guard gate.admit(progress) else { return }
 					Task { @MainActor in
@@ -106,8 +109,18 @@ final class ArchiveHandler: NSObject {
 		return dest
 	}
 	
-	static func getCompressionLevel() -> Int {
-		UserDefaults.standard.integer(forKey: "Feather.compressionLevel")
+	func cleanup() {
+		let workDir = _uniqueWorkDir
+		DispatchQueue.global(qos: .utility).async {
+			try? FileManager.default.removeItem(at: workDir)
+		}
+	}
+
+	static let compressionKey = "Feather.compressionLevel"
+
+	static var compressionLevel: ZipCompression {
+		let raw = UserDefaults.standard.object(forKey: compressionKey) as? Int
+		return raw.flatMap(ZipCompression.init(rawValue:)) ?? .DefaultCompression
 	}
 }
 

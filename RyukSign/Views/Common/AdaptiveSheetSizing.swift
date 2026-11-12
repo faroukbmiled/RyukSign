@@ -8,8 +8,7 @@
 import SwiftUI
 
 extension View {
-	/// iPad and the unfolded iPhone Duo otherwise get a small fixed form
-	/// sheet. Phones keep `detents`.
+	/// iPad otherwise gets a small fixed form sheet. Phones keep `detents`.
 	func adaptiveSheetSizing(phone detents: Set<PresentationDetent> = []) -> some View {
 		modifier(AdaptiveSheetSizing(detents: detents))
 	}
@@ -18,9 +17,10 @@ extension View {
 private struct AdaptiveSheetSizing: ViewModifier {
 	let detents: Set<PresentationDetent>
 
+	// A sheet's own size class is always compact, even on the unfolded Duo.
 	@ViewBuilder
 	func body(content: Content) -> some View {
-		if DuoDisplay.usesLargeScreenLayout {
+		if UIDevice.current.userInterfaceIdiom == .pad || DuoDisplay.isUnfolded() {
 			if #available(iOS 18, *) {
 				content.presentationSizing(.page)
 			} else {

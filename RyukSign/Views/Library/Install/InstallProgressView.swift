@@ -17,10 +17,17 @@ struct InstallProgressView: View {
 	var body: some View {
 		VStack(spacing: 12) {
 			_appIcon()
+				.grayscale(viewModel.isFailed ? 1 : 0)
 				.scaleEffect(_isPulsing ? 0.85 : 0.81)
-				.animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: _isPulsing)
+				.animation(
+					viewModel.isFailed ? .smooth : .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
+					value: _isPulsing
+				)
 				.onAppear {
 					_isPulsing = true
+				}
+				.onChange(of: viewModel.isFailed) { failed in
+					if failed { _isPulsing = false }
 				}
 		}
 	}

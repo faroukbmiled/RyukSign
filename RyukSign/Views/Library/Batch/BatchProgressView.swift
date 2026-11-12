@@ -13,6 +13,7 @@ import IDeviceSwift
 struct BatchProgressView: View {
 	@Environment(\.dismiss) var dismiss
 	@ObservedObject var runner: BatchJobRunner
+	@State private var _expanded: Set<BatchItem.ID> = []
 
 	// MARK: Body
 	var body: some View {
@@ -159,7 +160,7 @@ struct BatchProgressView: View {
 					Text(_subtitle(for: item))
 						.font(.subheadline)
 						.foregroundStyle(_isFailed(item) ? Color.red : .secondary)
-						.lineLimit(2)
+						.lineLimit(_expanded.contains(item.id) ? nil : 2)
 				}
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
@@ -174,6 +175,13 @@ struct BatchProgressView: View {
 			}
 		}
 		.padding(.vertical, 4)
+		.contentShape(Rectangle())
+		.onTapGesture {
+			guard _isFailed(item) else { return }
+			withAnimation(.smooth) {
+				if _expanded.remove(item.id) == nil { _expanded.insert(item.id) }
+			}
+		}
 	}
 
 	private func _isFailed(_ item: BatchItem) -> Bool {

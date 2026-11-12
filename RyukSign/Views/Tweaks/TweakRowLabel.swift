@@ -2,6 +2,8 @@
 //  TweakRowLabel.swift
 //  RyukSign
 //
+//  Created by Ryuk
+//
 
 import SwiftUI
 import UIKit
@@ -21,7 +23,9 @@ struct TweakRowLabel: View {
 			}
 			parts.append(v.fileSize.formattedFileSize)
 		}
-		parts.append(.localized("%lld versions", arguments: tweak.versions.count))
+		if tweak.versions.count > 1 {
+			parts.append(.localized("%lld versions", arguments: tweak.versions.count))
+		}
 		return parts.joined(separator: " · ")
 	}
 

@@ -2,8 +2,7 @@
 //  TweakExtractionView.swift
 //  RyukSign
 //
-//  Lets the user pull tweaks (.dylib/.framework/.bundle/.deb) out of an IPA or an
-//  installed Library app, pick which to keep, and import them into the Tweak Manager.
+//  Created by Ryuk
 //
 
 import SwiftUI
@@ -30,10 +29,8 @@ struct TweakExtractionView: View {
 
 	private struct MovePrompt: Identifiable { let id = UUID(); let ids: Set<UUID> }
 
-	// Above this many selected, confirm before importing.
 	private let _confirmThreshold = 10
 
-	// Grouped by containing folder, root first then alphabetical.
 	private var _groups: [(folder: String, items: [TweakCandidate])] {
 		Dictionary(grouping: candidates, by: { $0.folder })
 			.map { (folder: $0.key, items: $0.value) }
@@ -157,7 +154,6 @@ struct TweakExtractionView: View {
 		}
 		.onAppear {
 			guard !_seeded else { return }
-			// Open small folders by default; keep big ones (e.g. the app's Frameworks) collapsed.
 			_expanded = Set(_groups.filter { $0.items.count <= 10 }.map { $0.folder })
 			_seeded = true
 		}
@@ -327,7 +323,6 @@ struct TweakExtractionView: View {
 				: String.localized("Imported %lld tweaks", arguments: addedIds.count))
 		Toast.success(message, systemImage: "wrench.and.screwdriver.fill")
 
-		// Offer to file the new tweaks if folders exist.
 		if !manager.folders.isEmpty {
 			_movePrompt = MovePrompt(ids: addedIds)
 		} else {
@@ -343,7 +338,6 @@ struct TweakExtractionView: View {
 
 // MARK: - IPA extraction loader
 
-// Extracts an IPA off-main, then hands the candidates to TweakExtractionView.
 struct TweakIPAExtractView: View {
 	@Environment(\.dismiss) private var dismiss
 

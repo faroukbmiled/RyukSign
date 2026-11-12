@@ -36,7 +36,9 @@ extension ServerInstaller {
 		
 		app.http.server.configuration.hostname = sni()
 		app.http.server.configuration.tcpNoDelay = true
-		app.http.server.configuration.address = .hostname("0.0.0.0", port: port)
+		// .localhost names resolve to ::1 before 127.0.0.1, so listen dual stack for them.
+		let anyAddress = getServerMethod() == 0 && LocalCertificate.isEnabled ? "::" : "0.0.0.0"
+		app.http.server.configuration.address = .hostname(anyAddress, port: port)
 		app.http.server.configuration.port = port
 		app.routes.defaultMaxBodySize = "128mb"
 		app.routes.caseInsensitive = false
@@ -52,22 +54,36 @@ extension ServerInstaller {
 			return !self.getIPFix()
 			? (Self.getLocalAddress() ?? localhost)
 			: localhost
+		} else if LocalCertificate.isEnabled {
+			return LocalCertificate.host
 		} else {
 			return readCommonName() ?? localhost
 		}
 	}
 	
 	func tls() throws -> TLSConfiguration? {
-		guard
-			let crt = Self.getUrl("server", ext: "crt"),
-			let pem = Self.getUrl("server", ext: "pem")
-		else {
-			FileLogger.error("server.crt or server.pem missing from both Documents and the bundle", category: "install")
-			return nil
+		let crt: URL
+		let pem: URL
+
+		if LocalCertificate.isEnabled {
+			try LocalCertificate.prepare()
+			crt = LocalCertificate.chainURL
+			pem = LocalCertificate.keyURL
+			FileLogger.log("cert=on device", category: "install")
+		} else {
+			guard
+				let bundled = Self.getUrl("server", ext: "crt"),
+				let bundledKey = Self.getUrl("server", ext: "pem")
+			else {
+				FileLogger.error("server.crt or server.pem missing from both Documents and the bundle", category: "install")
+				return nil
+			}
+			crt = bundled
+			pem = bundledKey
+
+			let source = { (url: URL) in url.path.contains("/Documents/") ? "Documents" : "bundle" }
+			FileLogger.log("cert=\(source(crt)) key=\(source(pem))", category: "install")
 		}
-		
-		let source = { (url: URL) in url.path.contains("/Documents/") ? "Documents" : "bundle" }
-		FileLogger.log("cert=\(source(crt)) key=\(source(pem))", category: "install")
 		
 		do {
 			let chain = try NIOSSLCertificate.fromPEMFile(crt.path)

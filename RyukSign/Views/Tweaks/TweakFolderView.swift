@@ -2,8 +2,7 @@
 //  TweakFolderView.swift
 //  RyukSign
 //
-//  Contents of a single tweak folder: the same rows/actions as the library tab,
-//  scoped to one folder, with multi-select, search + sort and folder management.
+//  Created by Ryuk
 //
 
 import SwiftUI

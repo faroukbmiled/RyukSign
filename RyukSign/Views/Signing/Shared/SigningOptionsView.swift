@@ -14,7 +14,6 @@ struct SigningOptionsView: View {
 	var temporaryOptions: Options?
 
 	@AppStorage(AutoSignManager.enabledKey) private var _autoSign: Bool = false
-	@AppStorage(InstallCleanup.deleteKey) private var _deleteAfterInstall: Bool = false
 	
 	// MARK: Body
 	var body: some View {
@@ -187,33 +186,24 @@ struct SigningOptionsView: View {
 		}
 
 		NBSection(.localized("Post Signing")) {
-            _toggle(
-                .localized("Install After Signing"),
-                systemImage: "arrow.down.circle",
-                isOn: $options.post_installAppAfterSigned,
-                temporaryValue: temporaryOptions?.post_installAppAfterSigned
-            )
 			_toggle(
-				.localized("Delete After Signing"),
-				systemImage: "trash",
-				isOn: $options.post_deleteAppAfterSigned,
-				temporaryValue: temporaryOptions?.post_deleteAppAfterSigned
+				.localized("Install After Signing"),
+				systemImage: "arrow.down.circle",
+				isOn: $options.post_installAppAfterSigned,
+				temporaryValue: temporaryOptions?.post_installAppAfterSigned
 			)
 
 			if temporaryOptions == nil {
-				_toggle(
-					.localized("Delete After Installing"),
-					systemImage: "trash.fill",
-					isOn: $_deleteAfterInstall
-				)
-			}
-		} footer: {
-			VStack(alignment: .leading, spacing: 6) {
-				Text(.localized("This will delete your imported application after signing, to save on using unneeded space."))
-
-				if temporaryOptions == nil {
-					Text(.localized("Delete After Installing drops the signed app from your library once it finishes installing. It stays installed on your device."))
+				NavigationLink(destination: AutoCleanupView()) {
+					Label(.localized("Automatic Cleanup"), systemImage: "sparkles")
 				}
+			} else {
+				_toggle(
+					.localized("Delete After Signing"),
+					systemImage: "trash",
+					isOn: $options.post_deleteAppAfterSigned,
+					temporaryValue: temporaryOptions?.post_deleteAppAfterSigned
+				)
 			}
 		}
 		

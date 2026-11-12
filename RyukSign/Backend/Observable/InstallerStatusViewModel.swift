@@ -10,26 +10,35 @@ import Combine
 import IDeviceSwift
 
 extension InstallerStatusViewModel {
-	var statusImage: String {
+	var isFailed: Bool {
 		switch status {
-		case .none: "archivebox.fill"
-		case .ready: "app.gift"
-		case .sendingManifest, .sendingPayload: "paperplane.fill"
-		case .installing: "square.and.arrow.down"
-		case .completed: "app.badge.checkmark"
-		case .broken: "exclamationmark.triangle.fill"
+		case .broken, .completed(.failure): true
+		default: false
+		}
+	}
+
+	var statusImage: String {
+		if isFailed { return "exclamationmark.triangle.fill" }
+
+		switch status {
+		case .none: return "archivebox.fill"
+		case .ready: return "app.gift"
+		case .sendingManifest, .sendingPayload: return "paperplane.fill"
+		case .installing: return "square.and.arrow.down"
+		case .completed, .broken: return "app.badge.checkmark"
 		}
 	}
 	
 	var statusLabel: String {
+		if isFailed { return .localized("Failed") }
+
 		switch status {
-		case .none: .localized("Packaging")
-		case .ready: .localized("Ready")
-		case .sendingManifest: .localized("Sending Manifest")
-		case .sendingPayload: .localized("Sending Payload")
-		case .installing: .localized("Installing")
-		case .completed: .localized("Completed")
-		case .broken: .localized("Error")
+		case .none: return .localized("Packaging")
+		case .ready: return .localized("Ready")
+		case .sendingManifest: return .localized("Sending Manifest")
+		case .sendingPayload: return .localized("Sending Payload")
+		case .installing: return .localized("Installing")
+		case .completed, .broken: return .localized("Completed")
 		}
 	}
 }

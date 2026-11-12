@@ -116,7 +116,6 @@ struct RyukSignApp: App {
                     }
                 }
             }
-            // Folding or unfolding the iPhone Duo resizes the window.
             .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in
                 DuoDisplay.refreshSupportedOrientations()
             }
@@ -226,7 +225,15 @@ struct RyukSignApp: App {
 				let fullPath = url.validatedScheme(after: "/install/"),
 				let downloadURL = URL(string: fullPath)
 			{
-				_ = DownloadManager.shared.startDownload(from: downloadURL)
+				UIAlertController.showAlertWithCancel(
+					title: .localized("Install"),
+					message: .localized("Do you want to download and install this file?") + "\n\n\(downloadURL)",
+					actions: [
+						UIAlertAction(title: .localized("Install"), style: .default) { _ in
+							_ = DownloadManager.shared.startDownload(from: downloadURL)
+						}
+					]
+				)
 			}
 		} else {
 			let ext = url.pathExtension.lowercased()
@@ -384,7 +391,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, DownloadManager.ErrorDelegat
 		StorageManager.purgeStaleTemporary()
 		InstallCleanup.flush()
 		_addDefaultCertificates()
-		FR.downloadSSLCertificates(showFeedback: false)
+		FR.refreshSSLCertificatesIfStale()
 		_registerBackgroundTasks()
 
 		// Idempotent, no-op after first run.
@@ -395,8 +402,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, DownloadManager.ErrorDelegat
 		return true
 	}
 	
-	// Replaces the Info.plist orientations: phones stay portrait, except the
-	// unfolded iPhone Duo, whose inner display is used both ways up.
 	func application(
 		_ application: UIApplication,
 		supportedInterfaceOrientationsFor window: UIWindow?
@@ -405,7 +410,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, DownloadManager.ErrorDelegat
 	}
 
 	// MARK: - DownloadManager.ErrorDelegate
-
+	
 	func showUIErrorMessage(title: String, message: String) {
 		DispatchQueue.main.async {
 			UIAlertController.showErrorWithCopy(

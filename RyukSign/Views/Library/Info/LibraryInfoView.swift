@@ -7,7 +7,7 @@
 
 import SwiftUI
 import NimbleViews
-import Zsign
+import ZsignC
 
 // MARK: - View
 struct LibraryInfoView: View {
@@ -90,6 +90,13 @@ extension LibraryInfoView {
 			if let date = app.date {
 				_infoCell(.localized("Date Added"), desc: date.formatted())
 			}
+
+			if
+				let appDirectory = Storage.shared.getAppDirectory(for: app),
+				let minimumOS = Bundle(url: appDirectory)?.object(forInfoDictionaryKey: "MinimumOSVersion") as? String
+			{
+				_infoCell(.localized("Minimum OS"), desc: minimumOS)
+			}
 		}
 	}
 	
@@ -122,6 +129,9 @@ extension LibraryInfoView {
 			NavigationLink(.localized("Dylibs")) {
 				SigningDylibView(app: app, options: .constant(nil))
 			}
+			NavigationLink(.localized("Entitlements")) {
+				_EntitlementsView(app: app)
+			}
 		}
 	}
 	
@@ -146,5 +156,25 @@ extension LibraryInfoView {
 			Text(desc)
 		}
 		.copyableText(desc)
+	}
+}
+
+// MARK: - View: entitlements
+private struct _EntitlementsView: View {
+	let app: AppInfoPresentable
+
+	var body: some View {
+		if
+			let entitlements = Storage.shared.getAppDirectory(for: app)
+				.flatMap({ Bundle(url: $0)?.executableURL })
+				.flatMap(MachOEntitlements.read(forExecutableAt:)),
+			!entitlements.isEmpty
+		{
+			CertificatesInfoEntitlementView(entitlements: entitlements.mapValues { AnyCodable($0) })
+		} else {
+			Text(.localized("No Entitlements listed."))
+				.font(.footnote)
+				.foregroundStyle(.secondary)
+		}
 	}
 }

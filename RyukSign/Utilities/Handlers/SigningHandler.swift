@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Zsign
+import ZsignC
 import UIKit
 import OSLog
 
@@ -117,7 +117,7 @@ final class SigningHandler: NSObject {
 			try await _locateMachosAndChangeToSDK26(for: movedAppPath)
 		}
 
-		// After Liquid Glass, so its SDK 26.0 never lowers the Duo's 27.1.
+		// Must run after Liquid Glass, which lowers the SDK to 26.0.
 		if _options.experiment_supportIPhoneDuo {
 			SigningLog.shared.info(.localized("Patching for iPhone Duo"))
 			try await _locateMachosAndChangeForIPhoneDuo(for: movedAppPath)
@@ -498,7 +498,7 @@ extension SigningHandler {
 
 	private func _locateMachosAndChangeForIPhoneDuo(for app: URL) async throws {
 		if let url = Bundle(url: app)?.executableURL {
-			LCPatchMachOForIPhoneDuo(app.appendingPathComponent(url.relativePath).relativePath)
+			SigningLog.shared.info(LCPatchMachOForIPhoneDuo(app.appendingPathComponent(url.relativePath).relativePath))
 		}
 	}
 	

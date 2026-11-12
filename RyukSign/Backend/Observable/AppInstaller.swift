@@ -9,9 +9,7 @@ import Combine
 import Foundation
 import SwiftUI
 import IDeviceSwift
-import OSLog
 
-/// Install pipeline without a UI, so the single-app card and the batch queue can share it.
 @MainActor
 final class AppInstaller: ObservableObject {
 	enum Outcome {
@@ -23,7 +21,6 @@ final class AppInstaller: ObservableObject {
 	let app: AppInfoPresentable
 	let viewModel: InstallerStatusViewModel
 
-	/// redirect page fallback.
 	@Published var isPresentingFallbackPage = false
 
 	private let _isSharing: Bool
@@ -32,6 +29,8 @@ final class AppInstaller: ObservableObject {
 	private let _useShareSheet = UserDefaults.standard.bool(forKey: "Feather.useShareSheetForArchiving")
 
 	private var _server: ServerInstaller?
+	private var _archive: ArchiveHandler?
+	private var _packageTask: Task<(package: URL, exported: URL?), Error>?
 	private var _progressTask: Task<Void, Never>?
 	private var _statusObserver: AnyCancellable?
 	private var _completion: ((Result<Outcome, Error>) -> Void)?
@@ -52,6 +51,7 @@ final class AppInstaller: ObservableObject {
 	}
 
 	deinit {
+		_archive?.cleanup()
 		_progressTask?.cancel()
 		_declineCheck?.cancel()
 		if let _declineObserver { NotificationCenter.default.removeObserver(_declineObserver) }
@@ -73,7 +73,6 @@ final class AppInstaller: ObservableObject {
 		Task { await _run() }
 	}
 
-	/// Stops without reporting an outcome; the caller has already moved on.
 	func stop() {
 		_hasFinished = true
 		_completion = nil
@@ -81,6 +80,15 @@ final class AppInstaller: ObservableObject {
 		_statusObserver = nil
 		_progressTask?.cancel()
 		_progressTask = nil
+		_release()
+	}
+
+	private func _release() {
+		_packageTask?.cancel()
+		_packageTask = nil
+		_server = nil
+		_archive?.cleanup()
+		_archive = nil
 	}
 
 	// MARK: Pipeline
@@ -115,21 +123,23 @@ final class AppInstaller: ObservableObject {
 		}
 	}
 
-	/// Copying and zipping the bundle stays off the main actor; both are long and fully blocking.
 	private func _package() async throws -> (package: URL, exported: URL?) {
-		let app = app
-		let viewModel = viewModel
+		let handler = ArchiveHandler(app: app, viewModel: viewModel)
+		_archive = handler
 		let isSharing = _isSharing
 		let useShareSheet = _useShareSheet
 
-		return try await Task.detached(priority: .userInitiated) {
-			let handler = ArchiveHandler(app: app, viewModel: viewModel)
+		let task = Task.detached(priority: .userInitiated) {
 			try await handler.move()
-			let package = try await handler.archive()
+			try Task.checkCancellation()
+			let package = try await handler.archive(forExport: isSharing)
+			try Task.checkCancellation()
 
-			guard isSharing else { return (package, nil) }
-			return (package, try await handler.moveToArchive(package, shouldOpen: !useShareSheet))
-		}.value
+			guard isSharing else { return (package: package, exported: URL?.none) }
+			return (package: package, exported: try await handler.moveToArchive(package, shouldOpen: !useShareSheet))
+		}
+		_packageTask = task
+		return try await task.value
 	}
 
 	private func _serveForOTA(_ packageUrl: URL) async {
@@ -149,6 +159,8 @@ final class AppInstaller: ObservableObject {
 		if failure == nil {
 			failure = await server.selfCheck()
 		}
+
+		FileLogger.log("sending \(app.identifier ?? "?") \(app.version ?? "?")", category: "install")
 
 		viewModel.status = failure.map { .broken($0) } ?? .ready
 	}
@@ -179,7 +191,6 @@ final class AppInstaller: ObservableObject {
 		}
 	}
 
-	// Direct open keeps the install to one tap; the redirect page is only for builds that refuse the scheme.
 	private func _openInstall(_ link: String?) {
 		guard let link, let url = URL(string: link) else {
 			_finish(.failure(Self.error(.localized("Could not build the installation link, check your connection and try again."))))
@@ -198,7 +209,7 @@ final class AppInstaller: ObservableObject {
 		}
 	}
 
-	/// Declining iOS's prompt never reports back, so focus returning with no payload request means cancelled.
+	// Declining iOS's install prompt never reports back.
 	private func _armDeclineWatch() {
 		guard _declineObserver == nil else { return }
 
@@ -243,7 +254,14 @@ final class AppInstaller: ObservableObject {
 
 		let completion = _completion
 		_completion = nil
+		_release()
 		completion?(result)
+	}
+
+	static let detectsRejectionKey = "RyukSign.detectFailedInstalls"
+
+	private static var detectsRejection: Bool {
+		UserDefaults.standard.object(forKey: detectsRejectionKey) as? Bool ?? true
 	}
 
 	private static func error(_ message: String) -> Error {
@@ -255,35 +273,58 @@ final class AppInstaller: ObservableObject {
 	private func _startProgressPolling() {
 		guard _progressTask == nil, let bundleID = app.identifier else { return }
 
-		_progressTask = Task.detached(priority: .background) { [viewModel] in
+		_progressTask = Task.detached(priority: .utility) { [weak self, viewModel] in
 			var hasStarted = false
+			var peak = 0.0
+			var logged = -1.0
+			let deadline = Date().addingTimeInterval(120)
 
 			while !Task.isCancelled {
 				let raw = await UIApplication.installProgress(for: bundleID) ?? 0.0
 
 				if raw > 0 { hasStarted = true }
+				peak = max(peak, raw)
 
-				Logger.misc.info("Install progress for \(bundleID): \(raw)")
+				if abs(raw - logged) >= 0.1 || (raw == 0) != (logged == 0) {
+					FileLogger.log("progress \(bundleID): \(raw)", category: "install")
+					logged = raw
+				}
 
-				let value = hasStarted ? min(1.0, max(0.0, (raw - 0.6) / 0.3)) : 0.0
-
-				await MainActor.run {
-					if viewModel.installProgress != value {
-						viewModel.installProgress = value
+				// The drop back to zero at the end is installd finishing, not progress going backwards.
+				if raw > 0 {
+					let value = min(1.0, max(0.0, (raw - 0.6) / 0.3))
+					await MainActor.run {
+						if viewModel.installProgress != value {
+							viewModel.installProgress = value
+						}
 					}
 				}
 
 				// Progress dropping back to zero after it started means installd is done.
-				if hasStarted, raw == 0 {
-					await MainActor.run {
-						viewModel.installProgress = 1.0
-						viewModel.status = .completed(.success(()))
-					}
+				if hasStarted ? raw == 0 : Date() > deadline {
+					await self?._verifyInstall(started: hasStarted, peak: peak)
 					break
 				}
 
 				try? await Task.sleep(nanoseconds: 250_000_000)
 			}
 		}
+	}
+
+	// installd only reaches its last stage (0.88) once it accepts the app; a rejection drops out at 0.76.
+	private func _verifyInstall(started: Bool, peak: Double) {
+		FileLogger.log("install ended, started=\(started), peak=\(peak)", category: "install")
+
+		if peak < 0.85, Self.detectsRejection {
+			FileLogger.error("iOS rejected \(app.identifier ?? "?") \(app.version ?? "?")", category: "install")
+			let message: String = started
+				? .localized("iOS couldn't install the app. If a copy is already installed, delete it and try again.")
+				: .localized("iOS never started installing the app. Try again.")
+			viewModel.status = .broken(Self.error(message))
+			return
+		}
+
+		viewModel.installProgress = 1.0
+		viewModel.status = .completed(.success(()))
 	}
 }

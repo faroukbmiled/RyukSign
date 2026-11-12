@@ -2,9 +2,7 @@
 //  TweakInfoView.swift
 //  RyukSign
 //
-//  The "Tweak Info" screen: inspects one tweak file and shows what it is, where it goes,
-//  what it links against, whether anything it needs is missing, and offers a one-tap
-//  "use recommended injection settings". Pushed from the Files list so it never crowds it.
+//  Created by Ryuk
 //
 
 import SwiftUI
@@ -12,8 +10,7 @@ import NimbleViews
 
 // MARK: - Loader
 
-// Owns the off-main analysis as a @StateObject so it survives view rebuilds — a `.task`
-// gets cancelled on parent re-render, leaving the box stuck on "Analyzing…".
+// A .task here gets cancelled on parent re-renders and leaves the box stuck on Analyzing.
 @MainActor
 final class TweakAnalysisLoader: ObservableObject {
 	@Published var analysis: TweakAnalysis?
@@ -21,7 +18,7 @@ final class TweakAnalysisLoader: ObservableObject {
 	private var _loadedKey: URL?
 
 	func load(fileURL: URL, type: TweakFileType, appURL: URL?) {
-		guard _loadedKey != fileURL else { return } // already loaded / loading this file
+		guard _loadedKey != fileURL else { return }
 		_loadedKey = fileURL
 		loading = true
 		analysis = nil
@@ -42,10 +39,8 @@ struct TweakInfoView: View {
 	let title: String
 	let fileURL: URL
 	let type: TweakFileType
-	// The app being signed, when known — lets us check dependency satisfaction. Nil in the library.
 	var appURL: URL? = nil
 	var onApplyRecommendation: ((Options.InjectPath, Options.InjectFolder) -> Void)? = nil
-	// Current persisted injection config, so we can show "already applied" across reopens.
 	var currentConfig: TweakInjectConfig? = nil
 
 	@StateObject private var _loader = TweakAnalysisLoader()

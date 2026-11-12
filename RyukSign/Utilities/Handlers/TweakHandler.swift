@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import ZsignSwift
+import Zsign
 import OSLog
 
 class TweakHandler {

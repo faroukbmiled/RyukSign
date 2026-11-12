@@ -77,6 +77,7 @@ private struct InstallStatusView: View {
 	@ViewBuilder
 	private func _status() -> some View {
 		Label(viewModel.statusLabel, systemImage: viewModel.statusImage)
+			.foregroundStyle(viewModel.isFailed ? Color.red : .primary)
 			.padding()
 			.labelStyle(.titleAndIcon)
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -86,7 +87,7 @@ private struct InstallStatusView: View {
 	@ViewBuilder
 	private func _button() -> some View {
 		ZStack {
-			if viewModel.isCompleted {
+			if viewModel.isCompleted, !viewModel.isFailed {
 				Button {
 					UIApplication.openApp(with: app.identifier ?? "")
 				} label: {

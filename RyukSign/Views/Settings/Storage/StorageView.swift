@@ -72,10 +72,6 @@ struct StorageView: View {
 	@ObservedObject private var _manager = StorageManager.shared
 	@State private var _isClearing = false
 
-	@AppStorage(InstallCleanup.clearCacheKey) private var _clearCacheAfterInstall: Bool = false
-	@AppStorage(InstallCleanup.oldVersionsKey) private var _oldVersions: String = OldVersionCleanup.ask.rawValue
-	@AppStorage(InstallCleanup.oldVersionsScopeKey) private var _oldVersionsScope: String = OldVersionScope.both.rawValue
-
 	// MARK: Body
 	var body: some View {
 		NBList(.localized("Storage")) {
@@ -90,14 +86,11 @@ struct StorageView: View {
 						_row(usage)
 					}
 				}
-
-				_cleanup(report)
 			} else {
 				_scanning
 			}
 
-			_automatic
-			_previousVersions
+			_cleanup
 		}
 		.disabled(_isClearing)
 		.refreshable { _manager.refresh() }
@@ -121,31 +114,6 @@ private extension StorageView {
 		}
 	}
 
-	var _automatic: some View {
-		NBSection(.localized("Automatic Cleanup")) {
-			Toggle(.localized("Clear Cache After Installing"), isOn: $_clearCacheAfterInstall)
-		} footer: {
-			Text(.localized("Frees cached icons and web data every time an install finishes. They rebuild as you browse."))
-		}
-	}
-
-	var _previousVersions: some View {
-		NBSection(.localized("Previous Versions")) {
-			Picker(.localized("After Installing a Newer Version"), selection: $_oldVersions) {
-				ForEach(OldVersionCleanup.allCases) { option in
-					Text(option.label).tag(option.rawValue)
-				}
-			}
-			Picker(.localized("Delete From Old Versions"), selection: $_oldVersionsScope) {
-				ForEach(OldVersionScope.allCases) { option in
-					Text(option.label).tag(option.rawValue)
-				}
-			}
-		} footer: {
-			Text(.localized("Signed copies are the signed apps in your library; imported copies are the original IPAs. Only versions older than the one just installed are affected."))
-		}
-	}
-
 	@ViewBuilder
 	func _row(_ usage: StorageUsage) -> some View {
 		if usage.category.isBrowsable, usage.count > 0 {
@@ -157,29 +125,34 @@ private extension StorageView {
 		}
 	}
 
-	@ViewBuilder
-	func _cleanup(_ report: StorageReport) -> some View {
+	var _cleanup: some View {
 		Section {
-			Button(role: .destructive) {
-				DestructiveConfirm.present(
-					title: .localized("Free Up Space"),
-					message: .localized("Clears caches, logs, temp files and leftovers. Your apps, tweaks and certificates stay.")
-				) {
-					_clear()
-				}
-			} label: {
-				HStack {
-					Label(.localized("Free Up Space"), systemImage: "sparkles")
-					Spacer()
-					if _isClearing {
-						ProgressView()
-					} else {
-						Text(report.reclaimable.formattedFileSize)
-							.foregroundStyle(.secondary)
+			if let report = _manager.report {
+				Button(role: .destructive) {
+					DestructiveConfirm.present(
+						title: .localized("Free Up Space"),
+						message: .localized("Clears caches, logs, temp files and leftovers. Your apps, tweaks and certificates stay.")
+					) {
+						_clear()
+					}
+				} label: {
+					HStack {
+						Label(.localized("Free Up Space"), systemImage: "trash")
+						Spacer()
+						if _isClearing {
+							ProgressView()
+						} else {
+							Text(report.reclaimable.formattedFileSize)
+								.foregroundStyle(.secondary)
+						}
 					}
 				}
+				.disabled(report.reclaimable == 0)
 			}
-			.disabled(report.reclaimable == 0)
+
+			NavigationLink(destination: AutoCleanupView()) {
+				Label(.localized("Automatic Cleanup"), systemImage: "sparkles")
+			}
 		} footer: {
 			Text(.localized("Signing keeps the imported copy too, so an app you signed is stored twice. Delete the import if you won't sign it again."))
 		}

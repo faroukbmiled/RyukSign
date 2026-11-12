@@ -7,7 +7,7 @@
 
 import Foundation.NSURL
 import UIKit.UIImage
-import Zsign
+import ZsignC
 import NimbleJSON
 import AltSourceKit
 import IDeviceSwift
@@ -124,10 +124,10 @@ enum FR {
 		using provision: URL
 	) -> Bool {
 		defer {
-			password_check_fix_WHAT_THE_FUCK_free(provision.path)
+			password_check_fix_free(provision.path)
 		}
 		
-		password_check_fix_WHAT_THE_FUCK(provision.path)
+		password_check_fix(provision.path)
 		
 		if (!p12_password_check(key.path, password)) {
 			return false
@@ -147,23 +147,39 @@ enum FR {
 		HeartbeatManager.shared.start(true)
 	}
 	
-	static func downloadSSLCertificates(
-		from urlString: String = SSLCertificateUpdater.defaultPackURL.absoluteString,
-		showFeedback: Bool = true,
-		completion: @escaping (Bool) -> Void = { _ in }
-	) {
-		Task { @MainActor in
+	static func downloadSSLCertificates(completion: @escaping (Bool) -> Void) {
+		let generator = UINotificationFeedbackGenerator()
+		generator.prepare()
+
+		_fetchSSLCertificates { success in
+			if success { generator.notificationOccurred(.success) }
+			completion(success)
+		}
+	}
+
+	static func refreshSSLCertificatesIfStale() {
+		let crt = URL.documentsDirectory.appendingPathComponent("server.crt")
+		let modified = try? crt.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+		guard Date().timeIntervalSince(modified ?? .distantPast) > 7 * 24 * 60 * 60 else { return }
+
+		_fetchSSLCertificates { success in
+			if !success { FileLogger.error("SSL certificate refresh failed", category: "install") }
+		}
+	}
+
+	private static func _fetchSSLCertificates(completion: @escaping (Bool) -> Void) {
+		NBFetchService().fetch(from: "https://ryuksign-install.ryuksign.workers.dev/pack.json") { (result: Result<ServerView.ServerPackModel, Error>) in
+			guard case .success(let pack) = result else {
+				completion(false)
+				return
+			}
+
 			do {
-				guard let url = URL(string: urlString) else {
-					throw URLError(.badURL)
-				}
-				try await SSLCertificateUpdater.shared.download(from: url)
-				if showFeedback {
-					UINotificationFeedbackGenerator().notificationOccurred(.success)
-				}
+				try FileManager.forceWrite(content: pack.key, to: "server.pem")
+				try FileManager.forceWrite(content: [pack.cert, pack.ca].joined(separator: "\n"), to: "server.crt")
+				try FileManager.forceWrite(content: pack.info.domains.commonName, to: "commonName.txt")
 				completion(true)
 			} catch {
-				Logger.misc.error("Failed to refresh SSL certificates: \(error.localizedDescription, privacy: .public)")
 				completion(false)
 			}
 		}

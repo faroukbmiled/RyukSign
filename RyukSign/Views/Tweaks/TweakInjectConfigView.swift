@@ -2,9 +2,7 @@
 //  TweakInjectConfigView.swift
 //  RyukSign
 //
-//  Per-sign editor for one tweak injection. A tweak can hold several files (e.g. a
-//  .deb plus two .dylibs); each file gets its own row with where it lands and which
-//  extensions of THIS app it targets (enumerated live).
+//  Created by Ryuk
 //
 
 import SwiftUI

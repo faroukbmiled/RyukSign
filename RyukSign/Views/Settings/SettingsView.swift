@@ -86,7 +86,7 @@ struct SettingsView: View {
                     Text(.localized("Add and manage certificates used for signing applications."))
                 }
 
-                NBSection(.localized("Features")) {
+                NBSection(.localized("Signing")) {
                     NavigationLink(destination: ConfigurationView()) {
                         Label(.localized("Signing Options"), systemImage: "signature")
                     }
@@ -95,30 +95,22 @@ struct SettingsView: View {
                     } label: {
                         Label(.localized("Tweaks"), systemImage: "wrench.and.screwdriver")
                     }
-                    NavigationLink(destination: FilesCompressionView()) {
-                        Label(.localized("Files & Compression"), systemImage: "archivebox")
-                    }
                     NavigationLink(destination: InstallationView()) {
                         Label(.localized("Installation"), systemImage: "arrow.down.app")
                     }
-                    NavigationLink(destination: WebManagerView()) {
-                        Label(.localized("Web Manager"), systemImage: "externaldrive.badge.wifi")
-                    }
-                    NavigationLink(destination: LogsHistoryView()) {
-                        Label(.localized("Activity Logs"), systemImage: "text.alignleft")
-                    }
-                } footer: {
-                    Text(.localized("Configure the apps way of installing, its zip compression levels, and custom modifications to apps."))
                 }
-                
-                _directories()
+
+                _files()
 
                 Section {
                     NavigationLink(destination: StorageView()) {
                         Label(.localized("Storage"), systemImage: "internaldrive")
                     }
+                    NavigationLink(destination: LogsHistoryView()) {
+                        Label(.localized("Activity Logs"), systemImage: "text.alignleft")
+                    }
                     NavigationLink(destination: BackupView()) {
-                        Label(.localized("Backup & Restore"), systemImage: "arrow.triangle.2.circlepath")
+                        Label(.localized("Backup & Restore"), systemImage: "clock.arrow.circlepath")
                     }
                     NavigationLink(destination: ResetView()) {
                         Label(.localized("Reset"), systemImage: "trash")
@@ -168,19 +160,27 @@ extension SettingsView {
     }
     
     @ViewBuilder
-    private func _directories() -> some View {
-        NBSection(.localized("Misc")) {
-            Button(.localized("Open Documents"), systemImage: "folder") {
-                UIApplication.open(URL.documentsDirectory.toSharedDocumentsURL()!)
+    private func _files() -> some View {
+        NBSection(.localized("Files")) {
+            NavigationLink(destination: FilesCompressionView()) {
+                Label(.localized("Files & Compression"), systemImage: "archivebox")
             }
-            Button(.localized("Open Archives"), systemImage: "folder") {
-                UIApplication.open(FileManager.default.archives.toSharedDocumentsURL()!)
+            NavigationLink(destination: WebManagerView()) {
+                Label(.localized("Web Manager"), systemImage: "externaldrive.badge.wifi")
             }
-            Button(.localized("Open Certificates"), systemImage: "folder") {
-                UIApplication.open(FileManager.default.certificates.toSharedDocumentsURL()!)
+            Menu {
+                Button(.localized("Open Documents"), systemImage: "folder") {
+                    UIApplication.open(URL.documentsDirectory.toSharedDocumentsURL()!)
+                }
+                Button(.localized("Open Archives"), systemImage: "archivebox") {
+                    UIApplication.open(FileManager.default.archives.toSharedDocumentsURL()!)
+                }
+                Button(.localized("Open Certificates"), systemImage: "checkmark.seal") {
+                    UIApplication.open(FileManager.default.certificates.toSharedDocumentsURL()!)
+                }
+            } label: {
+                Label(.localized("Open in Files"), systemImage: "folder")
             }
-        } footer: {
-            Text(.localized("All of the apps files are contained in the documents directory, here are some quick links to these."))
         }
     }
     

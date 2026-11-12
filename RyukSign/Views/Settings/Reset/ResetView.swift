@@ -68,7 +68,7 @@ extension ResetView {
 		Section {
 			Button(.localized("Reset Sources"), systemImage: "xmark.circle") {
 				Self.resetAlert(
-					title: .localized("Reset Signed Apps"),
+					title: .localized("Reset Sources"),
 					message: Storage.shared.countContent(for: AltSource.self)
 				) {
 					Self.resetSources()

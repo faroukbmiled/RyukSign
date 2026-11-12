@@ -38,7 +38,7 @@ final class AppUpdateChecker: ObservableObject {
         signedApps: FetchedResults<Signed>,
         importedApps: FetchedResults<Imported>
     ) async {
-        // Core Data objects aren't thread-safe: snapshot them here, scan only the values off-main.
+        // Core Data objects can't leave the main actor.
         let installed = await MainActor.run {
             InstalledAppsIndex(signedApps: signedApps, importedApps: importedApps)
         }
@@ -53,19 +53,15 @@ final class AppUpdateChecker: ObservableObject {
 
             for source in sources {
                 for app in source.apps {
-                    let installedApp = self.findInstalledApp(for: app, in: installed)
-                    let hasUpdate = self.hasUpdate(
-                        installedVersion: installedApp?.version,
-                        sourceVersion: app.currentVersion
-                    ) && !ignored.contains(app.id ?? "")
+                    let match = installed.match(for: app)
+                    let hasUpdate = !ignored.contains(app.id ?? "")
+                        && self.hasUpdate(installedVersion: match?.version, sourceVersion: app.currentVersion)
 
                     newCache[app.currentUniqueId] = hasUpdate
 
-                    if hasUpdate {
+                    if hasUpdate, let match {
                         updatesSet.insert(app.currentUniqueId)
-                        if let installedApp {
-                            uniqueApps.insert(installedApp.uuid)
-                        }
+                        uniqueApps.insert(match.uuid)
                     }
                 }
             }
@@ -82,7 +78,7 @@ final class AppUpdateChecker: ObservableObject {
             }
         }.value
     }
-
+    
     func clearCache() {
         cacheQueue.async(flags: .barrier) { [weak self] in
             self?.updateCache.removeAll()
@@ -94,37 +90,17 @@ final class AppUpdateChecker: ObservableObject {
         signedApps: FetchedResults<Signed>,
         importedApps: FetchedResults<Imported>
     ) -> (version: String?, uuid: String)? {
-        findInstalledApp(for: app, in: InstalledAppsIndex(signedApps: signedApps, importedApps: importedApps))
+        InstalledAppsIndex(signedApps: signedApps, importedApps: importedApps).match(for: app)
     }
-
-    func findInstalledApp(
-        for app: ASRepository.App,
-        in installed: InstalledAppsIndex
-    ) -> (version: String?, uuid: String)? {
-        let appBundleId = app.id ?? ""
-        let appNameLower = app.currentName.lowercased()
-
-        guard !appBundleId.isEmpty || !appNameLower.isEmpty else { return nil }
-
-        guard let match = installed.matches(bundleId: appBundleId, nameLower: appNameLower),
-              !match.versions.isEmpty
-        else { return nil }
-
-        let highestVersion = match.versions.max { v1, v2 in
-            return !isNewerVersion(v1, than: v2)
-        }
-
-        return (highestVersion, match.uuid)
-    }
-
+    
     func hasUpdate(installedVersion: String?, sourceVersion: String?) -> Bool {
         guard let currentVersion = installedVersion,
               let newVersion = sourceVersion else { return false }
         
-        return isNewerVersion(newVersion, than: currentVersion)
+        return Self.isNewerVersion(newVersion, than: currentVersion)
     }
     
-    private func isNewerVersion(_ new: String, than old: String) -> Bool {
+    static func isNewerVersion(_ new: String, than old: String) -> Bool {
         let newComponents = new.split(separator: ".").compactMap { Int($0) }
         let oldComponents = old.split(separator: ".").compactMap { Int($0) }
         
@@ -164,6 +140,7 @@ final class AppUpdateChecker: ObservableObject {
         var uniqueApps = Set<String>()
 
         let ignored = SkippedUpdatesManager.shared.bundleIDs
+        let installed = InstalledAppsIndex(signedApps: signedApps, importedApps: importedApps)
 
         for source in sources {
             for app in source.apps {
@@ -174,11 +151,7 @@ final class AppUpdateChecker: ObservableObject {
                 ), !ignored.contains(app.id ?? "") {
                     updatesSet.insert(app.currentUniqueId)
 
-                    if let installedApp = findInstalledApp(
-                        for: app,
-                        signedApps: signedApps,
-                        importedApps: importedApps
-                    ) {
+                    if let installedApp = installed.match(for: app) {
                         uniqueApps.insert(installedApp.uuid)
                     }
                 }
@@ -190,64 +163,44 @@ final class AppUpdateChecker: ObservableObject {
     }
 }
 
-// MARK: - Installed Apps Index
-/// Value snapshot of the installed apps, keyed by identifier and lowercased name for O(1) matching.
+// MARK: - Installed apps index
 struct InstalledAppsIndex {
     private struct Entry {
         let version: String?
-        let uuid: String?
+        let uuid: String
     }
 
-    private var entries: [Entry] = []
-    private var byIdentifier: [String: [Int]] = [:]
-    private var byName: [String: [Int]] = [:]
+    private var _entries: [Entry] = []
+    private var _byIdentifier: [String: [Int]] = [:]
+    private var _byName: [String: [Int]] = [:]
 
     init(signedApps: FetchedResults<Signed>, importedApps: FetchedResults<Imported>) {
-        entries.reserveCapacity(signedApps.count + importedApps.count)
+        _entries.reserveCapacity(signedApps.count + importedApps.count)
+        for app in signedApps { _add(app) }
+        for app in importedApps { _add(app) }
+    }
 
-        for s in signedApps {
-            add(identifier: s.identifier, originalIdentifier: s.originalIdentifier, name: s.name, version: s.version, uuid: s.uuid)
+    private mutating func _add(_ app: AppInfoPresentable) {
+        let index = _entries.count
+        _entries.append(Entry(version: app.version, uuid: app.uuid ?? ""))
+
+        for identifier in Set([app.identifier, app.originalIdentifier].compactMap { $0 }) where !identifier.isEmpty {
+            _byIdentifier[identifier, default: []].append(index)
         }
-        for i in importedApps {
-            add(identifier: i.identifier, originalIdentifier: i.originalIdentifier, name: i.name, version: i.version, uuid: i.uuid)
+        if let name = app.name?.lowercased(), !name.isEmpty {
+            _byName[name, default: []].append(index)
         }
     }
 
-    private mutating func add(identifier: String?, originalIdentifier: String?, name: String?, version: String?, uuid: String?) {
-        let index = entries.count
-        entries.append(Entry(version: version, uuid: uuid))
+    func match(for app: ASRepository.App) -> (version: String?, uuid: String)? {
+        var indices = Set(_byIdentifier[app.id ?? ""] ?? [])
+        indices.formUnion(_byName[app.currentName.lowercased()] ?? [])
 
-        if let originalIdentifier {
-            byIdentifier[originalIdentifier, default: []].append(index)
-        }
-        if let identifier, identifier != originalIdentifier {
-            byIdentifier[identifier, default: []].append(index)
-        }
-        byName[(name ?? "").lowercased(), default: []].append(index)
-    }
+        let matches = indices.sorted().map { _entries[$0] }
+        let versions = matches.compactMap(\.version)
+        guard let first = matches.first, !versions.isEmpty else { return nil }
 
-    /// Versions of every matching installed app and the uuid of the first match, in install-list order.
-    func matches(bundleId: String, nameLower: String) -> (versions: [String], uuid: String)? {
-        var indices = Set<Int>()
-        if !bundleId.isEmpty, let ids = byIdentifier[bundleId] {
-            indices.formUnion(ids)
-        }
-        if let ids = byName[nameLower] {
-            indices.formUnion(ids)
-        }
-        guard !indices.isEmpty else { return nil }
-
-        var versions: [String] = []
-        var uuid = ""
-        for index in indices.sorted() {
-            let entry = entries[index]
-            if let version = entry.version {
-                versions.append(version)
-            }
-            if uuid.isEmpty {
-                uuid = entry.uuid ?? ""
-            }
-        }
-        return (versions, uuid)
+        let highest = versions.max { AppUpdateChecker.isNewerVersion($1, than: $0) }
+        return (highest, first.uuid)
     }
 }

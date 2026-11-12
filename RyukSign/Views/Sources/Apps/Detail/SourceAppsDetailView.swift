@@ -82,13 +82,15 @@ struct SourceAppsDetailView: View {
 										}
 									}
 								} label: {
-									HStack(spacing: 4) {
+									ViewThatFits(in: .horizontal) {
+										HStack(spacing: 4) {
+											Image(systemName: "bag")
+											Text(.localized("App Store"))
+												.lineLimit(1)
+										}
 										Image(systemName: "bag")
-											.font(.headline.bold())
-										Text(.localized("App Store"))
-											.lineLimit(1)
-											.font(.headline.bold())
 									}
+									.font(.headline.bold())
 									.foregroundStyle(Color.accentColor)
 									.padding(.horizontal, 16)
 									.padding(.vertical, 6)
@@ -107,7 +109,7 @@ struct SourceAppsDetailView: View {
 				_infoPills(app: app)
 				Divider()
                 
-                if let screenshotURLs = app.screenshotURLs {
+                if let screenshotURLs = app.screenshotURLs, !screenshotURLs.isEmpty {
                     NBSection(.localized("Screenshots")) {
                         _screenshots(screenshotURLs: screenshotURLs)
                     }

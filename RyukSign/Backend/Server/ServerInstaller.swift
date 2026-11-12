@@ -135,6 +135,11 @@ class ServerInstaller: Identifiable, ObservableObject {
 			return nil
 		} catch {
 			FileLogger.error("self check could not reach \(url.absoluteString): \(error.localizedDescription)", category: "install")
+			if LocalCertificate.isEnabled, !LocalCertificate.isTrusted {
+				return NSError(domain: "Install", code: -1, userInfo: [
+					NSLocalizedDescriptionKey: String.localized("The on-device certificate isn't trusted yet. Install its profile and turn on full trust in Settings › Installation.")
+				])
+			}
 			return error
 		}
 	}

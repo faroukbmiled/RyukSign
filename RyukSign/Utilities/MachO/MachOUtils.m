@@ -47,40 +47,47 @@ NSString *LCPatchMachOFixupARM64eSlice(const char *path) {
 	return nil;
 }
 
-/// `raiseOnly` leaves a slice already built against `sdk` or newer untouched.
-static NSString *PatchMachOAtOffset(void *mapped, size_t fileSize, off_t offset, uint32_t index, uint32_t sdk, BOOL raiseOnly) {
-	uint8_t *base = (uint8_t *)mapped + offset;
-	
-	if ((size_t)(offset + sizeof(struct mach_header_64)) > fileSize) {
+static NSString *PatchMachOAtOffset(uint8_t *mapped, size_t fileSize, size_t offset, uint32_t index, uint32_t sdk, BOOL raiseOnly) {
+	if (offset > fileSize || fileSize - offset < sizeof(struct mach_header_64)) {
 		return [NSString stringWithFormat:@"Slice %u: Invalid offset or truncated header", index];
 	}
 	
-	struct mach_header_64 *header = (struct mach_header_64 *)base;
+	struct mach_header_64 *header = (struct mach_header_64 *)(mapped + offset);
 	if (header->magic != MH_MAGIC_64) {
 		return [NSString stringWithFormat:@"Slice %u: Unsupported or non-64-bit Mach-O", index];
 	}
 	
-	struct load_command *cmd = (struct load_command *)(base + sizeof(struct mach_header_64));
+	size_t cursor = offset + sizeof(struct mach_header_64);
 	
 	for (uint32_t i = 0; i < header->ncmds; i++) {
-		uint8_t *cmdEnd = (uint8_t *)cmd + sizeof(struct load_command);
-		if ((size_t)(cmdEnd - (uint8_t *)mapped) > fileSize) {
+		if (fileSize - cursor < sizeof(struct load_command)) {
 			return [NSString stringWithFormat:@"Slice %u: Load command exceeds file size", index];
 		}
 		
-		if (cmd->cmd == LC_BUILD_VERSION) {
-			struct build_version_command *bvc = (struct build_version_command *)cmd;
-			if (raiseOnly && bvc->sdk >= sdk) {
-				return [NSString stringWithFormat:@"Slice %u: LC_BUILD_VERSION already at SDK %u.%u", index, bvc->sdk >> 16, (bvc->sdk >> 8) & 0xFF];
-			}
-			bvc->sdk = sdk;
-			return [NSString stringWithFormat:@"Slice %u: Patched LC_BUILD_VERSION to SDK %u.%u", index, sdk >> 16, (sdk >> 8) & 0xFF];
+		struct load_command *cmd = (struct load_command *)(mapped + cursor);
+		if (cmd->cmdsize < sizeof(struct load_command) || fileSize - cursor < cmd->cmdsize) {
+			return [NSString stringWithFormat:@"Slice %u: Malformed load command", index];
 		}
 		
-		cmd = (struct load_command *)((uint8_t *)cmd + cmd->cmdsize);
+		uint32_t *field = NULL;
+		if (cmd->cmd == LC_BUILD_VERSION && cmd->cmdsize >= sizeof(struct build_version_command)) {
+			field = &((struct build_version_command *)cmd)->sdk;
+		} else if (cmd->cmd == LC_VERSION_MIN_IPHONEOS && cmd->cmdsize >= sizeof(struct version_min_command)) {
+			field = &((struct version_min_command *)cmd)->sdk;
+		}
+		
+		if (field) {
+			if (raiseOnly && *field >= sdk) {
+				return [NSString stringWithFormat:@"Slice %u: SDK already %u.%u", index, *field >> 16, (*field >> 8) & 0xFF];
+			}
+			*field = sdk;
+			return [NSString stringWithFormat:@"Slice %u: Patched SDK to %u.%u", index, sdk >> 16, (sdk >> 8) & 0xFF];
+		}
+		
+		cursor += cmd->cmdsize;
 	}
 	
-	return [NSString stringWithFormat:@"Slice %u: LC_BUILD_VERSION not found", index];
+	return [NSString stringWithFormat:@"Slice %u: No SDK version load command found", index];
 }
 
 static NSString *PatchMachOSDK(const char *path, uint32_t sdk, BOOL raiseOnly) {
@@ -90,7 +97,12 @@ static NSString *PatchMachOSDK(const char *path, uint32_t sdk, BOOL raiseOnly) {
 	}
 	struct stat s = {0};
 	fstat(fd, &s);
-	void *map = mmap(NULL, s.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	size_t size = (size_t)s.st_size;
+	if (size < sizeof(uint32_t)) {
+		close(fd);
+		return [NSString stringWithFormat:@"Unsupported binary format %s", path];
+	}
+	uint8_t *map = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if(map == MAP_FAILED) {
 		close(fd);
 		return [NSString stringWithFormat:@"Failed to map %s: %s", path, strerror(errno)];
@@ -99,26 +111,25 @@ static NSString *PatchMachOSDK(const char *path, uint32_t sdk, BOOL raiseOnly) {
 	NSMutableString *result = [NSMutableString string];
 	uint32_t magic = *(uint32_t *)map;
 	
-	if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
-		struct fat_header *fat = (struct fat_header *)map;
-		uint32_t nfat = OSSwapBigToHostInt32(fat->nfat_arch);
-		struct fat_arch *archs = (struct fat_arch *)((uint8_t *)map + sizeof(struct fat_header));
+	if (magic == FAT_CIGAM && size >= sizeof(struct fat_header)) {
+		uint32_t nfat = OSSwapBigToHostInt32(((struct fat_header *)map)->nfat_arch);
+		size_t available = (size - sizeof(struct fat_header)) / sizeof(struct fat_arch);
+		struct fat_arch *archs = (struct fat_arch *)(map + sizeof(struct fat_header));
 		
-		for (uint32_t i = 0; i < nfat; i++) {
-			uint32_t offset = OSSwapBigToHostInt32(archs[i].offset);
-			NSString *sliceResult = PatchMachOAtOffset(map, s.st_size, offset, i, sdk, raiseOnly);
-			[result appendFormat:@"%@\n", sliceResult];
+		for (uint32_t i = 0; i < MIN(nfat, available); i++) {
+			size_t offset = OSSwapBigToHostInt32(archs[i].offset);
+			[result appendFormat:@"%@\n", PatchMachOAtOffset(map, size, offset, i, sdk, raiseOnly)];
 		}
 	} else if (magic == MH_MAGIC_64) {
-		NSString *mainResult = PatchMachOAtOffset(map, s.st_size, 0, 0, sdk, raiseOnly);
-		[result appendFormat:@"%@\n", mainResult];
+		[result appendFormat:@"%@\n", PatchMachOAtOffset(map, size, 0, 0, sdk, raiseOnly)];
 	} else {
-		munmap(map, s.st_size);
+		munmap(map, size);
 		close(fd);
-		return [NSString stringWithFormat:@"Unsupported binary format %s: %s", path, strerror(errno)];
+		return [NSString stringWithFormat:@"Unsupported binary format %s", path];
 	}
 	
-	munmap(map, s.st_size);
+	msync(map, size, MS_SYNC);
+	munmap(map, size);
 	close(fd);
 	return result;
 }
@@ -127,7 +138,6 @@ NSString *LCPatchMachOForSDK26(const char *path) {
 	return PatchMachOSDK(path, SDK_VERSION_26_0_0, NO);
 }
 
-/// The iPhone Duo letterboxes apps built against an SDK older than 27.1.
 NSString *LCPatchMachOForIPhoneDuo(const char *path) {
 	return PatchMachOSDK(path, SDK_VERSION_27_1_0, YES);
 }

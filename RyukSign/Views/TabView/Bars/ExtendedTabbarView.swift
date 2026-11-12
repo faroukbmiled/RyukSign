@@ -43,14 +43,30 @@ struct ExtendedTabbarView: View {
         
     private var tabSelectionBinding: Binding<TabSelection> {
         Binding(
-            get: { selectedTab },
+            get: { _selectableTab },
             set: { newValue in
-                if newValue == selectedTab, case .main(.sources) = newValue {
+                if newValue == _selectableTab, case .main(.sources) = newValue {
                     tabSelection.sourcesRetapped.toggle()
                 }
                 selectedTab = newValue
             }
         )
+    }
+
+    // UIKit aborts when the selected tab is hidden.
+    private var _selectableTab: TabSelection {
+        guard horizontalSizeClass == .compact else { return selectedTab }
+
+        let fallback: TabEnum
+        switch selectedTab {
+        case .main:
+            return selectedTab
+        case .customizable(let tab):
+            fallback = tab
+        case .allRepositories, .source:
+            fallback = .sources
+        }
+        return .main(_visibleDefaultTabs.contains(fallback) ? fallback : _tabPrefs.resolvedLaunchTab)
     }
 
     private func _badgeCount(for tab: TabEnum) -> Int {
@@ -81,14 +97,19 @@ struct ExtendedTabbarView: View {
             TabSection("Sources") {
                 Tab(.localized("All Repositories"), systemImage: "globe.desk", value: TabSelection.allRepositories) {
                     NavigationStack {
-                        SourceAppsView(object: Array(_sources), viewModel: viewModel)
+                        if _sources.isEmpty {
+                            NoRepositoriesView { _isAddingPresenting = true }
+                                .navigationTitle(.localized("All Repositories"))
+                        } else {
+                            _sourceApps(Array(_sources))
+                        }
                     }
                 }
                 
                 ForEach(_sources, id: \.identifier) { source in
                     Tab(value: TabSelection.source(source.identifier ?? "")) {
                         NavigationStack {
-                            SourceAppsView(object: [source], viewModel: viewModel)
+                            _sourceApps([source])
                         }
                     } label: {
                         _icon(source.name ?? .localized("Unknown"), iconUrl: source.iconURL)
@@ -98,6 +119,8 @@ struct ExtendedTabbarView: View {
                             Storage.shared.deleteSource(for: source)
                         }
                     }
+                    // The Duo's tab rail renders repo icons as blank tinted circles.
+                    .hidden(UIDevice.current.userInterfaceIdiom == .phone)
                 }
             }
             .sectionActions {
@@ -115,7 +138,7 @@ struct ExtendedTabbarView: View {
                 .adaptiveSheetSizing(phone: [.medium])
         }
         .onAppear {
-            selectedTab = .main(tabSelection.selectedTab)
+            selectedTab = _selection(for: tabSelection.selectedTab)
         }
         .onChange(of: _tabPrefs.hidden) { _, _ in
             if case .main(let tab) = selectedTab, !_visibleDefaultTabs.contains(tab) {
@@ -123,28 +146,40 @@ struct ExtendedTabbarView: View {
             }
         }
         .onChange(of: tabSelection.selectedTab) { _, newValue in
-            // When TabSelectionObserver changes (from "Installed" button), update our selection
+            guard _tab(of: selectedTab) != newValue else { return }
             withAnimation(.easeInOut(duration: 0.3)) {
-                selectedTab = .main(newValue)
+                selectedTab = _selection(for: newValue)
             }
         }
         .onChange(of: selectedTab) { _, newValue in
-            // Update TabSelectionObserver when user manually changes tabs
-            switch newValue {
-            case .main(let tab):
-                if tabSelection.selectedTab != tab {
-                    tabSelection.selectedTab = tab
-                }
-            case .customizable(let tab):
-                if tabSelection.selectedTab != tab {
-                    tabSelection.selectedTab = tab
-                }
-            default:
-                break // Don't update for source tabs
+            if let tab = _tab(of: newValue), tabSelection.selectedTab != tab {
+                tabSelection.selectedTab = tab
             }
         }
     }
+
+    private func _tab(of selection: TabSelection) -> TabEnum? {
+        switch selection {
+        case .main(let tab), .customizable(let tab): tab
+        case .allRepositories, .source: nil
+        }
+    }
+
+    private func _selection(for tab: TabEnum) -> TabSelection {
+        if _visibleDefaultTabs.contains(tab) { return .main(tab) }
+        return TabEnum.customizableTabs.contains(tab) ? .customizable(tab) : .main(_tabPrefs.resolvedLaunchTab)
+    }
     
+    // The sidebar can open these before the Sources tab has loaded anything.
+    private func _sourceApps(_ sources: [AltSource]) -> some View {
+        SourceAppsView(
+            object: sources,
+            viewModel: viewModel,
+            onRefresh: { await viewModel.fetchSources(_sources, refresh: true) }
+        )
+        .task { await viewModel.fetchSources(_sources) }
+    }
+
     @ViewBuilder
     private func _icon(_ title: String, iconUrl: URL?) -> some View {
         Label {

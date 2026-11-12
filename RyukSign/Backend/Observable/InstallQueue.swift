@@ -22,7 +22,18 @@ final class InstallQueue: ObservableObject {
 	@Published private(set) var isFinished = false
 	@Published var isSheetPresented = false
 
-	private init() {}
+	private var _failures: [(name: String, error: Error)] = []
+
+	// An advance that lands while backgrounded can't start the next install until we're back.
+	private init() {
+		NotificationCenter.default.addObserver(
+			forName: UIApplication.didBecomeActiveNotification,
+			object: nil,
+			queue: .main
+		) { _ in
+			MainActor.assumeIsolated { InstallQueue.shared.activate() }
+		}
+	}
 
 	var current: AnyApp? { apps.indices.contains(index) ? apps[index] : nil }
 	var upcoming: [AnyApp] { Array(apps.dropFirst(index + 1)) }
@@ -84,23 +95,51 @@ final class InstallQueue: ObservableObject {
 			}
 		case .success:
 			if let app = installer?.app { InstallCleanup.stage(app) }
-			// Let the finished ring land before the next app takes over.
-			DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?._advance() }
+			_advanceAfterResult()
 		case .failure(let error):
-			UIAlertController.showAlertWithOk(
-				title: .localized("Install"),
-				message: String(describing: error),
-				action: { [weak self] in
-					HeartbeatManager.shared.start(true)
-					self?._abandon()
-				}
-			)
+			_failures.append((installer?.app.name ?? .localized("App"), error))
+			_advanceAfterResult()
 		}
+	}
+
+	// The user may have skipped ahead during the delay.
+	private func _advanceAfterResult() {
+		let finished = installer
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+			guard let self, self.installer === finished else { return }
+			self._advance()
+		}
+	}
+
+	private func _reportFailures() {
+		let message = _failures.count == 1
+			? Self._describe(_failures[0].error)
+			: _failures.map { "\($0.name): \(Self._describe($0.error))" }.joined(separator: "\n\n")
+		_failures.removeAll()
+
+		UIAlertController.showAlertWithOk(
+			title: .localized("Install"),
+			message: message,
+			action: { [weak self] in
+				HeartbeatManager.shared.start(true)
+				self?._abandon()
+			}
+		)
+	}
+
+	private static func _describe(_ error: Error) -> String {
+		error is LocalizedError || (error as NSError).userInfo[NSLocalizedDescriptionKey] != nil
+			? error.localizedDescription
+			: String(describing: error)
 	}
 
 	/// Keeps the last app on screen so its finished state and Open button survive.
 	private func _advance() {
 		guard index + 1 < apps.count else {
+			guard _failures.isEmpty else {
+				_reportFailures()
+				return
+			}
 			isFinished = true
 			if !isSheetPresented { clear() }
 			return
@@ -115,6 +154,10 @@ final class InstallQueue: ObservableObject {
 	/// Dismiss first so the card doesn't blank out mid animation.
 	private func _abandon() {
 		guard index + 1 < apps.count else {
+			guard _failures.isEmpty else {
+				_reportFailures()
+				return
+			}
 			guard isSheetPresented else {
 				clear()
 				return
@@ -135,6 +178,7 @@ final class InstallQueue: ObservableObject {
 		apps.removeAll()
 		index = 0
 		isFinished = false
+		_failures.removeAll()
 
 		InstallCleanup.flush()
 	}

@@ -22,7 +22,7 @@ manual:
     file: "LICENSE_ELLEKIT"
 
   - name: "LiveContainer"
-    file: "Zsign/LICENSE_LC"
+    file: "LICENSE_LC"
 
 exclude:
   - swift-html-entities

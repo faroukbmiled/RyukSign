@@ -119,7 +119,7 @@ struct Options: Codable, Equatable {
 	var experiment_supportLiquidGlass: Bool
 	/// Modifies app to disable liquid glass
 	var experiment_disableLiquidGlass: Bool
-	/// Marks the app as built for SDK 27.1 so the iPhone Duo shows it full screen
+	/// Modifies app to run full screen on the unfolded iPhone Duo
 	var experiment_supportIPhoneDuo: Bool
 	/// Modifies application to use ElleKit instead of CydiaSubstrate
 	var experiment_replaceSubstrateWithEllekit: Bool

@@ -2,7 +2,7 @@
 //  TweakDetailView.swift
 //  RyukSign
 //
-//  Edit a managed tweak: versions, auto-inject rules and injection settings.
+//  Created by Ryuk
 //
 
 import SwiftUI
@@ -229,7 +229,6 @@ extension TweakDetailView {
 				}
 			}
 
-			// Full analysis on its own screen so it doesn't crowd this list.
 			NavigationLink {
 				TweakInfoView(
 					title: component.fileName,
