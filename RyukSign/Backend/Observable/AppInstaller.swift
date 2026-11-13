@@ -37,6 +37,7 @@ final class AppInstaller: ObservableObject {
 	private var _hasFinished = false
 	private var _declineObserver: NSObjectProtocol?
 	private var _declineCheck: DispatchWorkItem?
+	private var _installedBefore: InstalledAppState?
 
 	init(app: AppInfoPresentable, isSharing: Bool = false) {
 		self.app = app
@@ -158,7 +159,10 @@ final class AppInstaller: ObservableObject {
 			failure = await server.selfCheck()
 		}
 
-		FileLogger.log("sending \(app.identifier ?? "?") \(app.version ?? "?")", category: "install")
+		if let id = app.identifier {
+			_installedBefore = InstalledAppState.current(for: id)
+		}
+		FileLogger.log("sending \(app.identifier ?? "?") \(app.version ?? "?"), installed: \(_installedBefore?.description ?? "none")", category: "install")
 
 		viewModel.status = failure.map { .broken($0) } ?? .ready
 	}
@@ -170,7 +174,7 @@ final class AppInstaller: ObservableObject {
 		case .ready where _installationMethod == 0:
 			_armDeclineWatch()
 			_openInstall(_serverMethod == 0 ? _server?.iTunesLink : _server?.iTunesLinkExternal)
-		case .sendingManifest:
+		case .sendingManifest where _progressTask == nil:
 			_armDeclineWatch()
 		case .sendingPayload:
 			fallbackPage = nil
@@ -288,19 +292,28 @@ final class AppInstaller: ObservableObject {
 
 	private func _startProgressPolling() {
 		guard _progressTask == nil, let bundleID = app.identifier else { return }
+		let before = _installedBefore
 
 		_progressTask = Task.detached(priority: .utility) { [weak self, viewModel] in
+			let pollingStarted = Date()
 			var startedAt: Date?
 			var peak = 0.0
 			var logged = -1.0
-			let deadline = Date().addingTimeInterval(120)
+			var last = 0.0
+			var lastChange = Date()
+			var nextStateCheck = Date()
 
 			while !Task.isCancelled {
 				let raw = await UIApplication.installProgress(for: bundleID) ?? 0.0
+				let now = Date()
 
-				if raw > 0, startedAt == nil { startedAt = Date() }
+				if raw > 0, startedAt == nil { startedAt = now }
 				let hasStarted = startedAt != nil
 				peak = max(peak, raw)
+				if raw != last {
+					last = raw
+					lastChange = now
+				}
 
 				if abs(raw - logged) >= 0.1 || (raw == 0) != (logged == 0) {
 					FileLogger.log("progress \(bundleID): \(raw)", category: "install")
@@ -317,26 +330,45 @@ final class AppInstaller: ObservableObject {
 					}
 				}
 
-				// Progress dropping back to zero after it started means installd is done.
-				if hasStarted ? raw == 0 : Date() > deadline {
-					await self?._verifyInstall(started: hasStarted, peak: peak)
+				var endReason: String?
+				if hasStarted, raw == 0 {
+					endReason = "progress ended"
+				} else if !hasStarted, now.timeIntervalSince(pollingStarted) > 120 {
+					endReason = "never started"
+				} else if peak >= 0.85, now.timeIntervalSince(lastChange) > 60 {
+					endReason = "progress stuck at \(raw) after installd accepted the app"
+				} else if now.timeIntervalSince(pollingStarted) > 900 {
+					endReason = "timed out at \(raw)"
+				} else if now >= nextStateCheck {
+					// Tiny apps can finish between samples, and iOS doesn't always reset progress afterwards.
+					nextStateCheck = now.addingTimeInterval(1)
+					if let current = InstalledAppState.current(for: bundleID), current != before {
+						endReason = "installed app changed"
+					}
+				}
+
+				if let endReason {
+					FileLogger.log("install watch ended: \(endReason)", category: "install")
+					await self?._verifyInstall(started: hasStarted, peak: peak, before: before)
 					break
 				}
 
 				// Small apps finish within seconds and need dense samples; long installs don't.
-				let isLongInstall = startedAt.map { Date().timeIntervalSince($0) > 5 } ?? false
+				let isLongInstall = startedAt.map { now.timeIntervalSince($0) > 5 } ?? false
 				try? await Task.sleep(nanoseconds: isLongInstall ? 250_000_000 : 50_000_000)
 			}
 		}
 	}
 
-	// installd only reaches its last stage (0.88) once it accepts the app; a rejection drops out at 0.76.
-	private func _verifyInstall(started: Bool, peak: Double) {
-		FileLogger.log("install ended, started=\(started), peak=\(peak)", category: "install")
+	// installd only reaches 0.88 once it accepts the app.
+	private func _verifyInstall(started: Bool, peak: Double, before: InstalledAppState?) {
+		let after = app.identifier.flatMap(InstalledAppState.current(for:))
+		let replaced = after != nil && after != before
+		FileLogger.log("install ended, started=\(started), peak=\(peak), installed: \(after?.description ?? "none"), replaced=\(replaced)", category: "install")
 
-		if peak < 0.85, Self.detectsRejection {
+		if peak < 0.85, !replaced, Self.detectsRejection {
 			FileLogger.error("iOS rejected \(app.identifier ?? "?") \(app.version ?? "?")", category: "install")
-			let message: String = started
+			let message: String = started || after != nil
 				? .localized("iOS couldn't install the app. If a copy is already installed, delete it and try again.")
 				: .localized("iOS never started installing the app. Try again.")
 			viewModel.status = .broken(Self.error(message))
