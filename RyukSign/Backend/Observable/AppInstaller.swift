@@ -290,7 +290,7 @@ final class AppInstaller: ObservableObject {
 		guard _progressTask == nil, let bundleID = app.identifier else { return }
 
 		_progressTask = Task.detached(priority: .utility) { [weak self, viewModel] in
-			var hasStarted = false
+			var startedAt: Date?
 			var peak = 0.0
 			var logged = -1.0
 			let deadline = Date().addingTimeInterval(120)
@@ -298,7 +298,8 @@ final class AppInstaller: ObservableObject {
 			while !Task.isCancelled {
 				let raw = await UIApplication.installProgress(for: bundleID) ?? 0.0
 
-				if raw > 0 { hasStarted = true }
+				if raw > 0, startedAt == nil { startedAt = Date() }
+				let hasStarted = startedAt != nil
 				peak = max(peak, raw)
 
 				if abs(raw - logged) >= 0.1 || (raw == 0) != (logged == 0) {
@@ -322,7 +323,9 @@ final class AppInstaller: ObservableObject {
 					break
 				}
 
-				try? await Task.sleep(nanoseconds: 250_000_000)
+				// Small apps finish within seconds and need dense samples; long installs don't.
+				let isLongInstall = startedAt.map { Date().timeIntervalSince($0) > 5 } ?? false
+				try? await Task.sleep(nanoseconds: isLongInstall ? 250_000_000 : 50_000_000)
 			}
 		}
 	}

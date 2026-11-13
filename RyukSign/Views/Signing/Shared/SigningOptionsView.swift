@@ -41,6 +41,24 @@ struct SigningOptionsView: View {
 			Text(.localized("Replaces wildcard keychain groups with the app's bundle identifier, preventing sideloaded apps from accessing each other's keychain entries."))
 		}
 
+		NBSection(.localized("Sandbox Escape")) {
+			_toggle(
+				.localized("Block Sandbox Escape"),
+				systemImage: "lock.shield",
+				isOn: $options.blockSandboxEscape,
+				temporaryValue: temporaryOptions?.blockSandboxEscape
+			)
+
+			_toggle(
+				.localized("Remove App Groups"),
+				systemImage: "square.stack.3d.up.slash",
+				isOn: $options.removeAppGroups,
+				temporaryValue: temporaryOptions?.removeAppGroups
+			)
+		} footer: {
+			Text(.localized("Protects against the bad_query and worse_query exploits. The guard keeps App Groups working, but an app built to get around it still can. Removing App Groups fully blocks worse_query, but breaks widgets and extensions that share data."))
+		}
+
 		NBSection(.localized("General")) {
 			Self.picker(
 				.localized("Appearance"),

@@ -1,6 +1,587 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Sandbox Escape" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الهروب من الصندوق الرملي"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Únik ze sandboxu"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox-Ausbruch"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox Escape"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escape del sandbox"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Évasion du bac à sable"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lolos Sandbox"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Evasione dalla sandbox"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ucieczka z piaskownicy"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выход из песочницы"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox Kaçışı"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thoát sandbox"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沙盒逃逸"
+          }
+        }
+      }
+    },
+    "Remove App Groups" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة App Groups"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat App Groups"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Groups entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove App Groups"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar App Groups"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer les App Groups"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hapus App Groups"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi App Groups"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usuń App Groups"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить App Groups"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Groups'u Kaldır"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa App Groups"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除 App Groups"
+          }
+        }
+      }
+    },
+    "Protects against the bad_query and worse_query exploits. The guard keeps App Groups working, but an app built to get around it still can. Removing App Groups fully blocks worse_query, but breaks widgets and extensions that share data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحمي من ثغرتي bad_query و worse_query. الحارس يُبقي App Groups تعمل، لكن تطبيقًا مصممًا لتجاوزه يستطيع ذلك. إزالة App Groups تحظر worse_query تمامًا، لكنها تعطّل الأدوات والإضافات التي تشارك البيانات."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chrání před zranitelnostmi bad_query a worse_query. Ochrana zachová funkční App Groups, ale aplikace vytvořená k jejímu obejití ji obejde. Odebrání App Groups zcela blokuje worse_query, ale rozbije widgety a rozšíření, které sdílejí data."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schützt vor den Exploits bad_query und worse_query. Der Schutz lässt App Groups funktionieren, eine gezielt dafür gebaute App kann ihn aber umgehen. Das Entfernen der App Groups blockiert worse_query vollständig, macht aber Widgets und Erweiterungen kaputt, die Daten teilen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protects against the bad_query and worse_query exploits. The guard keeps App Groups working, but an app built to get around it still can. Removing App Groups fully blocks worse_query, but breaks widgets and extensions that share data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protege contra los exploits bad_query y worse_query. La protección mantiene los App Groups funcionando, pero una app creada para saltársela aún puede hacerlo. Eliminar los App Groups bloquea worse_query por completo, pero rompe los widgets y extensiones que comparten datos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protège contre les exploits bad_query et worse_query. La protection laisse les App Groups fonctionner, mais une app conçue pour la contourner y parviendra. Supprimer les App Groups bloque totalement worse_query, mais casse les widgets et extensions qui partagent des données."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melindungi dari eksploit bad_query dan worse_query. Penjaga membuat App Groups tetap berfungsi, tetapi aplikasi yang dibuat untuk mengakalinya tetap bisa. Menghapus App Groups memblokir worse_query sepenuhnya, tetapi merusak widget dan ekstensi yang berbagi data."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protegge dagli exploit bad_query e worse_query. La protezione mantiene funzionanti gli App Groups, ma un’app creata per aggirarla può comunque farlo. Rimuovere gli App Groups blocca del tutto worse_query, ma rompe widget ed estensioni che condividono dati."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chroni przed exploitami bad_query i worse_query. Zabezpieczenie zostawia działające App Groups, ale aplikacja napisana tak, by je obejść, nadal to zrobi. Usunięcie App Groups całkowicie blokuje worse_query, ale psuje widżety i rozszerzenia współdzielące dane."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Защищает от эксплойтов bad_query и worse_query. Защита оставляет App Groups рабочими, но приложение, созданное для её обхода, всё равно её обойдёт. Удаление App Groups полностью блокирует worse_query, но ломает виджеты и расширения, которые делятся данными."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bad_query ve worse_query açıklarına karşı korur. Koruma App Groups'u çalışır bırakır, ancak onu aşmak için yazılmış bir uygulama yine de aşabilir. App Groups'u kaldırmak worse_query'yi tamamen engeller, ancak veri paylaşan widget'ları ve uzantıları bozar."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảo vệ trước các lỗ hổng bad_query và worse_query. Lớp bảo vệ giữ App Groups hoạt động, nhưng một ứng dụng được viết để vượt qua nó vẫn làm được. Xóa App Groups chặn hoàn toàn worse_query, nhưng làm hỏng widget và tiện ích mở rộng dùng chung dữ liệu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "防范 bad_query 和 worse_query 漏洞。防护会保留 App Groups 的功能，但专门为绕过它而编写的应用仍能绕过。移除 App Groups 可彻底阻断 worse_query，但会破坏共享数据的小组件和扩展。"
+          }
+        }
+      }
+    },
+    "Removed App Group entitlements" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمت إزالة صلاحيات App Group"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oprávnění App Group odebrána"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-Group-Berechtigungen entfernt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed App Group entitlements"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se eliminaron los permisos de App Group"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Droits App Group supprimés"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entitlement App Group dihapus"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autorizzazioni App Group rimosse"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usunięto uprawnienia App Group"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Права App Group удалены"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Group yetkileri kaldırıldı"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã xóa quyền App Group"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已移除 App Group 权限"
+          }
+        }
+      }
+    },
+    "Injected the sandbox escape guard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم حقن حارس الهروب من الصندوق الرملي"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ochrana proti úniku ze sandboxu vložena"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox-Ausbruchschutz eingefügt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Injected the sandbox escape guard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protección contra el escape del sandbox inyectada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection contre l’évasion du bac à sable injectée"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Penjaga lolos sandbox disuntikkan"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protezione dall’evasione dalla sandbox iniettata"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wstrzyknięto zabezpieczenie przed ucieczką z piaskownicy"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Защита от выхода из песочницы внедрена"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox kaçışı koruması enjekte edildi"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã chèn lớp bảo vệ chống thoát sandbox"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已注入沙盒逃逸防护"
+          }
+        }
+      }
+    },
+    "Block Sandbox Escape" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حظر هروب الصندوق الرملي"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blokovat únik ze sandboxu"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox-Ausbruch blockieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block Sandbox Escape"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloquear escape del sandbox"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloquer l’évasion du bac à sable"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blokir Lolos Sandbox"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocca l’evasione dalla sandbox"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blokuj ucieczkę z piaskownicy"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Блокировать выход из песочницы"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox Kaçışını Engelle"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chặn thoát sandbox"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "阻止沙盒逃逸"
+          }
+        }
+      }
+    },
+    "Sandbox escape block is unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حظر الهروب من الصندوق الرملي غير متوفر"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blokování úniku ze sandboxu není dostupné"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox-Ausbruch-Blockierung nicht verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox escape block is unavailable"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El bloqueo de escape del sandbox no está disponible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le blocage de l’évasion du bac à sable est indisponible"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pemblokiran lolos sandbox tidak tersedia"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il blocco dell’evasione dalla sandbox non è disponibile"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blokowanie ucieczki z piaskownicy jest niedostępne"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Блокировка выхода из песочницы недоступна"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sandbox kaçışı engelleme kullanılamıyor"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tính năng chặn thoát sandbox không khả dụng"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沙盒逃逸拦截不可用"
+          }
+        }
+      }
+    },
     "Tap a tweak to choose when and where it injects." : {
       "extractionState" : "manual",
       "localizations" : {

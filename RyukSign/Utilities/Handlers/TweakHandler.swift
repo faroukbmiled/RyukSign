@@ -46,6 +46,22 @@ class TweakHandler {
 		return url
 	}
 
+	/// Bundled guard against the bad_query and worse_query sandbox escapes
+	private var _sandboxEscapeBlockURL: URL? {
+		guard _options.blockSandboxEscape else { return nil }
+		guard let url = Bundle.main.url(forResource: "SandboxEscapeBlock", withExtension: "dylib") else {
+			SigningLog.shared.error(.localized("Sandbox escape block is unavailable"))
+			return nil
+		}
+		return url
+	}
+
+	private func _stage(_ bundled: URL, in directory: URL) throws -> URL {
+		let staged = directory.appendingPathComponent(bundled.lastPathComponent)
+		try _fileManager.copyItem(at: bundled, to: staged)
+		return staged
+	}
+
 	/// `Frameworks/` can be absent from apps, so the parent has to exist before the move.
 	private func _place(_ url: URL, at destination: URL) throws {
 		try _fileManager.createDirectoryIfNeeded(at: destination.deletingLastPathComponent())
@@ -112,9 +128,10 @@ class TweakHandler {
 		Logger.misc.info("Attempting to inject")
 
 		let filePickerFix = _filePickerFixURL
+		let sandboxEscapeBlock = _sandboxEscapeBlockURL
 
 		if !_options.experiment_replaceSubstrateWithEllekit {
-			guard _hasAnyInjection || filePickerFix != nil else { return }
+			guard _hasAnyInjection || filePickerFix != nil || sandboxEscapeBlock != nil else { return }
 		}
 
 		try await _checkEllekit()
@@ -123,9 +140,7 @@ class TweakHandler {
 		try _fileManager.createDirectoryIfNeeded(at: baseTmpDir)
 
 		if let filePickerFix {
-			let staged = baseTmpDir.appendingPathComponent(filePickerFix.lastPathComponent)
-			try _fileManager.copyItem(at: filePickerFix, to: staged)
-			_urls.append(staged)
+			_urls.append(try _stage(filePickerFix, in: baseTmpDir))
 		}
 
 		// Legacy job: injectionFiles + ellekit, extensions only when injectIntoExtensions.
@@ -145,6 +160,18 @@ class TweakHandler {
 			for name in names {
 				SigningLog.shared.info(.localized("Injected %@", arguments: name), category: "inject")
 			}
+		}
+
+		// Extensions run their own code, so the guard goes into every executable.
+		if let sandboxEscapeBlock {
+			let names = try await _runJob(
+				urls: [try _stage(sandboxEscapeBlock, in: baseTmpDir)],
+				baseTmpDir: baseTmpDir,
+				path: _options.injectPath,
+				folder: _options.injectFolder
+			)
+			_injectIntoTargets(dylibNames: names, targeting: .all, path: _options.injectPath, folder: _options.injectFolder)
+			SigningLog.shared.info(.localized("Injected the sandbox escape guard"), category: "inject")
 		}
 
 		// Managed specs: each file carries its own config + targeting, processed

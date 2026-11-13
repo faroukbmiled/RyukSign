@@ -128,7 +128,7 @@ final class SigningHandler: NSObject {
 			SigningLog.shared.info(.localized("Injecting tweaks"))
 			try await _inject(for: movedAppPath, with: _options)
 		} else {
-			if !_options.injectionFiles.isEmpty || hasTweakSpecs || _options.fixFilePicker {
+			if !_options.injectionFiles.isEmpty || hasTweakSpecs || _options.fixFilePicker || _options.blockSandboxEscape {
 				SigningLog.shared.info(.localized("Injecting tweaks"))
 				try await _inject(for: movedAppPath, with: _options)
 			}
@@ -136,6 +136,10 @@ final class SigningHandler: NSObject {
 		
 		// iOS "26" (19) needs special treatment
 		try await _locateMachosAndFixupArm64eSlice(for: movedAppPath)
+
+		if _options.removeAppGroups {
+			try _removeAppGroups()
+		}
 
 		if _options.keychainIsolation {
 			try await _isolateKeychainGroups(for: movedAppPath)
@@ -244,13 +248,26 @@ extension SigningHandler {
 		guard !isolated.isEmpty else { return }
 
 		entitlements["keychain-access-groups"] = isolated
+		try _useEntitlements(entitlements)
 
+		SigningLog.shared.info(.localized("Isolating keychain to %@", arguments: isolated.joined(separator: ", ")))
+	}
+
+	private func _removeAppGroups() throws {
+		let key = "com.apple.security.application-groups"
+		guard let entitlements = _baseEntitlements(), entitlements[key] != nil else { return }
+
+		entitlements.removeObject(forKey: key)
+		try _useEntitlements(entitlements)
+
+		SigningLog.shared.info(.localized("Removed App Group entitlements"))
+	}
+
+	private func _useEntitlements(_ entitlements: NSDictionary) throws {
 		let entitlementsURL = _uniqueWorkDir.appendingPathComponent("entitlements.plist")
 		let data = try PropertyListSerialization.data(fromPropertyList: entitlements, format: .xml, options: 0)
 		try data.write(to: entitlementsURL)
 		_options.appEntitlementsFile = entitlementsURL
-
-		SigningLog.shared.info(.localized("Isolating keychain to %@", arguments: isolated.joined(separator: ", ")))
 	}
 
 	private func _baseEntitlements() -> NSMutableDictionary? {
