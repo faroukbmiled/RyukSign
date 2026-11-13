@@ -28,6 +28,9 @@ struct SourcesView: View {
 
 	@AppStorage("Feather.sourcesTabShowAllReposDirectly")
 	private var _sourcesTabShowAllReposDirectly: Bool = false
+	@AppStorage("RyukSign.sourcesSort") private var _sort: SourceSort = .name
+	@AppStorage("RyukSign.sourcesSortAscending") private var _sortAscending = true
+	@ObservedObject private var _favorites = SourceFavorites.shared
 
 	/// Sources not excluded from "All Repositories"
 	private var _nonExcludedSources: [AltSource] {
@@ -58,6 +61,9 @@ struct SourcesView: View {
 		.task(id: Array(_sources)) {
 			await viewModel.fetchSources(_sources)
 		}
+		.onAppear {
+			handlePendingNavigation(appNavigationManager.pendingAppNavigation)
+		}
 		.onChange(of: appNavigationManager.pendingAppNavigation) { pendingNavigation in
 			handlePendingNavigation(pendingNavigation)
 		}
@@ -74,7 +80,7 @@ struct SourcesView: View {
 		.onChange(of: scenePhase) { newPhase in
 			if newPhase == .active {
 				Task {
-					await viewModel.fetchSources(_sources)
+					await viewModel.refreshStale(Array(_sources))
 				}
 			}
 		}
@@ -96,7 +102,8 @@ struct SourcesView: View {
 			viewModel: viewModel,
 			onRefresh: {
 				await self.viewModel.fetchSources(self._sources, refresh: true)
-			}
+			},
+			isSourcesRoot: true
 		)
 		.toolbar {
 			NBToolbarButton(
@@ -197,20 +204,49 @@ struct SourcesView: View {
 		)
 	}
 
+	private var _sortedSources: [AltSource] {
+		let sorted = _filteredSources.sorted { lhs, rhs in
+			switch _sort {
+			case .name:
+				return (lhs.name ?? "").localizedCaseInsensitiveCompare(rhs.name ?? "") == .orderedAscending
+			case .apps:
+				return (viewModel.sources[lhs]?.apps.count ?? 0) > (viewModel.sources[rhs]?.apps.count ?? 0)
+			case .added:
+				return (lhs.date ?? .distantPast) > (rhs.date ?? .distantPast)
+			}
+		}
+		return _sortAscending ? sorted : sorted.reversed()
+	}
+
 	@ViewBuilder
 	private var repositoriesSection: some View {
-		let sectionTitle = _isEditMode ? "\(_selectedSources.count) selected" : "\(_filteredSources.count)"
-		NBSection(
-			.localized("Repositories"),
-			secondary: sectionTitle
-		) {
-			ForEach(_filteredSources) { source in
-				if _isEditMode {
-					editModeRow(for: source)
-				} else {
-					normalModeRow(for: source)
-				}
+		let sources = _sortedSources
+		let favorites = sources.filter(_favorites.contains)
+		let others = sources.filter { !_favorites.contains($0) }
+
+		if !favorites.isEmpty {
+			NBSection(.localized("Favorites"), secondary: "\(favorites.count)") {
+				ForEach(favorites) { _row(for: $0) }
 			}
+		}
+
+		if !others.isEmpty {
+			let sectionTitle = _isEditMode ? "\(_selectedSources.count) selected" : "\(others.count)"
+			NBSection(
+				.localized("Repositories"),
+				secondary: sectionTitle
+			) {
+				ForEach(others) { _row(for: $0) }
+			}
+		}
+	}
+
+	@ViewBuilder
+	private func _row(for source: AltSource) -> some View {
+		if _isEditMode {
+			editModeRow(for: source)
+		} else {
+			normalModeRow(for: source)
 		}
 	}
 
@@ -319,13 +355,36 @@ struct SourcesView: View {
 				}
 				.disabled(_selectedSources.isEmpty)
 			} else {
-				Button {
-					_isAddingPresenting = true
-				} label: {
-					Image(systemName: "plus")
+				HStack {
+					_sortMenu
+					Button {
+						_isAddingPresenting = true
+					} label: {
+						Image(systemName: "plus")
+					}
+					.disabled(_addingSourceLoading)
 				}
-				.disabled(_addingSourceLoading)
 			}
+		}
+	}
+
+	private var _sortMenu: some View {
+		Menu {
+			Picker(.localized("Sort by"), selection: $_sort) {
+				ForEach(SourceSort.allCases, id: \.self) { option in
+					Label(option.title, systemImage: option.systemImage).tag(option)
+				}
+			}
+
+			SortOrderPicker(ascending: $_sortAscending)
+
+			Section {
+				Toggle(isOn: $_sourcesTabShowAllReposDirectly) {
+					Label(.localized("Show All Repos by Default"), systemImage: "square.stack")
+				}
+			}
+		} label: {
+			Image(systemName: "line.3.horizontal.decrease")
 		}
 	}
 
@@ -420,6 +479,29 @@ struct NoRepositoriesView: View {
 		) {
 			Button(action: onAdd) {
 				NBButton(.localized("Add Source"), style: .text)
+			}
+		}
+	}
+}
+
+// MARK: - Sort
+extension SourcesView {
+	enum SourceSort: String, CaseIterable {
+		case name, apps, added
+
+		var title: String {
+			switch self {
+			case .name: .localized("Name")
+			case .apps: .localized("App Count")
+			case .added: .localized("Date Added")
+			}
+		}
+
+		var systemImage: String {
+			switch self {
+			case .name: "textformat"
+			case .apps: "number"
+			case .added: "calendar"
 			}
 		}
 	}

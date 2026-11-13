@@ -31,6 +31,7 @@ struct InstallCardView: View {
 		.padding([.top, .horizontal])
 		.padding(.bottom, 36)
 		.ignoresSafeArea(.container, edges: .bottom)
+		.installFallbackSheet(installer)
 	}
 }
 
@@ -41,6 +42,8 @@ private struct InstallStatusView: View {
 	@ObservedObject var viewModel: InstallerStatusViewModel
 	var upcoming: [AnyApp]
 	var onCancel: () -> Void
+
+	@State private var _isShowingError = false
 
 	var body: some View {
 		ZStack {
@@ -87,7 +90,20 @@ private struct InstallStatusView: View {
 	@ViewBuilder
 	private func _button() -> some View {
 		ZStack {
-			if viewModel.isCompleted, !viewModel.isFailed {
+			if let failure = viewModel.failure {
+				Button(.localized("Details")) {
+					_isShowingError = true
+				}
+				.font(.subheadline.weight(.semibold))
+				.padding()
+				.compatTransition()
+				.alert(.localized("Install Failed"), isPresented: $_isShowingError) {
+					Button(.localized("Copy")) { UIPasteboard.general.string = failure.message }
+					Button(.localized("OK"), role: .cancel) {}
+				} message: {
+					Text(failure.message)
+				}
+			} else if viewModel.isCompleted {
 				Button {
 					UIApplication.openApp(with: app.identifier ?? "")
 				} label: {
@@ -99,6 +115,7 @@ private struct InstallStatusView: View {
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
 		.animation(.easeInOut(duration: 0.3), value: viewModel.isCompleted)
+		.animation(.easeInOut(duration: 0.3), value: viewModel.isFailed)
 	}
 
 	@ViewBuilder

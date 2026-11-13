@@ -25,6 +25,7 @@ class AppNavigationManager: ObservableObject {
         let appId: String
         let appName: String
         let sourceIdentifier: String?
+        var opensDetail = false
         let navigationId: String = UUID().uuidString
         let timestamp: Date = Date()
         
@@ -33,7 +34,7 @@ class AppNavigationManager: ObservableObject {
         }
     }
     
-    func navigateToApp(appId: String, appName: String, sourceIdentifier: String? = nil) {
+    func navigateToApp(appId: String, appName: String, sourceIdentifier: String? = nil, opensDetail: Bool = false) {
         let now = Date()
         guard now.timeIntervalSince(lastNavigationTime) > navigationDebounceInterval else {
             return
@@ -46,7 +47,8 @@ class AppNavigationManager: ObservableObject {
         pendingAppNavigation = PendingAppNavigation(
             appId: appId,
             appName: appName,
-            sourceIdentifier: sourceIdentifier
+            sourceIdentifier: sourceIdentifier,
+            opensDetail: opensDetail
         )
         
         TabSelectionObserver.shared.selectedTab = .sources

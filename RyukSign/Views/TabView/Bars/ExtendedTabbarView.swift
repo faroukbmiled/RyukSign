@@ -77,11 +77,11 @@ struct ExtendedTabbarView: View {
 
     var body: some View {
         TabView(selection: tabSelectionBinding) {
-            ForEach(_visibleDefaultTabs, id: \.self) { tab in
-                Tab(tab.title, systemImage: tab.icon, value: TabSelection.main(tab)) {
-                    TabEnum.view(for: tab)
+            ForEach(_visibleDefaultTabs.placed, id: \.self) { placed in
+                Tab(placed.tab.title, systemImage: placed.tab.icon, value: TabSelection.main(placed.tab)) {
+                    TabEnum.view(for: placed.tab)
                 }
-                .badge(_badgeCount(for: tab))
+                .badge(_badgeCount(for: placed.tab))
             }
 
             ForEach(TabEnum.customizableTabs, id: \.self) { tab in

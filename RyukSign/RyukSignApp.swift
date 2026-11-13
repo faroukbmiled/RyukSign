@@ -54,6 +54,13 @@ struct RyukSignApp: App {
         if #available(iOS 19.0, *) {
             UserDefaults.standard.set(true, forKey: "com.apple.SwiftUI.IgnoreSolariumLinkedOnCheck")
         }
+
+        // Hosted UIKit lists skip scroll edge tracking.
+        if #unavailable(iOS 26) {
+            let appearance = UITabBarAppearance()
+            appearance.configureWithDefaultBackground()
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
     }
     
     var body: some Scene {
@@ -110,10 +117,8 @@ struct RyukSignApp: App {
                 UIApplication.topViewController()?.view.window?.tintColor = UIColor(Color.userTint)
             }
             .onChange(of: scenePhase) { newPhase in
-                if newPhase == .active {
-                    Task { @MainActor in
-                        SourcesViewModel.shared.resetLoadingState()
-                    }
+                if newPhase == .active, UserDefaults.standard.object(forKey: AppUpdateChecker.launchCheckKey) as? Bool ?? true {
+                    Task { await SourcesViewModel.shared.refreshStale(Storage.shared.getSources()) }
                 }
             }
             .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in

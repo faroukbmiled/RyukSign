@@ -17,14 +17,6 @@ struct SourceAppsTableRepresentableView: UIViewRepresentable {
     @Binding var sortOption: SourceAppsView.SortOption
     @Binding var sortAscending: Bool
     @Binding var scrollToAppId: String?
-    let signedApps: FetchedResults<Signed>
-    let importedApps: FetchedResults<Imported>
-    let updateChecker: AppUpdateChecker
-    let showUpdatesOnly: Bool
-    let showTabBar: Bool
-    @Binding var selectedTab: SourceAppsView.SourceTab
-    let localUpdateCount: Int
-    let forceUpdateTrigger: Int
     let onSelect: (SourceAppsView.SourceAppRoute) -> Void
     let onUIReady: (() -> Void)?
     let onRefresh: (() async -> Void)?
@@ -50,78 +42,44 @@ struct SourceAppsTableRepresentableView: UIViewRepresentable {
 
         tableView.contentInsetAdjustmentBehavior = .automatic
 
-        if #available(iOS 17, *) {
-            tableView.allowsSelection = true
-        } else {
-            tableView.allowsSelection = false
-        }
     }
     
-    func setupTableHeader(_ tableView: UITableView, context: Context) {
-        let hasNews = sources.count == 1 && sources.first?.news != nil && !(sources.first!.news!.isEmpty)
+    private var _news: [ASRepository.News] {
+        if sources.count == 1 { return sources[0].news ?? [] }
+        guard UserDefaults.standard.object(forKey: "RyukSign.sourcesCombinedNews") as? Bool ?? true else { return [] }
 
-        guard showTabBar || hasNews else {
+        var seen = Set<String>()
+        let all = sources.flatMap { $0.news ?? [] }.filter { seen.insert($0.id).inserted }
+        let newest = all.sorted { ($0.date?.date ?? .distantPast) > ($1.date?.date ?? .distantPast) }.prefix(15)
+        return newest.reversed()
+    }
+
+    func setupTableHeader(_ tableView: UITableView, context: Context) {
+        let news = _news
+        let hasNews = !news.isEmpty
+
+        guard hasNews else {
             tableView.tableHeaderView = nil
-            context.coordinator.tabBarHostController = nil
             return
         }
 
         let container = UIView()
         container.backgroundColor = .clear
-        var totalHeight: CGFloat = 0
-        var currentY: CGFloat = 0
 
-        if showTabBar {
-            let tabBarView = SourceTabBarView(
-                selectedTab: selectedTab,
-                updateCount: localUpdateCount,
-                onTabSelected: { tab in
-                    self.selectedTab = tab
-                }
-            )
-            let tabBarHost = UIHostingController(rootView: tabBarView)
-            tabBarHost.view.translatesAutoresizingMaskIntoConstraints = false
-            tabBarHost.view.backgroundColor = .clear
+        let newsHost = UIHostingController(rootView: SourceNewsView(news: news))
+        newsHost.view.translatesAutoresizingMaskIntoConstraints = false
+        newsHost.view.backgroundColor = .clear
+        container.addSubview(newsHost.view)
 
-            container.addSubview(tabBarHost.view)
+        let newsHeight: CGFloat = 161
+        NSLayoutConstraint.activate([
+            newsHost.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            newsHost.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            newsHost.view.topAnchor.constraint(equalTo: container.topAnchor),
+            newsHost.view.heightAnchor.constraint(equalToConstant: newsHeight)
+        ])
 
-            let tabBarHeight: CGFloat = 44
-            NSLayoutConstraint.activate([
-                tabBarHost.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                tabBarHost.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-                tabBarHost.view.topAnchor.constraint(equalTo: container.topAnchor, constant: currentY),
-                tabBarHost.view.heightAnchor.constraint(equalToConstant: tabBarHeight)
-            ])
-
-            currentY += tabBarHeight
-            totalHeight += tabBarHeight
-
-            context.coordinator.tabBarHostController = tabBarHost
-        } else {
-            context.coordinator.tabBarHostController = nil
-        }
-
-        if hasNews, let news = sources.first?.news {
-            let newsView = SourceNewsView(news: news)
-            let newsHost = UIHostingController(rootView: newsView)
-            newsHost.view.translatesAutoresizingMaskIntoConstraints = false
-            newsHost.view.backgroundColor = .clear
-
-            container.addSubview(newsHost.view)
-
-            let newsHeight: CGFloat = 161
-            NSLayoutConstraint.activate([
-                newsHost.view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                newsHost.view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-                newsHost.view.topAnchor.constraint(equalTo: container.topAnchor, constant: currentY),
-                newsHost.view.heightAnchor.constraint(equalToConstant: newsHeight)
-            ])
-
-            totalHeight += newsHeight
-        }
-
-        let width = tableView.bounds.width
-        container.frame = CGRect(x: 0, y: 0, width: width, height: totalHeight)
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: newsHeight)
 
         DispatchQueue.main.async {
             tableView.tableHeaderView = container
@@ -156,34 +114,12 @@ struct SourceAppsTableRepresentableView: UIViewRepresentable {
         coordinator.onRefresh = onRefresh
 
         let changes = detectChanges(coordinator: coordinator)
-
-        // Recreate the tab bar only on structural change, not tab/count change.
-        let structureChanged = coordinator.showTabBar != showTabBar
-        if structureChanged {
+        if changes.sourcesChanged {
             setupTableHeader(tableView, context: context)
-        } else if coordinator.selectedTab != selectedTab || coordinator.localUpdateCount != localUpdateCount {
-            if let tabBarHost = coordinator.tabBarHostController {
-                let updatedTabBarView = SourceTabBarView(
-                    selectedTab: selectedTab,
-                    updateCount: localUpdateCount,
-                    onTabSelected: { tab in
-                        self.selectedTab = tab
-                    }
-                )
-                tabBarHost.rootView = updatedTabBarView
-            }
         }
 
         coordinator.sources = sources
         coordinator.sourcesVersion = sourcesVersion
-        coordinator.signedApps = signedApps
-        coordinator.importedApps = importedApps
-        coordinator.updateChecker = updateChecker
-        coordinator.showUpdatesOnly = showUpdatesOnly
-        coordinator.showTabBar = showTabBar
-        coordinator.selectedTab = selectedTab
-        coordinator.localUpdateCount = localUpdateCount
-        coordinator.forceUpdateTrigger = forceUpdateTrigger
 
         if changes.searchChanged {
             coordinator.updateSearchText(searchText)
@@ -222,15 +158,10 @@ struct SourceAppsTableRepresentableView: UIViewRepresentable {
         let searchChanged = coordinator.searchText != searchText
         let sortOptionChanged = coordinator.sortOption != sortOption
         let sortDirectionChanged = coordinator.sortAscending != sortAscending
-        let updatesFilterChanged = coordinator.showUpdatesOnly != showUpdatesOnly
-        let forceTriggerChanged = coordinator.forceUpdateTrigger != forceUpdateTrigger
+        let needsReload = sourcesChanged || sortOptionChanged || sortDirectionChanged
+        let hasChanges = needsReload || searchChanged
 
-        let hasChanges = sourcesChanged || searchChanged || sortOptionChanged || sortDirectionChanged || updatesFilterChanged || forceTriggerChanged
-        let needsReload = sourcesChanged || sortOptionChanged || sortDirectionChanged || updatesFilterChanged || forceTriggerChanged
-        // Contents/order actually changed (not just a cosmetic forceUpdateTrigger bump) — decides whether to reset the render window to top.
-        let listChanged = sourcesChanged || sortOptionChanged || sortDirectionChanged || updatesFilterChanged
-
-        return (hasChanges, searchChanged, needsReload, sourcesChanged, listChanged)
+        return (hasChanges, searchChanged, needsReload, sourcesChanged, needsReload)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -240,14 +171,6 @@ struct SourceAppsTableRepresentableView: UIViewRepresentable {
             searchText: searchText,
             sortOption: sortOption,
             sortAscending: sortAscending,
-            signedApps: signedApps,
-            importedApps: importedApps,
-            updateChecker: updateChecker,
-            showUpdatesOnly: showUpdatesOnly,
-            showTabBar: showTabBar,
-            selectedTab: selectedTab,
-            localUpdateCount: localUpdateCount,
-            forceUpdateTrigger: forceUpdateTrigger,
             onSelect: onSelect,
             onRefresh: onRefresh
         )
@@ -262,19 +185,10 @@ extension SourceAppsTableRepresentableView {
         var searchText: String
         var sortOption: SourceAppsView.SortOption
         var sortAscending: Bool
-        var signedApps: FetchedResults<Signed>
-        var importedApps: FetchedResults<Imported>
-        var updateChecker: AppUpdateChecker
-        var showUpdatesOnly: Bool
-        var showTabBar: Bool
-        var selectedTab: SourceAppsView.SourceTab
-        var localUpdateCount: Int
-        var forceUpdateTrigger: Int
         let onSelect: (SourceAppsView.SourceAppRoute) -> Void
         var onUIReady: (() -> Void)?
         var onRefresh: (() async -> Void)?
         var refreshControl: UIRefreshControl?
-        var tabBarHostController: UIHostingController<SourceTabBarView>?
 
         var lastScrollToAppId: String?
         weak var uiTableView: UITableView?
@@ -349,14 +263,6 @@ extension SourceAppsTableRepresentableView {
             searchText: String,
             sortOption: SourceAppsView.SortOption,
             sortAscending: Bool,
-            signedApps: FetchedResults<Signed>,
-            importedApps: FetchedResults<Imported>,
-            updateChecker: AppUpdateChecker,
-            showUpdatesOnly: Bool,
-            showTabBar: Bool,
-            selectedTab: SourceAppsView.SourceTab,
-            localUpdateCount: Int,
-            forceUpdateTrigger: Int,
             onSelect: @escaping (SourceAppsView.SourceAppRoute) -> Void,
             onRefresh: (() async -> Void)? = nil
         ) {
@@ -364,14 +270,6 @@ extension SourceAppsTableRepresentableView {
             self.searchText = searchText
             self.sortOption = sortOption
             self.sortAscending = sortAscending
-            self.signedApps = signedApps
-            self.importedApps = importedApps
-            self.updateChecker = updateChecker
-            self.showUpdatesOnly = showUpdatesOnly
-            self.showTabBar = showTabBar
-            self.selectedTab = selectedTab
-            self.localUpdateCount = localUpdateCount
-            self.forceUpdateTrigger = forceUpdateTrigger
             self.onSelect = onSelect
             self.onRefresh = onRefresh
             self.sourcesVersion = sourcesVersion

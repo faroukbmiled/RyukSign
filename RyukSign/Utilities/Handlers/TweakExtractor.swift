@@ -89,9 +89,7 @@ enum TweakExtractor {
 		do {
 			try _fm.createDirectoryIfNeeded(at: workDir)
 
-			let ext = ipaURL.pathExtension.lowercased()
-			if ext == "ipa" { Zip.addCustomFileExtension("ipa") }
-			if ext == "tipa" { Zip.addCustomFileExtension("tipa") }
+			_ = AppFileHandler.registerZipExtensions
 
 			// Copy locally first so we hold a stable, accessible source.
 			let localCopy = workDir.appendingPathComponent(ipaURL.lastPathComponent)

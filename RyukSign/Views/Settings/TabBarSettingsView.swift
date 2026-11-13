@@ -36,31 +36,31 @@ struct TabBarSettingsView: View {
 					_prefs.move(from: source, to: destination)
 				}
 			} footer: {
-				Text(.localized("Drag to reorder (tap Edit). Hidden tabs stay reachable from Settings — the Settings tab can't be hidden."))
+				Text(.localized("Hold a tab and drag to reorder. Settings can't be hidden."))
 			}
-		}
-		.toolbar {
-			ToolbarItem(placement: .topBarTrailing) { EditButton() }
 		}
 	}
 
-	@ViewBuilder
 	private func _row(for tab: TabEnum) -> some View {
-		if _prefs.isHideable(tab) {
-			Toggle(isOn: Binding(
-				get: { !_prefs.isHidden(tab) },
-				set: { _prefs.setHidden(tab, !$0) }
-			)) {
-				Label(tab.title, systemImage: tab.icon)
-			}
-		} else {
-			HStack {
+		HStack(spacing: 12) {
+			if _prefs.isHideable(tab) {
+				Toggle(isOn: Binding(
+					get: { !_prefs.isHidden(tab) },
+					set: { _prefs.setHidden(tab, !$0) }
+				)) {
+					Label(tab.title, systemImage: tab.icon)
+				}
+			} else {
 				Label(tab.title, systemImage: tab.icon)
 				Spacer()
 				Image(systemName: "lock")
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
+
+			Image(systemName: "line.3.horizontal")
+				.foregroundStyle(.tertiary)
+				.accessibilityHidden(true)
 		}
 	}
 }

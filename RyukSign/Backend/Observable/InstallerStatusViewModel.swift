@@ -17,6 +17,13 @@ extension InstallerStatusViewModel {
 		}
 	}
 
+	var failure: Error? {
+		switch status {
+		case .broken(let error), .completed(.failure(let error)): error
+		default: nil
+		}
+	}
+
 	var statusImage: String {
 		if isFailed { return "exclamationmark.triangle.fill" }
 

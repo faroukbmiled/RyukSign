@@ -27,17 +27,35 @@ extension SourceAppsView {
             case .date:     .localized("Date")
             }
         }
+
+        static let rawValueKey = "Feather.sortOptionRawValue"
+
+        static var saved: Self {
+            UserDefaults.standard.string(forKey: rawValueKey).flatMap(Self.init) ?? .date
+        }
+
+        var systemImage: String {
+            switch self {
+            case .default:  "list.bullet"
+            case .name:     "textformat"
+            case .date:     "calendar"
+            }
+        }
     }
 }
 
 // MARK: - View
 struct SourceAppsView: View {
-    @AppStorage("Feather.sortOptionRawValue") private var _sortOptionRawValue: String = SortOption.date.rawValue
-    @AppStorage("Feather.sortAscending") private var _sortAscending: Bool = true
+    static let sortAscendingKey = "Feather.sortAscending"
+
+    @AppStorage(SortOption.rawValueKey) private var _sortOptionRawValue: String = SortOption.date.rawValue
+    @AppStorage(sortAscendingKey) private var _sortAscending: Bool = true
+    @AppStorage("Feather.sourcesTabShowAllReposDirectly") private var _showsAllReposDirectly = false
     @AppStorage("Feather.sourcesShowUpdatesAsTab") private var _sourcesShowUpdatesAsTab: Bool = false
 
     @State private var _sortOption: SortOption = .default
     @State private var _selectedRoute: SourceAppRoute?
+    @State private var _updateRoute: UpdateRoute?
     @State private var _scrollToAppId: String?
 
     @State var isLoading = true
@@ -48,7 +66,6 @@ struct SourceAppsView: View {
     @State private var _lastProcessedNavigationId: String?
     @State private var showUpdatesOnly = false
     @State private var _selectedTab: SourceTab = .all
-    @State private var _forceUpdateTrigger: Int = 0
 
     enum SourceTab {
         case all
@@ -57,16 +74,6 @@ struct SourceAppsView: View {
     
     @ObservedObject var appNavigationManager = AppNavigationManager.shared
     @ObservedObject private var updateChecker = AppUpdateChecker.shared
-    
-    @FetchRequest(
-        entity: Signed.entity(),
-        sortDescriptors: []
-    ) private var signedApps: FetchedResults<Signed>
-    
-    @FetchRequest(
-        entity: Imported.entity(),
-        sortDescriptors: []
-    ) private var importedApps: FetchedResults<Imported>
 
     private var _navigationTitle: String {
         if object.count == 1 {
@@ -79,10 +86,10 @@ struct SourceAppsView: View {
     let object: [AltSource]
     @ObservedObject var viewModel: SourcesViewModel
     @State private var _sources: [ASRepository]?
-    @State private var _localUpdateCount: Int = 0
     // Bumped only on a real repository reload — lets the table detect a data change in O(1) instead of deep-comparing [ASRepository].
     @State private var _sourcesVersion: Int = 0
     var onRefresh: (() async -> Void)?
+    var isSourcesRoot = false
     
     /// True once a non-empty list is loaded — gates the search bar above skeleton/empty.
     private var _hasLoadedContent: Bool {
@@ -90,12 +97,28 @@ struct SourceAppsView: View {
         return false
     }
 
+    private var _updates: [AppUpdate] {
+        updateChecker.updates(in: Set(object.compactMap(\.identifier)))
+    }
+
+    private var _searchedUpdates: [AppUpdate] {
+        _searchText.isEmpty ? _updates : _updates.filter { $0.name.localizedCaseInsensitiveContains(_searchText) }
+    }
+
+    private var _showsTabBar: Bool {
+        _sourcesShowUpdatesAsTab && !_updates.isEmpty
+    }
+
+    private var _showsUpdates: Bool {
+        !_updates.isEmpty && (_sourcesShowUpdatesAsTab ? _selectedTab == .updates : showUpdatesOnly)
+    }
+
     // MARK: - Body
     var body: some View {
         ZStack {
             if let sources = _sources, !sources.isEmpty {
                 tableView(for: sources)
-                    .ignoresSafeArea(.container, edges: [.top, .bottom])
+                    .ignoresSafeArea(.container, edges: _showsTabBar ? .bottom : [.top, .bottom])
                     .background(Color(.systemBackground))
             } else if _sources == nil || isLoading || !viewModel.isFinished {
                 // Loading or a load in flight — show skeleton, never the empty/error
@@ -106,8 +129,27 @@ struct SourceAppsView: View {
                 // Load finished and genuinely empty (e.g. premium auth rejected) — actionable empty state, not an infinite spinner.
                 _emptyStateView
             }
+
+            // Overlay keeps table state across switches.
+            if _showsUpdates {
+                SourceUpdatesView(updates: _searchedUpdates, sort: _sortOption, ascending: _sortAscending) { update in
+                    _updateRoute = UpdateRoute(key: update.id, sourceIDs: Set(object.compactMap(\.identifier)))
+                } onOpen: { candidate in
+                    _selectedRoute = SourceAppRoute(source: candidate.repository, app: candidate.app)
+                }
+                .background(Color(.systemBackground))
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: _showsUpdates)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if _showsTabBar {
+                SourceTabBarView(selectedTab: _selectedTab, updateCount: _updates.count) { _selectedTab = $0 }
+            }
         }
         .navigationTitle(_navigationTitle)
+        .navigationBarTitleDisplayMode(.inline)
+        .legacyOpaqueNavigationBar()
         // Attach the search bar only once a real list exists, else it floats above skeleton/empty.
         .if(_hasLoadedContent) { $0.searchable(text: $_searchText, placement: .platform()) }
         .refreshable {
@@ -122,83 +164,23 @@ struct SourceAppsView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Section(.localized("Sort by")) {
-                        ForEach(SortOption.allCases, id: \.displayName) { option in
-                            _sortButton(for: option)
-                        }
-                    }
-
-                    if _localUpdateCount > 0 && !_sourcesShowUpdatesAsTab {
-                        Divider()
-
-                        Button {
-                            showUpdatesOnly.toggle()
-                        } label: {
-                            HStack {
-                                Text(.localized("Updates Only"))
-                                Spacer()
-                                if showUpdatesOnly {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
+                    _viewMenu
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "line.3.horizontal.decrease")
-
-                        if _localUpdateCount > 0 && !_sourcesShowUpdatesAsTab {
-                            Text("\(_localUpdateCount)")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.accentColor)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.accentColor.opacity(0.15)))
-                        }
-                    }
+                    Image(systemName: "line.3.horizontal.decrease")
                 }
             }
         }
         .onAppear(perform: handleOnAppear)
-        .onReceive(NotificationCenter.default.publisher(for: .skippedUpdatesChanged)) { _ in
-            // An app was ignored/resumed — recompute update counts and refresh the list.
-            Task { @MainActor in
-                await refreshUpdateCountIfNeeded()
-                _forceUpdateTrigger += 1
-            }
-        }
         .onChange(of: viewModel.isFinished, perform: handleViewModelFinished)
         .onChange(of: _sortOption, perform: handleSortOptionChange)
         .onChange(of: appNavigationManager.pendingAppNavigation, perform: handlePendingNavigation)
         .onChange(of: _sources, perform: handleSourcesChange)
         .onChange(of: _uiReadyForNavigation, perform: handleUIReadyChange)
-        .onChange(of: signedApps.count) { _ in
-            Task { @MainActor in
-                await refreshUpdateCountIfNeeded()
+        .onChange(of: _updates.isEmpty) { isEmpty in
+            if isEmpty {
+                showUpdatesOnly = false
+                _selectedTab = .all
             }
-        }
-        .onChange(of: importedApps.count) { _ in
-            Task { @MainActor in
-                await refreshUpdateCountIfNeeded()
-            }
-        }
-        .onChange(of: updateChecker.updateCount) { newCount in
-            if let sources = _sources {
-                _localUpdateCount = calculateLocalUpdateCount(for: sources)
-            }
-        }
-        .onChange(of: _localUpdateCount) { newCount in
-            if newCount == 0 {
-                if showUpdatesOnly {
-                    showUpdatesOnly = false
-                }
-                if _selectedTab == .updates {
-                    _selectedTab = .all
-                }
-            }
-        }
-        .onChange(of: _selectedTab) { newTab in
-            _forceUpdateTrigger += 1
         }
         .onReceive(TabSelectionObserver.shared.$sourcesRetapped.dropFirst()) { _ in
             if _selectedTab != .all {
@@ -211,14 +193,37 @@ struct SourceAppsView: View {
         .navigationDestinationIfAvailable(item: $_selectedRoute) { route in
             SourceAppsDetailView(source: route.source, app: route.app)
         }
+        .navigationDestinationIfAvailable(item: $_updateRoute) { route in
+            UpdatePickerView(route: route)
+        }
     }
-    
+
+    @ViewBuilder
+    private var _viewMenu: some View {
+        SortPicker(selection: $_sortOption)
+
+        if _sortOption != .default {
+            SortOrderPicker(ascending: $_sortAscending)
+        }
+
+        Section {
+            if !_updates.isEmpty && !_sourcesShowUpdatesAsTab {
+                Toggle(isOn: $showUpdatesOnly) {
+                    Label(.localized("Updates Only"), systemImage: "arrow.down.circle")
+                }
+            }
+            if isSourcesRoot {
+                Toggle(isOn: $_showsAllReposDirectly) {
+                    Label(.localized("Show All Repos by Default"), systemImage: "square.stack")
+                }
+            }
+        }
+    }
+
     // MARK: - View Builders
     
     @ViewBuilder
     private func tableView(for sources: [ASRepository]) -> some View {
-        let effectiveShowUpdatesOnly = _sourcesShowUpdatesAsTab ? (_selectedTab == .updates) : showUpdatesOnly
-
         SourceAppsTableRepresentableView(
             sources: sources,
             sourcesVersion: _sourcesVersion,
@@ -226,14 +231,6 @@ struct SourceAppsView: View {
             sortOption: $_sortOption,
             sortAscending: $_sortAscending,
             scrollToAppId: $_scrollToAppId,
-            signedApps: signedApps,
-            importedApps: importedApps,
-            updateChecker: updateChecker,
-            showUpdatesOnly: effectiveShowUpdatesOnly,
-            showTabBar: _sourcesShowUpdatesAsTab && _localUpdateCount > 0,
-            selectedTab: $_selectedTab,
-            localUpdateCount: _localUpdateCount,
-            forceUpdateTrigger: _forceUpdateTrigger,
             onSelect: { route in
                 _selectedRoute = route
             },
@@ -284,20 +281,12 @@ struct SourceAppsView: View {
     // MARK: - Event Handlers
     
     private func handleOnAppear() {
-        if !hasLoadedOnce, viewModel.isFinished {
+        if !hasLoadedOnce, viewModel.isFinished || object.contains(where: { viewModel.sources[$0] != nil }) {
             _load()
             hasLoadedOnce = true
         }
         _sortOption = SortOption(rawValue: _sortOptionRawValue) ?? .default
-
-        if _sources != nil {
-            // Force a UI refresh so tab/filter state is correct on appear.
-            _forceUpdateTrigger += 1
-
-            Task { @MainActor in
-                await refreshUpdateCountIfNeeded()
-            }
-        }
+        _ = _openPendingDetail()
     }
     
     private func handleViewModelFinished(_ isFinished: Bool) {
@@ -313,10 +302,6 @@ struct SourceAppsView: View {
     private func handleSourcesChange(_ sources: [ASRepository]?) {
         guard sources != nil, !isLoading else { return }
 
-        Task { @MainActor in
-            await refreshUpdateCountIfNeeded()
-        }
-
         if appNavigationManager.pendingAppNavigation != nil && !_isProcessingNavigation {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 handlePendingNavigationWhenReady()
@@ -330,24 +315,28 @@ struct SourceAppsView: View {
         }
     }
     
-    @MainActor
-    private func refreshUpdateCountIfNeeded() async {
-        guard let sources = _sources else { return }
-
-        await updateChecker.precomputeAllUpdates(
-            sources: sources,
-            signedApps: signedApps,
-            importedApps: importedApps
-        )
-
-        // Tab switching is handled by onChange(of: _localUpdateCount).
-        _localUpdateCount = calculateLocalUpdateCount(for: sources)
-    }
-    
     // MARK: - Navigation Handling
     
+    private func _openPendingDetail() -> Bool {
+        guard let navigation = appNavigationManager.pendingAppNavigation, navigation.opensDetail else { return false }
+
+        for source in object where navigation.sourceIdentifier.map({ $0 == source.identifier }) ?? true {
+            guard
+                let repository = viewModel.sources[source],
+                let app = repository.apps.first(where: { $0.currentUniqueId == navigation.appId })
+            else { continue }
+
+            appNavigationManager.clearPendingNavigation()
+            _selectedTab = .all
+            showUpdatesOnly = false
+            _selectedRoute = SourceAppRoute(source: repository, app: app)
+            return true
+        }
+        return false
+    }
+
     private func handlePendingNavigation(_ pendingNavigation: AppNavigationManager.PendingAppNavigation?) {
-        guard let navigation = pendingNavigation else { return }
+        guard let navigation = pendingNavigation, !_openPendingDetail() else { return }
         
         if _lastProcessedNavigationId == navigation.navigationId && _isProcessingNavigation {
             return
@@ -444,43 +433,12 @@ struct SourceAppsView: View {
             _sources = loadedSources
             _sourcesVersion += 1
 
-            await updateChecker.precomputeAllUpdates(
-                sources: loadedSources,
-                signedApps: signedApps,
-                importedApps: importedApps
-            )
-
-            // Reuse the count precomputeAllUpdates just computed instead of re-walking
-            // every app on the main actor (that second pass was part of the freeze).
-            _localUpdateCount = updateChecker.updateCount
-
             withAnimation(.easeIn(duration: 0.2)) {
                 isLoading = false
             }
         }
     }
 
-    // Calculate update count only for apps in current sources
-    private func calculateLocalUpdateCount(for sources: [ASRepository]) -> Int {
-        var uniqueAppsWithUpdates = Set<String>()
-
-        for source in sources {
-            for app in source.apps {
-                if updateChecker.appsWithUpdates.contains(app.currentUniqueId) {
-                    if let installedApp = updateChecker.findInstalledApp(
-                        for: app,
-                        signedApps: signedApps,
-                        importedApps: importedApps
-                    ) {
-                        uniqueAppsWithUpdates.insert(installedApp.uuid)
-                    }
-                }
-            }
-        }
-
-        return uniqueAppsWithUpdates.count
-    }
-    
     struct SourceAppRoute: Identifiable, Hashable {
         let source: ASRepository
         let app: ASRepository.App
@@ -488,29 +446,16 @@ struct SourceAppsView: View {
     }
 }
 
-// MARK: - Extension: View (Sort)
-extension SourceAppsView {
-    private func _sortButton(for option: SortOption) -> some View {
-        Button {
-            if _sortOption == option {
-                _sortAscending.toggle()
-            } else {
-                _sortOption = option
-                _sortAscending = true
-            }
-        } label: {
-            HStack {
-                Text(option.displayName)
-                Spacer()
-                if _sortOption == option {
-                    Image(systemName: _sortAscending ? "chevron.up" : "chevron.down")
-                }
-            }
+extension View {
+    @ViewBuilder
+    func legacyOpaqueNavigationBar() -> some View {
+        if #unavailable(iOS 26) {
+            self.toolbarBackground(.visible, for: .navigationBar)
+        } else {
+            self
         }
     }
-}
 
-extension View {
     @ViewBuilder
     func navigationDestinationIfAvailable<Item: Identifiable & Hashable, Destination: View>(
         item: Binding<Item?>,
@@ -519,7 +464,14 @@ extension View {
         if #available(iOS 17, *) {
             self.navigationDestination(item: item, destination: destination)
         } else {
-            self
+            self.navigationDestination(isPresented: Binding(
+                get: { item.wrappedValue != nil },
+                set: { if !$0 { item.wrappedValue = nil } }
+            )) {
+                if let value = item.wrappedValue {
+                    destination(value)
+                }
+            }
         }
     }
 
@@ -529,6 +481,29 @@ extension View {
             transform(self)
         } else {
             self
+        }
+    }
+}
+
+struct SortPicker: View {
+    @Binding var selection: SourceAppsView.SortOption
+
+    var body: some View {
+        Picker(.localized("Sort by"), selection: $selection) {
+            ForEach(SourceAppsView.SortOption.allCases, id: \.self) { option in
+                Label(option.displayName, systemImage: option.systemImage).tag(option)
+            }
+        }
+    }
+}
+
+struct SortOrderPicker: View {
+    @Binding var ascending: Bool
+
+    var body: some View {
+        Picker(.localized("Order"), selection: $ascending) {
+            Label(.localized("Ascending"), systemImage: "arrow.up").tag(true)
+            Label(.localized("Descending"), systemImage: "arrow.down").tag(false)
         }
     }
 }

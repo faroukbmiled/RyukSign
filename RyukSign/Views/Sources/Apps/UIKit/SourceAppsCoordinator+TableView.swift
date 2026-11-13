@@ -50,11 +50,9 @@ extension SourceAppsTableRepresentableView.Coordinator {
         // MARK: - TableView Delegate
         
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            if #available(iOS 17, *) {
-                tableView.deselectRow(at: indexPath, animated: true)
-                guard let entry = getEntry(at: indexPath) else { return }
-                onSelect(SourceAppsView.SourceAppRoute(source: entry.source, app: entry.app))
-            }
+            tableView.deselectRow(at: indexPath, animated: true)
+            guard let entry = getEntry(at: indexPath) else { return }
+            onSelect(SourceAppsView.SourceAppRoute(source: entry.source, app: entry.app))
         }
 
         func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
@@ -90,7 +88,8 @@ extension SourceAppsTableRepresentableView.Coordinator {
                 .font(.headline)
                 .padding(.vertical, 2)
             }
-            
+            .background(Color(uiColor: .systemBackground))
+
             return headerView
         }
         
@@ -116,7 +115,7 @@ extension SourceAppsTableRepresentableView.Coordinator {
                     title: .localized("Copy Download URLs"),
                     image: UIImage(systemName: "list.bullet"),
                     children: self.contextActions(for: entry.app, with: { version in
-                        UIPasteboard.general.string = version?.absoluteString
+                        UIPasteboard.general.string = (version?.downloadURL ?? entry.app.currentDownloadUrl)?.absoluteString
                     }, image: UIImage(systemName: "doc.on.clipboard"))
                 )
 
@@ -124,13 +123,7 @@ extension SourceAppsTableRepresentableView.Coordinator {
                     title: .localized("Previous Versions"),
                     image: UIImage(systemName: "square.and.arrow.down.on.square"),
                     children: self.contextActions(for: entry.app, with: { version in
-                        if let url = version {
-                            _ = DownloadManager.shared.startDownload(
-                                from: url,
-                                id: entry.app.currentUniqueId,
-                                appName: entry.app.name
-                            )
-                        }
+                        DownloadManager.shared.startDownload(for: entry.app, version: version)
                     }, image: UIImage(systemName: "arrow.down"))
                 )
 
@@ -164,15 +157,8 @@ extension SourceAppsTableRepresentableView.Coordinator {
 
                 actions.append(contentsOf: [downloadsMenu, versionsMenu])
 
-                // Ignore/resume update checks — only for installed apps; placed at the bottom of the menu.
-                if
-                    let bundleId = entry.app.id, !bundleId.isEmpty,
-                    self.updateChecker.findInstalledApp(
-                        for: entry.app,
-                        signedApps: self.signedApps,
-                        importedApps: self.importedApps
-                    ) != nil
-                {
+                // Installed apps only.
+                if let bundleId = entry.app.id, AppUpdateChecker.shared.libraryKeys.contains(bundleId) {
                     let isIgnored = SkippedUpdatesManager.shared.isIgnored(bundleId)
                     let ignoreAction = UIAction(
                         title: isIgnored ? .localized("Resume Updates") : .localized("Ignore Updates"),
@@ -204,12 +190,8 @@ extension SourceAppsTableRepresentableView.Coordinator {
         
         func getSectionTitle(for section: Int) -> String {
             switch sortOption {
-            case .default: 
-                if showUpdatesOnly {
-                    return .localized("%lld Updates", arguments: sortedApps.count)
-                } else {
-                    return .localized("%lld Apps", arguments: sortedApps.count)
-                }
+            case .default:
+                return .localized("%lld Apps", arguments: sortedApps.count)
             case .name, .date: 
                 return cache.sectionTitles[safe: section] ?? ""
             }
@@ -217,7 +199,7 @@ extension SourceAppsTableRepresentableView.Coordinator {
         
         func contextActions(
             for app: ASRepository.App,
-            with action: @escaping (URL?) -> Void,
+            with action: @escaping (ASRepository.App.Version?) -> Void,
             image: UIImage?
         ) -> [UIAction] {
             if let versions = app.versions, !versions.isEmpty {
@@ -226,7 +208,7 @@ extension SourceAppsTableRepresentableView.Coordinator {
                         title: version.version,
                         image: image
                     ) { _ in
-                        action(version.downloadURL)
+                        action(version)
                     }
                 }
             } else {
@@ -235,7 +217,7 @@ extension SourceAppsTableRepresentableView.Coordinator {
                         title: app.currentVersion ?? "",
                         image: image
                     ) { _ in
-                        action(app.currentDownloadUrl)
+                        action(nil)
                     }
                 ]
             }

@@ -135,3 +135,15 @@ final class TabBarPreferences: ObservableObject {
 		objectWillChange.send()
 	}
 }
+
+struct PlacedTab: Hashable {
+	let index: Int
+	let tab: TabEnum
+}
+
+extension Array where Element == TabEnum {
+	// Moved tabs otherwise keep stale UIKit images.
+	var placed: [PlacedTab] {
+		enumerated().map { PlacedTab(index: $0.offset, tab: $0.element) }
+	}
+}

@@ -57,6 +57,9 @@ struct SettingsView: View {
 					NavigationLink(destination: TabBarSettingsView()) {
 						Label(.localized("Tab Bar"), systemImage: "squares.below.rectangle")
 					}
+					NavigationLink(destination: SourcesSettingsView()) {
+						Label(.localized("Sources"), systemImage: "globe.desk")
+					}
 					NavigationLink(destination: DownloadsSettingsView()) {
 						Label(.localized("Downloads"), systemImage: "arrow.down.circle")
 					}

@@ -99,9 +99,6 @@ struct AppearanceView: View {
 				Toggle(.localized("Show All Repos by Default"), isOn: $_sourcesTabShowAllReposDirectly)
 				Toggle(.localized("Show Updates as Tab"), isOn: $_sourcesShowUpdatesAsTab)
 				Toggle(.localized("Update Count Badge"), isOn: $_showSourcesUpdateBadge)
-				NavigationLink(destination: IgnoredUpdatesView()) {
-					Label(.localized("Ignored Updates"), systemImage: "bell.slash")
-				}
 			} footer: {
 				Text(.localized("When enabled, the Sources tab shows all apps directly. Toggle off to manage sources. The update count badge shows the number of available app updates on the Sources tab."))
 			}

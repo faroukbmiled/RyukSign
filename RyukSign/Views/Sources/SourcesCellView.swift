@@ -12,6 +12,9 @@ import NukeUI
 // MARK: - View
 struct SourcesCellView: View {
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
+	@AppStorage("RyukSign.sourcesShowAppCount") private var _showsAppCount = true
+	@ObservedObject private var _viewModel = SourcesViewModel.shared
+	@ObservedObject private var _favorites = SourceFavorites.shared
 
 	var source: AltSource
 	var isEditMode: Bool = false
@@ -34,7 +37,7 @@ struct SourcesCellView: View {
 		let cellContent = HStack {
 			FRIconCellView(
 				title: source.name ?? .localized("Unknown"),
-				subtitle: source.sourceURL?.absoluteString ?? "",
+				subtitle: _subtitle,
 				iconUrl: source.iconURL
 			)
 			if _isPremiumSource {
@@ -55,11 +58,15 @@ struct SourcesCellView: View {
 				.fill(Color(.quaternarySystemFill))
 			: nil
 		)
+		.onAppear { _isExcluded = RyukSignAPI.isSourceExcluded(_sourceIdentifier) }
 
 		if isEditMode {
 			cellContent
 		} else {
 			cellContent
+				.swipeActions(edge: .leading) {
+					_favoriteAction()
+				}
 				.swipeActions {
 					if !_isPremiumSource {
 						_actions(for: source)
@@ -68,6 +75,7 @@ struct SourcesCellView: View {
 					_contextActions(for: source)
 				}
 				.contextMenu {
+					_favoriteAction()
 					_contextActions(for: source)
 					_excludeAction()
 					if !_isPremiumSource {
@@ -81,6 +89,25 @@ struct SourcesCellView: View {
 
 // MARK: - Extension: View
 extension SourcesCellView {
+	private var _subtitle: String {
+		let url = source.sourceURL?.absoluteString ?? ""
+		guard _showsAppCount, let count = _viewModel.sources[source]?.apps.count else { return url }
+		return .localized("%lld Apps", arguments: count) + " • " + url
+	}
+
+	private func _favoriteAction() -> some View {
+		let isFavorite = _favorites.contains(source)
+		return Button {
+			_favorites.toggle(source)
+		} label: {
+			Label(
+				isFavorite ? .localized("Unfavorite") : .localized("Favorite"),
+				systemImage: isFavorite ? "star.slash" : "star"
+			)
+		}
+		.tint(.yellow)
+	}
+
 	@ViewBuilder
 	private func _actions(for source: AltSource) -> some View {
 		Button(.localized("Delete"), systemImage: "trash", role: .destructive) {
@@ -108,14 +135,5 @@ extension SourcesCellView {
 			)
 		}
 		.tint(.orange)
-	}
-}
-
-// MARK: - Extension: onAppear
-extension SourcesCellView {
-	func onAppearLoadExcluded() -> some View {
-		self.onAppear {
-			_isExcluded = RyukSignAPI.isSourceExcluded(_sourceIdentifier)
-		}
 	}
 }

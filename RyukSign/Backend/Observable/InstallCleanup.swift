@@ -11,13 +11,13 @@ import NimbleExtensions
 @MainActor
 enum InstallCleanup {
 	enum OlderVersions: String, CaseIterable {
-		case ask, delete, keep
+		case keep, ask, delete
 
 		var title: String {
 			switch self {
-			case .ask: .localized("Ask")
-			case .delete: .localized("Delete")
 			case .keep: .localized("Keep")
+			case .ask: .localized("Ask Each Time")
+			case .delete: .localized("Delete")
 			}
 		}
 	}
@@ -54,15 +54,16 @@ enum InstallCleanup {
 		_pending.append(uuid)
 	}
 
-	// Only safe once the install UI is gone; pending is cleared last so a kill reruns it on launch.
+	// Queued apps wait for the next flush.
 	static func flush() {
-		let uuids = _pending
+		let shown = Set(InstallQueue.shared.apps.compactMap(\.base.uuid))
+		let uuids = _pending.filter { !shown.contains($0) }
 		guard !uuids.isEmpty else { return }
-		defer { _pending = [] }
+		defer { _pending = _pending.filter(shown.contains) }
 
 		let defaults = UserDefaults.standard
 		let apps = Storage.shared.getAllApps()
-		let older = _olderVersions(of: uuids, in: apps)
+		let older = _olderVersions(of: uuids, in: apps).filter { !shown.contains($0.uuid ?? "") }
 
 		if defaults.bool(forKey: deleteKey) {
 			Storage.shared.deleteApps(apps.filter { uuids.contains($0.uuid ?? "") })
@@ -87,7 +88,7 @@ enum InstallCleanup {
 	// MARK: Older versions
 
 	private static var _olderVersionsMode: OlderVersions {
-		OlderVersions(rawValue: UserDefaults.standard.string(forKey: olderVersionsKey) ?? "") ?? .ask
+		OlderVersions(rawValue: UserDefaults.standard.string(forKey: olderVersionsKey) ?? "") ?? .keep
 	}
 
 	// Bundle id only: a name match could delete an unrelated app.

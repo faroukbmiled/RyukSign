@@ -8,11 +8,15 @@
 import SwiftUI
 import CoreData
 import NimbleViews
+import NimbleExtensions
 
 // MARK: - View
 struct LibraryView: View {
     @StateObject var downloadManager = DownloadManager.shared
     @ObservedObject private var tabSelection = TabSelectionObserver.shared
+    @ObservedObject private var _updateChecker = AppUpdateChecker.shared
+    @AppStorage("RyukSign.libraryShowsUpdates") private var _showsUpdates = true
+    @State private var _updateRoute: UpdateRoute?
     
     @State private var _selectedInfoAppPresenting: AnyApp?
     @State private var _selectedSigningAppPresenting: AnyApp?
@@ -47,31 +51,34 @@ struct LibraryView: View {
     
     // MARK: Computed Properties
     private var filteredSignedApps: [Signed] {
-        _signedApps.filter { app in
-            _searchText.isEmpty ||
-            (app.name?.localizedCaseInsensitiveContains(_searchText) ?? false)
-        }
+        _signedApps.filter(_matches)
     }
     
     private var filteredImportedApps: [Imported] {
-        _importedApps.filter { app in
-            _searchText.isEmpty ||
-            (app.name?.localizedCaseInsensitiveContains(_searchText) ?? false)
-        }
+        _importedApps.filter(_matches)
+    }
+
+    private func _matches(_ app: AppInfoPresentable) -> Bool {
+        if _selectedScope == .updates, _update(for: app) == nil { return false }
+        return _searchText.isEmpty || (app.name?.localizedCaseInsensitiveContains(_searchText) ?? false)
+    }
+
+    private func _update(for app: AppInfoPresentable) -> AppUpdate? {
+        _updateChecker.update(for: app).flatMap { $0.libraryUUID == app.uuid ? $0 : nil }
     }
     
     private var shouldShowSignedSection: Bool {
-        _selectedScope == .all || _selectedScope == .signed
+        _selectedScope != .imported
     }
     
     private var shouldShowImportedSection: Bool {
-        _selectedScope == .all || _selectedScope == .imported
+        _selectedScope != .signed
     }
     
     private var hasNoContent: Bool {
         filteredSignedApps.isEmpty && filteredImportedApps.isEmpty
     }
-    
+
     // MARK: Body
     var body: some View {
         NBNavigationView(.localized("Library")) {
@@ -108,6 +115,25 @@ struct LibraryView: View {
                             }
                         }
                     }
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        if !_editMode.isEditing {
+                            Menu {
+                                Picker(.localized("Show"), selection: $_selectedScope) {
+                                    ForEach(Scope.allCases, id: \.displayName) { scope in
+                                        Label(scope.displayName, systemImage: scope.systemImage).tag(scope)
+                                    }
+                                }
+                                Section {
+                                    Toggle(isOn: $_showsUpdates) {
+                                        Label(.localized("Show Updates"), systemImage: "arrow.down.circle")
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "line.3.horizontal.decrease")
+                            }
+                        }
+                    }
                 }
                 .safeAreaInset(edge: .bottom) {
                     if _editMode.isEditing {
@@ -115,6 +141,16 @@ struct LibraryView: View {
                     }
                 }
                 .environment(\.editMode, $_editMode)
+                .sheet(item: $_updateRoute) { route in
+                    NavigationStack {
+                        UpdatePickerView(route: route)
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button(.localized("Done")) { _updateRoute = nil }
+                                }
+                            }
+                    }
+                }
                 .sheet(item: $_selectedInfoAppPresenting) { app in
                     LibraryInfoView(app: app.base)
                 }
@@ -198,6 +234,25 @@ struct LibraryView: View {
         }
     }
     
+    private func _cell(for app: AppInfoPresentable) -> some View {
+        LibraryCellView(
+            app: app,
+            selectedInfoAppPresenting: $_selectedInfoAppPresenting,
+            selectedSigningAppPresenting: $_selectedSigningAppPresenting,
+            selectedAppUUIDs: $_selectedAppUUIDs,
+            isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
+            update: _showsUpdates || _selectedScope == .updates ? _update(for: app) : nil,
+            onUpdate: _startUpdate,
+            onSelectMore: { _beginSelection(with: app) }
+        )
+    }
+
+    private func _startUpdate(_ update: AppUpdate) {
+        if !_updateChecker.autoUpdate(update) {
+            _updateRoute = UpdateRoute(key: update.id, sourceIDs: nil)
+        }
+    }
+
     // MARK: Signed Apps Section
     @ViewBuilder
     private var signedAppsSection: some View {
@@ -215,16 +270,9 @@ struct LibraryView: View {
             secondary: sectionTitle
         ) {
             ForEach(filteredSignedApps, id: \.uuid) { app in
-                LibraryCellView(
-                    app: app,
-                    selectedInfoAppPresenting: $_selectedInfoAppPresenting,
-                    selectedSigningAppPresenting: $_selectedSigningAppPresenting,
-                    selectedAppUUIDs: $_selectedAppUUIDs,
-                    isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
-                    onSelectMore: { _beginSelection(with: app) }
-                )
-                .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
-                .id(app.uuid)
+                _cell(for: app)
+                    .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
+                    .id(app.uuid)
             }
             .onMove(perform: _searchText.isEmpty ? _moveSignedApps : nil)
         }
@@ -247,16 +295,9 @@ struct LibraryView: View {
             secondary: sectionTitle
         ) {
             ForEach(filteredImportedApps, id: \.uuid) { app in
-                LibraryCellView(
-                    app: app,
-                    selectedInfoAppPresenting: $_selectedInfoAppPresenting,
-                    selectedSigningAppPresenting: $_selectedSigningAppPresenting,
-                    selectedAppUUIDs: $_selectedAppUUIDs,
-                    isHighlighted: app.uuid == tabSelection.highlightedAppUUID,
-                    onSelectMore: { _beginSelection(with: app) }
-                )
-                .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
-                .id(app.uuid)
+                _cell(for: app)
+                    .compatMatchedTransitionSource(id: app.uuid ?? "", ns: _namespace)
+                    .id(app.uuid)
             }
             .onMove(perform: _searchText.isEmpty ? _moveImportedApps : nil)
         }
@@ -265,6 +306,18 @@ struct LibraryView: View {
     // MARK: Empty State View
     @ViewBuilder
     private var emptyStateView: some View {
+        if _selectedScope == .updates {
+            NBContentUnavailable(
+                .localized("Up to Date"),
+                systemImage: "checkmark.circle",
+                description: .localized("No newer version in your sources.")
+            ) {}
+        } else {
+            _noAppsView
+        }
+    }
+
+    private var _noAppsView: some View {
         NBContentUnavailable(
             .localized("No Apps"),
             systemImage: "questionmark.app.fill",
@@ -328,6 +381,7 @@ struct LibraryView: View {
             Label(title, systemImage: systemImage)
                 .font(.subheadline.weight(.medium))
                 .lineLimit(1)
+                .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity)
                 .frame(height: 34)
         }
@@ -473,12 +527,23 @@ extension LibraryView {
         case all
         case signed
         case imported
+        case updates
         
         var displayName: String {
             switch self {
             case .all: return .localized("All")
             case .signed: return .localized("Signed")
             case .imported: return .localized("Imported")
+            case .updates: return .localized("Updates")
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .all: "square.grid.2x2"
+            case .signed: "signature"
+            case .imported: "square.and.arrow.down"
+            case .updates: "arrow.down.circle"
             }
         }
     }

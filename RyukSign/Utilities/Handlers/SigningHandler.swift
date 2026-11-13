@@ -202,6 +202,7 @@ final class SigningHandler: NSObject {
 				appIcon: bundle?.iconFileName,
 				appDescription: _appDescription
 			) { signed in
+				AppOrigins.shared.copy(from: self._app.uuid, to: self._uuid)
 				Logger.signing.info("[\(self._uuid)] Added to database (original ID: \(self._originalBundleIdentifier ?? "nil"), current ID: \(bundle?.bundleIdentifier ?? "nil"))")
 				continuation.resume(returning: signed)
 			}

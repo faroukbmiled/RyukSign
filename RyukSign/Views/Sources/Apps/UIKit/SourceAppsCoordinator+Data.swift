@@ -17,20 +17,16 @@ extension SourceAppsTableRepresentableView.Coordinator {
             
             let filtered = searchText.isEmpty ? allApps : filterBySearch(allApps)
             
-            let updatesFiltered = showUpdatesOnly ? 
-                filtered.filter { updateChecker.appsWithUpdates.contains($0.app.currentUniqueId) } : 
-                filtered
-            
             switch sortOption {
             case .default:
                 clearGroupedData()
-                return sortAscending ? updatesFiltered : updatesFiltered.reversed()
+                return sortAscending ? filtered : filtered.reversed()
                 
             case .name:
-                return sortByName(updatesFiltered)
+                return sortByName(filtered)
                 
             case .date:
-                return sortByDate(updatesFiltered)
+                return sortByDate(filtered)
             }
         }
         

@@ -29,11 +29,7 @@ struct VersionHistoryView: View {
                     .contextMenu {
                         if let downloadURL = version.downloadURL {
                             Button {
-                                _ = DownloadManager.shared.startDownload(
-                                    from: downloadURL,
-                                    id: app.currentUniqueId,
-                                    appName: app.currentName,
-                                )
+                                DownloadManager.shared.startDownload(for: app, version: version)
 								dismiss()
                             } label: {
                                 Label(version.version, systemImage: "arrow.down")

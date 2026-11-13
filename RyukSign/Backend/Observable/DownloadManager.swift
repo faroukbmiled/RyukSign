@@ -11,6 +11,7 @@ import UIKit
 import UserNotifications
 import BackgroundTasks
 import ActivityKit
+import AltSourceKit
 
 class DownloadManager: NSObject, ObservableObject {
 	static let shared = DownloadManager()
@@ -539,11 +540,12 @@ class DownloadManager: NSObject, ObservableObject {
 		let task = session.downloadTask(with: request)
 		download.task = task
 		task.priority = 1.0
-		task.resume()
 
 		DispatchQueue.main.async {
 			self.objectWillChange.send()
 			self.downloads.append(download)
+			// Delegate needs it registered before finishing.
+			task.resume()
 
 			self.startProgressTimer()
 
@@ -838,5 +840,18 @@ class DownloadManager: NSObject, ObservableObject {
 		} else {
 			endLiveActivity()
 		}
+	}
+}
+
+// MARK: - Source Apps
+extension DownloadManager {
+	@MainActor
+	@discardableResult
+	func startDownload(for app: ASRepository.App, version: ASRepository.App.Version? = nil) -> Download? {
+		guard let url = version.map(\.downloadURL) ?? app.currentDownloadUrl else { return nil }
+
+		let download = startDownload(from: url, id: app.currentUniqueId, appName: app.currentName, appDescription: app.localizedDescription)
+		download.origin = AppUpdateChecker.shared.origin(for: app, version: version?.version)
+		return download
 	}
 }

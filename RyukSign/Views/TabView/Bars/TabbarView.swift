@@ -38,14 +38,14 @@ struct TabbarView: View {
 
     var body: some View {
         TabView(selection: tabSelectionBinding) {
-            ForEach(_visibleDefaultTabs, id: \.self) { tab in
-                TabEnum.view(for: tab)
+            ForEach(_visibleDefaultTabs.placed, id: \.self) { placed in
+                TabEnum.view(for: placed.tab)
                     .environmentObject(tabSelection)
                     .tabItem {
-                        Label(tab.title, systemImage: tab.icon)
+                        Label(placed.tab.title, systemImage: placed.tab.icon)
                     }
-                    .badge(_badge(for: tab))
-                    .tag(tab)
+                    .badge(_badge(for: placed.tab))
+                    .tag(placed.tab)
             }
         }
     }

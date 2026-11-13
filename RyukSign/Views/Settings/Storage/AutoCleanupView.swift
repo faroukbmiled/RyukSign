@@ -14,7 +14,7 @@ struct AutoCleanupView: View {
 
 	@AppStorage(InstallCleanup.deleteKey) private var _deleteAfterInstall: Bool = false
 	@AppStorage(InstallCleanup.clearCacheKey) private var _clearCacheAfterInstall: Bool = false
-	@AppStorage(InstallCleanup.olderVersionsKey) private var _olderVersions: InstallCleanup.OlderVersions = .ask
+	@AppStorage(InstallCleanup.olderVersionsKey) private var _olderVersions: InstallCleanup.OlderVersions = .keep
 	@AppStorage(InstallCleanup.olderVersionsScopeKey) private var _olderVersionsScope: InstallCleanup.OlderVersionsScope = .all
 
 	// MARK: Body
@@ -42,6 +42,8 @@ struct AutoCleanupView: View {
 						ForEach(InstallCleanup.OlderVersionsScope.allCases, id: \.self) { Text($0.title).tag($0) }
 					}
 				}
+			} footer: {
+				Text(.localized("What happens to older copies of an app in your Library after you install an update."))
 			}
 		}
 		.animation(.default, value: _olderVersions)

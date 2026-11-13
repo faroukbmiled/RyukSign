@@ -61,6 +61,7 @@ struct SourceAppsDetailView: View {
 
 						HStack(spacing: 8) {
 							DownloadButtonView(app: app)
+								.layoutPriority(1)
 
 							if let bundleId = app.id {
 								Button {

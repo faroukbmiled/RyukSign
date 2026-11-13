@@ -111,37 +111,37 @@ final class InstallQueue: ObservableObject {
 		}
 	}
 
+	// The last card shows its own failure.
 	private func _reportFailures() {
-		let message = _failures.count == 1
-			? Self._describe(_failures[0].error)
-			: _failures.map { "\($0.name): \(Self._describe($0.error))" }.joined(separator: "\n\n")
+		let failures = _failures
 		_failures.removeAll()
+		HeartbeatManager.shared.start(true)
 
-		UIAlertController.showAlertWithOk(
-			title: .localized("Install"),
-			message: message,
-			action: { [weak self] in
-				HeartbeatManager.shared.start(true)
-				self?._abandon()
-			}
-		)
-	}
+		guard failures.count > 1 || installer?.viewModel.isFailed != true else { return }
 
-	private static func _describe(_ error: Error) -> String {
-		error is LocalizedError || (error as NSError).userInfo[NSLocalizedDescriptionKey] != nil
-			? error.localizedDescription
-			: String(describing: error)
+		let message = failures.map { "\($0.name): \($0.error.message)" }.joined(separator: "\n\n")
+		// Let the sheet present first.
+		DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+			guard let presenter = InstallQueueWindow.shared.presenter else { return }
+			UIAlertController.showAlert(
+				presenter,
+				title: .localized("Install"),
+				message: message,
+				actions: [UIAlertAction(title: .localized("OK"), style: .cancel)]
+			)
+		}
 	}
 
 	/// Keeps the last app on screen so its finished state and Open button survive.
 	private func _advance() {
 		guard index + 1 < apps.count else {
-			guard _failures.isEmpty else {
-				_reportFailures()
-				return
-			}
 			isFinished = true
-			if !isSheetPresented { clear() }
+			if !_failures.isEmpty {
+				isSheetPresented = true
+				_reportFailures()
+			} else if !isSheetPresented {
+				clear()
+			}
 			return
 		}
 
@@ -155,6 +155,9 @@ final class InstallQueue: ObservableObject {
 	private func _abandon() {
 		guard index + 1 < apps.count else {
 			guard _failures.isEmpty else {
+				installer?.stop()
+				isFinished = true
+				isSheetPresented = true
 				_reportFailures()
 				return
 			}

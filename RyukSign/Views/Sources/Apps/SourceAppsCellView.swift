@@ -15,13 +15,14 @@ struct SourceAppsCellView: View {
 	
 	var source: ASRepository
 	var app: ASRepository.App
+	var subtitle: String?
 	
 	var body: some View {
 		VStack {
 			HStack(spacing: 2) {
 				FRIconCellView(
 					title: app.currentName,
-					subtitle: Self.appDescription(app: app),
+					subtitle: subtitle ?? Self.appDescription(app: app),
 					iconUrl: app.iconURL
 				)
 				.overlay(alignment: .bottomLeading) {

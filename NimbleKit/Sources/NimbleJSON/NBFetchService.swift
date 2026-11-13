@@ -52,6 +52,7 @@ extension NBFetchService {
 	public func fetch<T: Decodable>(
 		from url: URL,
 		headers: [String: String] = [:],
+		onData: ((Data) -> Void)? = nil,
 		completion: @escaping (Result<T, Error>) -> Void
 	) {
 		DispatchQueue.global(qos: .userInitiated).async {
@@ -97,6 +98,7 @@ extension NBFetchService {
 					let decoder = JSONDecoder()
 					let decodedData = try decoder.decode(T.self, from: data)
 					Self.log.debug("Request OK (HTTP \(statusCode, privacy: .public)) \(url.absoluteString, privacy: .public)")
+					onData?(data)
 					completion(.success(decodedData))
 				} catch {
 					let snippet = String(data: data.prefix(512), encoding: .utf8) ?? "<non-utf8 \(data.count) bytes>"

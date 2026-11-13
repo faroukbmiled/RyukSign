@@ -13,7 +13,6 @@ import NimbleViews
 struct LibraryCellView: View {
 	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	@Environment(\.editMode) private var editMode
-	@ObservedObject private var skippedUpdates = SkippedUpdatesManager.shared
 
 	var certInfo: Date.ExpirationInfo? {
 		Storage.shared.getCertificate(from: app)?.expiration?.expirationInfo()
@@ -28,6 +27,8 @@ struct LibraryCellView: View {
 	@Binding var selectedSigningAppPresenting: AnyApp?
 	@Binding var selectedAppUUIDs: Set<String>
 	var isHighlighted: Bool = false
+	var update: AppUpdate?
+	var onUpdate: ((AppUpdate) -> Void)?
 	var onSelectMore: (() -> Void)?
 	
 	// MARK: Selections
@@ -65,11 +66,29 @@ struct LibraryCellView: View {
 			
 			FRAppIconView(app: app, size: 57)
 			
-			NBTitleWithSubtitleView(
-				title: app.name ?? .localized("Unknown"),
-				subtitle: _desc,
-				linelimit: 0
-			)
+			VStack(alignment: .leading, spacing: 4) {
+				NBTitleWithSubtitleView(
+					title: app.name ?? .localized("Unknown"),
+					subtitle: _desc,
+					linelimit: 0
+				)
+
+				if let update, let onUpdate, !isEditing {
+					Button {
+						NBHaptic.tap()
+						onUpdate(update)
+					} label: {
+						HStack(spacing: 4) {
+							Image(systemName: "arrow.up.circle.fill")
+							Text(String.localized("Update to %@", arguments: update.best.version))
+						}
+						.font(.caption.weight(.semibold))
+						.foregroundStyle(Color.accentColor)
+						.lineLimit(1)
+					}
+					.buttonStyle(.borderless)
+				}
+			}
 			
 			if !isEditing {
 				_buttonActions(for: app)
@@ -90,16 +109,13 @@ struct LibraryCellView: View {
 		}
 		.contextMenu {
 			if !isEditing {
-				_contextActions(for: app)
-				Divider()
-				_contextActionsExtra(for: app)
-				Divider()
-				if let onSelectMore {
-					Button(.localized("Select"), systemImage: "checkmark.circle") {
-						onSelectMore()
-					}
-				}
-				_actions(for: app)
+				LibraryAppMenu(
+					app: app,
+					selectedInfoAppPresenting: $selectedInfoAppPresenting,
+					selectedSigningAppPresenting: $selectedSigningAppPresenting,
+					onUpdate: onUpdate,
+					onSelectMore: onSelectMore
+				)
 			}
 		}
 	}
@@ -134,73 +150,6 @@ extension LibraryCellView {
 	private func _actions(for app: AppInfoPresentable) -> some View {
 		Button(.localized("Delete"), systemImage: "trash", role: .destructive) {
 			Storage.shared.deleteApp(for: app)
-		}
-	}
-	
-	@ViewBuilder
-	private func _contextActions(for app: AppInfoPresentable) -> some View {
-		Button(.localized("Get Info"), systemImage: "info.circle") {
-			Presentation.afterDismiss { selectedInfoAppPresenting = AnyApp(base: app) }
-		}
-
-		if let bundleId = app.originalIdentifier ?? app.identifier {
-			Button(.localized("View on App Store"), systemImage: "bag") {
-				AppStoreHelper.openAppStore(for: bundleId) { result in
-					switch result {
-					case .success:
-						break
-					case .failure(let error):
-						let alert = UIAlertController(
-							title: "App Store Error",
-							message: error.localizedDescription,
-							preferredStyle: .alert
-						)
-						alert.addAction(UIAlertAction(title: "OK", style: .default))
-
-						if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-						   let viewController = windowScene.windows.first?.rootViewController {
-							viewController.present(alert, animated: true)
-						}
-					}
-				}
-			}
-		}
-
-		if let bundleId = app.originalIdentifier ?? app.identifier, !bundleId.isEmpty {
-			let isIgnored = skippedUpdates.isIgnored(bundleId)
-			Button(
-				.localized(isIgnored ? "Resume Updates" : "Ignore Updates"),
-				systemImage: isIgnored ? "bell" : "bell.slash"
-			) {
-				SkippedUpdatesManager.shared.toggle(bundleId)
-			}
-		}
-	}
-	
-	@ViewBuilder
-	private func _contextActionsExtra(for app: AppInfoPresentable) -> some View {
-		if app.isSigned {
-			if let id = app.identifier {
-				Button(.localized("Open"), systemImage: "app.badge.checkmark") {
-					UIApplication.openApp(with: id)
-				}
-			}
-			Button(.localized("Install"), systemImage: "square.and.arrow.down") {
-				InstallQueue.shared.enqueue(app)
-			}
-			Button(.localized("Re-sign"), systemImage: "signature") {
-				Presentation.afterDismiss { selectedSigningAppPresenting = AnyApp(base: app) }
-			}
-			Button(.localized("Export"), systemImage: "square.and.arrow.up") {
-				InstallQueue.shared.enqueue(app, exporting: true)
-			}
-		} else {
-			Button(.localized("Install"), systemImage: "square.and.arrow.down") {
-				InstallQueue.shared.enqueue(app)
-			}
-			Button(.localized("Sign"), systemImage: "signature") {
-				Presentation.afterDismiss { selectedSigningAppPresenting = AnyApp(base: app) }
-			}
 		}
 	}
 	

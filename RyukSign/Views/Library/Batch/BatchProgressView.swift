@@ -252,10 +252,6 @@ private struct BatchInstallStatusView: View {
 				.lineLimit(1)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.sheet(isPresented: $installer.isPresentingFallbackPage) {
-			if let url = installer.fallbackPageURL {
-				SafariRepresentableView(url: url).ignoresSafeArea()
-			}
-		}
+		.installFallbackSheet(installer)
 	}
 }

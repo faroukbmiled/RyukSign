@@ -21,7 +21,7 @@ final class AppInstaller: ObservableObject {
 	let app: AppInfoPresentable
 	let viewModel: InstallerStatusViewModel
 
-	@Published var isPresentingFallbackPage = false
+	@Published var fallbackPage: URL?
 
 	private let _isSharing: Bool
 	private let _installationMethod = UserDefaults.standard.integer(forKey: "Feather.installationMethod")
@@ -37,8 +37,6 @@ final class AppInstaller: ObservableObject {
 	private var _hasFinished = false
 	private var _declineObserver: NSObjectProtocol?
 	private var _declineCheck: DispatchWorkItem?
-
-	var fallbackPageURL: URL? { _server?.pageEndpoint }
 
 	init(app: AppInfoPresentable, isSharing: Bool = false) {
 		self.app = app
@@ -170,11 +168,12 @@ final class AppInstaller: ObservableObject {
 	private func _handle(_ status: InstallerStatusViewModel.InstallerStatus) {
 		switch status {
 		case .ready where _installationMethod == 0:
+			_armDeclineWatch()
 			_openInstall(_serverMethod == 0 ? _server?.iTunesLink : _server?.iTunesLinkExternal)
 		case .sendingManifest:
 			_armDeclineWatch()
 		case .sendingPayload:
-			isPresentingFallbackPage = false
+			fallbackPage = nil
 			_disarmDeclineWatch()
 		case .installing where _installationMethod == 0:
 			_startProgressPolling()
@@ -204,7 +203,7 @@ final class AppInstaller: ObservableObject {
 
 			if !opened {
 				FileLogger.error("iOS refused the scheme, falling back to the redirect page", category: "install")
-				self?.isPresentingFallbackPage = true
+				self?.fallbackPage = self?._server?.pageEndpoint
 			}
 		}
 	}
@@ -218,7 +217,7 @@ final class AppInstaller: ObservableObject {
 			object: nil,
 			queue: .main
 		) { [weak self] _ in
-			self?._scheduleDeclineCheck(after: 2)
+			self?._scheduleDeclineCheck(after: 3)
 		}
 
 		_scheduleDeclineCheck(after: 60)
@@ -228,12 +227,24 @@ final class AppInstaller: ObservableObject {
 		_declineCheck?.cancel()
 
 		let work = DispatchWorkItem { [weak self] in
-			guard let self, case .sendingManifest = self.viewModel.status else { return }
-			self._finish(.success(.cancelled))
+			guard let self, self.fallbackPage == nil else { return }
+			switch self.viewModel.status {
+			case .ready, .sendingManifest: Task { await self._cancelIfIdle() }
+			default: break
+			}
 		}
 
 		_declineCheck = work
 		DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+	}
+
+	// Slow manifest fetch can mimic a decline.
+	private func _cancelIfIdle() async {
+		if let id = app.identifier, (await UIApplication.installProgress(for: id) ?? 0) > 0 { return }
+		switch viewModel.status {
+		case .ready, .sendingManifest: _finish(.success(.cancelled))
+		default: break
+		}
 	}
 
 	private func _disarmDeclineWatch() {
@@ -251,6 +262,11 @@ final class AppInstaller: ObservableObject {
 		_hasFinished = true
 		_disarmDeclineWatch()
 		_statusObserver = nil
+		fallbackPage = nil
+
+		if case .failure(let error) = result, !viewModel.isFailed {
+			viewModel.status = .broken(error)
+		}
 
 		let completion = _completion
 		_completion = nil

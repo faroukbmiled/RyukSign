@@ -40,9 +40,7 @@ class TabSelectionObserver: ObservableObject {
 struct DownloadButtonView: View {
 	let app: ASRepository.App
 	@ObservedObject private var downloadManager = DownloadManager.shared
-	@State private var downloadProgress: Double = 0
-	@State private var downloadPhase: DownloadPhase = .queued
-	@State private var cancellable: AnyCancellable?
+	@ObservedObject private var _updateChecker = AppUpdateChecker.shared
 
 	@State private var installedApp: InstalledAppInfo? = nil
 	@State private var isCheckingInstalled = true
@@ -72,91 +70,32 @@ struct DownloadButtonView: View {
 			case imported
 		}
 
-		var hasUpdate: Bool {
-			guard let currentVersion = version else { return false }
-			guard let sourceVersion = sourceApp.currentVersion else { return false }
-
-			return isNewerVersion(sourceVersion, than: currentVersion)
-		}
-
 		var isDowngrade: Bool {
-			guard let currentVersion = version else { return false }
-			guard let sourceVersion = sourceApp.currentVersion else { return false }
-
-			return isNewerVersion(currentVersion, than: sourceVersion)
-		}
-
-		private func isNewerVersion(_ new: String, than old: String) -> Bool {
-			let newComponents = new.split(separator: ".").compactMap { Int($0) }
-			let oldComponents = old.split(separator: ".").compactMap { Int($0) }
-
-			let maxCount = max(newComponents.count, oldComponents.count)
-
-			for i in 0..<maxCount {
-				let newValue = i < newComponents.count ? newComponents[i] : 0
-				let oldValue = i < oldComponents.count ? oldComponents[i] : 0
-
-				if newValue > oldValue {
-					return true
-				} else if newValue < oldValue {
-					return false
-				}
-			}
-
-			return false
+			guard let version, let sourceVersion = sourceApp.currentVersion else { return false }
+			return AppUpdateChecker.isNewerVersion(version, than: sourceVersion)
 		}
 	}
 
-	private var _phaseSymbol: String {
-		switch downloadPhase {
-		case .importing: return "archivebox"
-		case .signing: return "signature"
-		default: return "square.fill"
+	private var _hasUpdate: Bool {
+		_updateChecker.updates.contains { update in
+			update.candidates.contains { $0.app.currentUniqueId == app.currentUniqueId }
 		}
 	}
 
 	var body: some View {
 		ZStack {
 			if let currentDownload = downloadManager.getDownload(by: app.currentUniqueId) {
-				ZStack {
-					DownloadPhaseRing(phase: downloadPhase, progress: downloadProgress, size: 31, lineWidth: 2.3)
-
-					Image(systemName: _phaseSymbol)
-						.foregroundStyle(downloadPhase.tint)
-						.font(.footnote).bold()
-				}
-				.onTapGesture {
-					if currentDownload.canCancel {
-						downloadManager.cancelDownload(currentDownload)
-					}
-				}
-				.transition(.scale.combined(with: .opacity))
+				DownloadProgressButton(download: currentDownload)
+					.transition(.scale.combined(with: .opacity))
 			} else if let installedApp = installedApp {
 				HStack(spacing: 8) {
-					if installedApp.hasUpdate {
-						Button {
-							NBHaptic.tap()
-							if let url = app.currentDownloadUrl {
-                                _ = downloadManager.startDownload(from: url, id: app.currentUniqueId, appName: app.currentName, appDescription: app.localizedDescription)
-							}
-						} label: {
-							Text(.localized("Update"))
-								.lineLimit(1)
-								.font(.headline.bold())
-								.foregroundStyle(.white)
-								.padding(.horizontal, 20)
-								.padding(.vertical, 6)
-								.background(Color.accentColor)
-								.clipShape(Capsule())
-						}
-						.buttonStyle(.borderless)
-						.transition(.scale.combined(with: .opacity))
+					if _hasUpdate {
+						UpdateCapsuleButton { downloadManager.startDownload(for: app) }
+							.transition(.scale.combined(with: .opacity))
 					} else if installedApp.isDowngrade {
 						Button {
 							NBHaptic.tap()
-							if let url = app.currentDownloadUrl {
-								_ = downloadManager.startDownload(from: url, id: app.currentUniqueId, appName: app.currentName, appDescription: app.localizedDescription)
-							}
+							downloadManager.startDownload(for: app)
 						} label: {
 							HStack(spacing: 4) {
 								Image(systemName: "clock.arrow.circlepath")
@@ -191,19 +130,15 @@ struct DownloadButtonView: View {
 					}
 					
 					Menu {
-						if installedApp.hasUpdate || installedApp.isDowngrade || !installedApp.hasUpdate && !installedApp.isDowngrade {
-							Button {
-								tabSelection.navigateToLibraryWithHighlight(uuid: installedApp.uuid)
-							} label: {
-								Label(.localized("View in Library"), systemImage: "square.grid.2x2")
-							}
+						Button {
+							tabSelection.navigateToLibraryWithHighlight(uuid: installedApp.uuid)
+						} label: {
+							Label(.localized("View in Library"), systemImage: "square.grid.2x2")
 						}
 
 						Button {
 							NBHaptic.tap()
-							if let url = app.currentDownloadUrl {
-                                _ = downloadManager.startDownload(from: url, id: app.currentUniqueId, appName: app.currentName, appDescription: app.localizedDescription)
-							}
+							downloadManager.startDownload(for: app)
 						} label: {
 							Label(.localized("Download Again"), systemImage: "arrow.down.circle")
 						}
@@ -220,9 +155,7 @@ struct DownloadButtonView: View {
 			} else if !isCheckingInstalled {
 				Button {
 					NBHaptic.tap()
-					if let url = app.currentDownloadUrl {
-						_ = downloadManager.startDownload(from: url, id: app.currentUniqueId, appName: app.currentName, appDescription: app.localizedDescription)
-					}
+					downloadManager.startDownload(for: app)
 				} label: {
 					HStack(spacing: 4) {
 						Image(systemName: "arrow.down.circle")
@@ -242,18 +175,11 @@ struct DownloadButtonView: View {
 			}
 		}
 		.onAppear {
-			setupObserver()
 			checkIfInstalled()
 			// Delay setting hasAppeared to prevent initial animation
 			DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 				hasAppeared = true
 			}
-		}
-		.onDisappear { 
-			cancellable?.cancel() 
-		}
-		.onChange(of: downloadManager.downloads.description) { _ in
-			setupObserver()
 		}
 		.onChange(of: signedApps.count) { _ in
 			checkIfInstalled()
@@ -265,28 +191,6 @@ struct DownloadButtonView: View {
 		.animation(hasAppeared ? .easeInOut(duration: 0.25) : nil, value: installedApp != nil)
 	}
 	
-	private func setupObserver() {
-		cancellable?.cancel()
-		guard let download = downloadManager.getDownload(by: app.currentUniqueId) else {
-			downloadProgress = 0
-			return
-		}
-		syncProgress(from: download)
-		let publisher = Publishers.CombineLatest3(
-			download.$progress,
-			download.$unpackageProgress,
-			download.$isPaused
-		)
-		cancellable = publisher.sink { _, _, _ in
-			syncProgress(from: download)
-		}
-	}
-	
-	private func syncProgress(from download: Download) {
-		downloadProgress = download.phaseProgress
-		downloadPhase = download.phase
-	}
-
 	private func checkIfInstalled() {
         isCheckingInstalled = true
 
@@ -347,4 +251,49 @@ struct DownloadButtonView: View {
 
         isCheckingInstalled = false
     }
+}
+
+struct DownloadProgressButton: View {
+	let download: Download
+	@State private var _phase: DownloadPhase = .queued
+	@State private var _progress: Double = 0
+
+	private var _changes: AnyPublisher<Void, Never> {
+		Publishers.MergeMany(
+			download.$progress.map { _ in }.eraseToAnyPublisher(),
+			download.$unpackageProgress.map { _ in }.eraseToAnyPublisher(),
+			download.$isPaused.map { _ in }.eraseToAnyPublisher(),
+			download.$isImporting.map { _ in }.eraseToAnyPublisher(),
+			download.$isSigning.map { _ in }.eraseToAnyPublisher()
+		)
+		.receive(on: DispatchQueue.main)
+		.eraseToAnyPublisher()
+	}
+
+	private var _symbol: String {
+		switch _phase {
+		case .importing: "archivebox"
+		case .signing: "signature"
+		default: "square.fill"
+		}
+	}
+
+	var body: some View {
+		ZStack {
+			DownloadPhaseRing(phase: _phase, progress: _progress, size: 31, lineWidth: 2.3)
+			Image(systemName: _symbol)
+				.foregroundStyle(_phase.tint)
+				.font(.footnote.bold())
+		}
+		.contentShape(Circle())
+		.onTapGesture {
+			if download.canCancel {
+				DownloadManager.shared.cancelDownload(download)
+			}
+		}
+		.onReceive(_changes) {
+			_phase = download.phase
+			_progress = download.phaseProgress
+		}
+	}
 }

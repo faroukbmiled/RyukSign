@@ -97,13 +97,14 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 		)
 	}
 
+	// Zip's extension set isn't thread safe; register once.
+	static let registerZipExtensions: Void = {
+		Zip.addCustomFileExtension("ipa")
+		Zip.addCustomFileExtension("tipa")
+	}()
+
 	func extract() async throws {
-		if _ipa.pathExtension == "ipa" {
-			Zip.addCustomFileExtension("ipa")
-		}
-		if _ipa.pathExtension == "tipa" {
-			Zip.addCustomFileExtension("tipa")
-		}
+		_ = Self.registerZipExtensions
 
 		let download = self._download
 
@@ -233,6 +234,7 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 					finish(.failure(self._error(.database, reason: error.localizedDescription, underlying: error)))
 				} else {
 					Logger.misc.info("[\(self._uuid)] Added to database")
+					AppOrigins.shared.set(self._download?.origin, for: self._uuid)
 					finish(.success(()))
 				}
 			}
