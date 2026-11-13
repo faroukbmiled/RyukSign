@@ -65,9 +65,6 @@ struct LibraryAppMenu: View {
 			Button(String.localized("Update to %@", arguments: update.best.version), systemImage: "arrow.up.circle") {
 				Presentation.afterDismiss { onUpdate(update) }
 			}
-			Button(.localized("View in Sources"), systemImage: "globe.desk") {
-				ViewInSources.open(update.best)
-			}
 		}
 
 		if let bundleId = app.originalIdentifier ?? app.identifier, _updateChecker.pins[bundleId] != nil {
