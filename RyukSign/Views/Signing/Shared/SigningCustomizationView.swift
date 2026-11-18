@@ -88,7 +88,8 @@ struct SigningCustomizationView: View {
 					title: .localized("Identifier"),
 					initialValue: options.appIdentifier ?? (app.identifier ?? ""),
 					bindingValue: $options.appIdentifier,
-					suggestion: identifierSuggestion
+					suggestion: identifierSuggestion,
+					identitiesOf: app
 				)
 			}
 			_infoCell(.localized("Version"), desc: options.appVersion ?? app.version) {

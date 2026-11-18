@@ -96,9 +96,9 @@ class ServerInstaller: Identifiable, ObservableObject {
 					case .success:
 						self._updateStatus(.installing)
 					case .failure(let error):
-						self._updateStatus(.broken(error))
-						self.backgroundTaskManager?.stop()
-						self.backgroundTaskManager = nil
+						// iOS drops and resumes long downloads, so the install watch decides the outcome.
+						FileLogger.error("payload stream ended early: \(error)", category: "install")
+						self._updateStatus(.installing)
 					}
 				}
 			case "/healthz":

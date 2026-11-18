@@ -725,6 +725,10 @@ class DownloadManager: NSObject, ObservableObject {
 		return downloads.first(where: { $0.id == id })
 	}
 	
+	func download(for update: AppUpdate) -> Download? {
+		update.candidates.lazy.compactMap { self.getDownload(by: $0.app.currentUniqueId) }.first
+	}
+
 	func getDownloadIndex(by id: String) -> Int? {
 		return downloads.firstIndex(where: { $0.id == id })
 	}
@@ -774,7 +778,8 @@ class DownloadManager: NSObject, ObservableObject {
 	}
 
 	private func autoSignOrFinish(_ app: AppInfoPresentable, for download: Download) {
-		guard AutoSignManager.isEnabled else {
+		let action = download.action ?? .current
+		guard action != .keep else {
 			if isAppInBackground { sendCompletionNotification(for: download, status: "✅ Added to Library") }
 			finishImport(of: download, succeeded: true)
 			return
@@ -785,7 +790,7 @@ class DownloadManager: NSObject, ObservableObject {
 		download.isSigning = true
 
 		Task { @MainActor in
-			switch await AutoSignManager.shared.sign(app) {
+			switch await AutoSignManager.shared.sign(app, installs: action == .install) {
 			case .success:
 				self.report(for: download, status: "✅ Signed") {
 					Toast.success(.localized("Signed successfully"), systemImage: "checkmark.seal.fill")
@@ -847,11 +852,16 @@ class DownloadManager: NSObject, ObservableObject {
 extension DownloadManager {
 	@MainActor
 	@discardableResult
-	func startDownload(for app: ASRepository.App, version: ASRepository.App.Version? = nil) -> Download? {
+	func startDownload(
+		for app: ASRepository.App,
+		version: ASRepository.App.Version? = nil,
+		then action: AutoSignManager.Action? = nil
+	) -> Download? {
 		guard let url = version.map(\.downloadURL) ?? app.currentDownloadUrl else { return nil }
 
 		let download = startDownload(from: url, id: app.currentUniqueId, appName: app.currentName, appDescription: app.localizedDescription)
 		download.origin = AppUpdateChecker.shared.origin(for: app, version: version?.version)
+		download.action = action
 		return download
 	}
 }

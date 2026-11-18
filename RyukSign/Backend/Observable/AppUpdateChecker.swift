@@ -55,6 +55,7 @@ final class AppUpdateChecker: ObservableObject {
 	static let singleSourceKey = "RyukSign.updateSingleSourceDirectly"
 	static let launchCheckKey = "RyukSign.checkUpdatesOnLaunch"
 	static let groupKey = "RyukSign.groupUpdatesByApp"
+	static let updateAllKey = "RyukSign.showsUpdateAll"
 
 	@Published private(set) var updates: [AppUpdate] = []
 	@Published private(set) var pins: [String: AppOrigin]

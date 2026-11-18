@@ -69,16 +69,22 @@ final class FRIconCache {
 
 @MainActor
 final class FRAppIconLoader: ObservableObject {
-	@Published var image: UIImage?
+	@Published private(set) var image: UIImage?
+	private(set) var bundleURL: URL?
 	private var task: Task<Void, Never>?
 
 	func load(bundleURL: URL, appearance: FRIconAppearance, tint: String, isTinted: Bool, dynamic: Bool) {
+		task?.cancel()
+		if self.bundleURL != bundleURL {
+			self.bundleURL = bundleURL
+			image = nil
+		}
+
 		if let cached = FRIconCache.shared.image(for: bundleURL, appearance: appearance, tint: tint, isTinted: isTinted, dynamic: dynamic) {
 			self.image = cached
 			return
 		}
 
-		task?.cancel()
 		task = Task {
 			let generated = await Task.detached(priority: .userInitiated) {
 				return iconTest(bundleURL)
@@ -141,7 +147,7 @@ struct FRAppIconView: View {
 
 	var body: some View {
 		Group {
-			if let image = loader.image ?? _cachedImage {
+			if let image = _cachedImage ?? (loader.bundleURL == _bundleURL ? loader.image : nil) {
 				Image(uiImage: image)
 					.appIconStyle(size: size)
 			} else {
@@ -149,7 +155,7 @@ struct FRAppIconView: View {
 					.appIconStyle(size: size)
 			}
 		}
-		.task(id: "\(appearance.rawValue)\(selectedColorHex)\(shouldTintIcons)\(shouldChangeIconsBasedOffStyle)") {
+		.task(id: "\(_bundleURL?.path ?? "")\(appearance.rawValue)\(selectedColorHex)\(shouldTintIcons)\(shouldChangeIconsBasedOffStyle)") {
 			_load()
 		}
 		.onDisappear {

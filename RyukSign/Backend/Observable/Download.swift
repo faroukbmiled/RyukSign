@@ -48,6 +48,7 @@ class Download: Identifiable, @unchecked Sendable {
 	let onlyArchiving: Bool
 	let appDescription: String?
 	var origin: AppOrigin?
+	var action: AutoSignManager.Action?
 
 	var isManual: Bool {
 		id.contains("FeatherManualDownload")

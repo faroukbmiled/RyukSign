@@ -38,6 +38,7 @@ final class AppInstaller: ObservableObject {
 	private var _declineObserver: NSObjectProtocol?
 	private var _declineCheck: DispatchWorkItem?
 	private var _installedBefore: InstalledAppState?
+	private var _packageSize = 0
 
 	init(app: AppInfoPresentable, isSharing: Bool = false) {
 		self.app = app
@@ -148,6 +149,7 @@ final class AppInstaller: ObservableObject {
 		}
 
 		server.packageUrl = packageUrl
+		_packageSize = (try? packageUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
 
 		if _serverMethod == 1 {
 			viewModel.status = .sendingManifest
@@ -293,6 +295,8 @@ final class AppInstaller: ObservableObject {
 	private func _startProgressPolling() {
 		guard _progressTask == nil, let bundleID = app.identifier else { return }
 		let before = _installedBefore
+		// installd can sit on one value for minutes while it unpacks and verifies a big app.
+		let stallLimit = 60 + 60 * Double(_packageSize) / 1_000_000_000
 
 		_progressTask = Task.detached(priority: .utility) { [weak self, viewModel] in
 			let pollingStarted = Date()
@@ -301,6 +305,7 @@ final class AppInstaller: ObservableObject {
 			var logged = -1.0
 			var last = 0.0
 			var lastChange = Date()
+			var zeroSince: Date?
 			var nextStateCheck = Date()
 
 			while !Task.isCancelled {
@@ -314,6 +319,7 @@ final class AppInstaller: ObservableObject {
 					last = raw
 					lastChange = now
 				}
+				zeroSince = raw == 0 ? zeroSince ?? now : nil
 
 				if abs(raw - logged) >= 0.1 || (raw == 0) != (logged == 0) {
 					FileLogger.log("progress \(bundleID): \(raw)", category: "install")
@@ -331,14 +337,12 @@ final class AppInstaller: ObservableObject {
 				}
 
 				var endReason: String?
-				if hasStarted, raw == 0 {
+				if hasStarted, let zeroSince, now.timeIntervalSince(zeroSince) > 2 {
 					endReason = "progress ended"
 				} else if !hasStarted, now.timeIntervalSince(pollingStarted) > 120 {
 					endReason = "never started"
-				} else if peak >= 0.85, now.timeIntervalSince(lastChange) > 60 {
-					endReason = "progress stuck at \(raw) after installd accepted the app"
-				} else if now.timeIntervalSince(pollingStarted) > 900 {
-					endReason = "timed out at \(raw)"
+				} else if hasStarted, now.timeIntervalSince(lastChange) > stallLimit {
+					endReason = "progress stuck at \(raw) for \(Int(stallLimit))s"
 				} else if now >= nextStateCheck {
 					// Tiny apps can finish between samples, and iOS doesn't always reset progress afterwards.
 					nextStateCheck = now.addingTimeInterval(1)

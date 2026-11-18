@@ -10,7 +10,7 @@ import NimbleExtensions
 
 @MainActor
 enum InstallCleanup {
-	enum OlderVersions: String, CaseIterable {
+	enum OtherVersions: String, CaseIterable {
 		case keep, ask, delete
 
 		var title: String {
@@ -22,7 +22,7 @@ enum InstallCleanup {
 		}
 	}
 
-	enum OlderVersionsScope: String, CaseIterable {
+	enum OtherVersionsScope: String, CaseIterable {
 		case all, signed, imported
 
 		var title: String {
@@ -42,10 +42,55 @@ enum InstallCleanup {
 		}
 	}
 
+	enum VersionMatch: String, CaseIterable, Identifiable {
+		case older, same, newer
+
+		var id: Self { self }
+
+		var key: String {
+			switch self {
+			case .older: "RyukSign.cleanupOlderVersions"
+			case .same: "RyukSign.cleanupSameVersion"
+			case .newer: "RyukSign.cleanupNewerVersions"
+			}
+		}
+
+		var isOnByDefault: Bool { self == .older }
+
+		var isIncluded: Bool {
+			UserDefaults.standard.object(forKey: key) as? Bool ?? isOnByDefault
+		}
+
+		var title: String {
+			switch self {
+			case .older: .localized("Older")
+			case .same: .localized("Same")
+			case .newer: .localized("Newer")
+			}
+		}
+
+		var subtitle: String {
+			switch self {
+			case .older: .localized("Deletes older versions of the app")
+			case .same: .localized("Deletes copies with the same version")
+			case .newer: .localized("Deletes newer versions of the app")
+			}
+		}
+
+		static var summary: String {
+			let included = allCases.filter(\.isIncluded)
+			switch included.count {
+			case 0: return .localized("None")
+			case allCases.count: return .localized("All")
+			default: return included.map(\.title).joined(separator: ", ")
+			}
+		}
+	}
+
 	static let deleteKey = "Feather.deleteAppAfterInstall"
 	static let clearCacheKey = "Feather.clearCacheAfterInstall"
-	static let olderVersionsKey = "RyukSign.olderVersionsAfterInstall"
-	static let olderVersionsScopeKey = "RyukSign.olderVersionsScope"
+	static let otherVersionsKey = "RyukSign.olderVersionsAfterInstall"
+	static let otherVersionsScopeKey = "RyukSign.olderVersionsScope"
 	private static let pendingKey = "Feather.installCleanupPending"
 
 	// Persisted so a kill before flush() still cleans up.
@@ -63,7 +108,7 @@ enum InstallCleanup {
 
 		let defaults = UserDefaults.standard
 		let apps = Storage.shared.getAllApps()
-		let older = _olderVersions(of: uuids, in: apps).filter { !shown.contains($0.uuid ?? "") }
+		let others = _otherVersions(of: uuids, in: apps).filter { !shown.contains($0.uuid ?? "") }
 
 		if defaults.bool(forKey: deleteKey) {
 			Storage.shared.deleteApps(apps.filter { uuids.contains($0.uuid ?? "") })
@@ -73,9 +118,9 @@ enum InstallCleanup {
 			StorageManager.purgeCaches()
 		}
 
-		switch _olderVersionsMode {
-		case .delete: Storage.shared.deleteApps(older)
-		case .ask: _confirmDeleting(older)
+		switch _otherVersionsMode {
+		case .delete: Storage.shared.deleteApps(others)
+		case .ask: _confirmDeleting(others)
 		case .keep: break
 		}
 	}
@@ -85,17 +130,19 @@ enum InstallCleanup {
 		set { UserDefaults.standard.set(newValue, forKey: pendingKey) }
 	}
 
-	// MARK: Older versions
+	// MARK: Other versions
 
-	private static var _olderVersionsMode: OlderVersions {
-		OlderVersions(rawValue: UserDefaults.standard.string(forKey: olderVersionsKey) ?? "") ?? .keep
+	private static var _otherVersionsMode: OtherVersions {
+		OtherVersions(rawValue: UserDefaults.standard.string(forKey: otherVersionsKey) ?? "") ?? .keep
 	}
 
 	// Bundle id only: a name match could delete an unrelated app.
-	private static func _olderVersions(of uuids: [String], in apps: [AppInfoPresentable]) -> [AppInfoPresentable] {
-		guard _olderVersionsMode != .keep else { return [] }
+	private static func _otherVersions(of uuids: [String], in apps: [AppInfoPresentable]) -> [AppInfoPresentable] {
+		guard _otherVersionsMode != .keep else { return [] }
 
-		let scope = OlderVersionsScope(rawValue: UserDefaults.standard.string(forKey: olderVersionsScopeKey) ?? "") ?? .all
+		let defaults = UserDefaults.standard
+		let scope = OtherVersionsScope(rawValue: defaults.string(forKey: otherVersionsScopeKey) ?? "") ?? .all
+		let matches = Set(VersionMatch.allCases.filter(\.isIncluded))
 		let installed = apps.filter { uuids.contains($0.uuid ?? "") }
 
 		return apps.filter { app in
@@ -112,7 +159,12 @@ enum InstallCleanup {
 				let sameApp = app.isSigned
 					? app.identifier != nil && app.identifier == new.identifier
 					: app.originalIdentifier != nil && app.originalIdentifier == new.originalIdentifier
-				return sameApp && AppUpdateChecker.isNewerVersion(new.version ?? "", than: version)
+				guard sameApp else { return false }
+
+				let installedVersion = new.version ?? ""
+				if AppUpdateChecker.isNewerVersion(installedVersion, than: version) { return matches.contains(.older) }
+				if AppUpdateChecker.isNewerVersion(version, than: installedVersion) { return matches.contains(.newer) }
+				return matches.contains(.same)
 			}
 		}
 	}
@@ -132,8 +184,8 @@ enum InstallCleanup {
 
 			UIAlertController.showAlert(
 				presenter,
-				title: .localized("Delete Older Versions?"),
-				message: .localized("Older versions of %@ use %@.", arguments: names, size.formattedFileSize),
+				title: .localized("Delete Other Versions?"),
+				message: .localized("Other versions of %@ use %@.", arguments: names, size.formattedFileSize),
 				actions: [
 					UIAlertAction(title: .localized("Keep"), style: .cancel),
 					UIAlertAction(title: .localized("Delete"), style: .destructive) { _ in

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NukeUI
 import AltSourceKit
 import NimbleViews
 import NimbleExtensions
@@ -15,6 +16,9 @@ struct UpdateRoute: Identifiable, Hashable {
 	let key: String
 	let sourceIDs: Set<String>?
 
+	/// Scoped routes live inside the Sources stack, where jumping to Sources would race the pop.
+	var isInSources: Bool { sourceIDs != nil }
+
 	static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
 	func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
@@ -22,6 +26,8 @@ struct UpdateRoute: Identifiable, Hashable {
 struct SourceUpdatesView: View {
 	@ObservedObject private var _checker = AppUpdateChecker.shared
 	@AppStorage(AppUpdateChecker.groupKey) private var _groupsByApp = true
+	@AppStorage(AppUpdateChecker.updateAllKey) private var _showsUpdateAll = true
+	@State private var _isUpdatingAll = false
 
 	let updates: [AppUpdate]
 	let sort: SourceAppsView.SortOption
@@ -31,13 +37,20 @@ struct SourceUpdatesView: View {
 
 	var body: some View {
 		List {
+			if _showsUpdateAll, updates.count > 1 {
+				_updateAllHeader
+			}
+
 			if _groupsByApp {
 				_sections(updates, name: \.name, date: \.best.date) { update in
 					if _checker.isAutomatic(update) {
 						_candidateRow(update.best, of: update)
 					} else {
-						AppUpdateRow(update: update, app: _checker.libraryApp(for: update)) {
+						AppUpdateRow(update: update) {
 							onSelect(update)
+						}
+						.contextMenu {
+							UpdateMenuItems(update: update) { onSelect(update) }
 						}
 					}
 				}
@@ -49,6 +62,26 @@ struct SourceUpdatesView: View {
 			}
 		}
 		.listStyle(.plain)
+		.compactTopMargin()
+		.sheet(isPresented: $_isUpdatingAll) {
+			UpdateAllView(updates: updates, sort: sort, ascending: ascending)
+		}
+	}
+
+	private var _updateAllHeader: some View {
+		HStack {
+			Text(verbatim: .localized("%lld Updates", arguments: updates.count))
+				.font(.headline)
+			Spacer()
+			Button(.localized("Update All")) {
+				NBHaptic.tap()
+				_isUpdatingAll = true
+			}
+			.font(.headline)
+			.buttonStyle(.borderless)
+		}
+		.listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
+		.listRowSeparator(.hidden)
 	}
 
 	private func _sections<Item, Row: View>(
@@ -79,12 +112,48 @@ struct SourceUpdatesView: View {
 			.onTapGesture { onOpen(candidate) }
 			.contextMenu {
 				PinSourceButton(candidate: candidate, key: update.id)
-				if update.candidates.count > 1 {
-					Button(.localized("Other Sources"), systemImage: "square.stack") {
-						onSelect(update)
-					}
-				}
+				UpdateMenuItems(update: update) { onSelect(update) }
 			}
+	}
+}
+
+struct UpdateMenuItems: View {
+	let update: AppUpdate
+	var onChooseSource: () -> Void
+
+	var body: some View {
+		if update.candidates.count > 1 {
+			Button(.localized("Other Sources"), systemImage: "square.stack", action: onChooseSource)
+		}
+		Button(.localized("Ignore Updates"), systemImage: "bell.slash") {
+			SkippedUpdatesManager.shared.ignore(update.id)
+		}
+	}
+}
+
+private extension View {
+	@ViewBuilder
+	func compactTopMargin() -> some View {
+		if #available(iOS 17, *) {
+			contentMargins(.top, 0, for: .scrollContent)
+		} else {
+			self
+		}
+	}
+}
+
+struct UpdateIcon: View {
+	let update: AppUpdate
+	var size: CGFloat = 56
+
+	var body: some View {
+		if let app = AppUpdateChecker.shared.libraryApp(for: update) {
+			FRAppIconView(app: app, size: size)
+		} else {
+			LazyImage(url: update.best.app.iconURL) { state in
+				(state.image ?? Image("App_Unknown")).appIconStyle(size: size)
+			}
+		}
 	}
 }
 
@@ -92,7 +161,6 @@ struct AppUpdateRow: View {
 	@ObservedObject private var _downloads = DownloadManager.shared
 
 	let update: AppUpdate
-	let app: AppInfoPresentable?
 	var onSelect: () -> Void
 
 	private var _subtitle: String {
@@ -102,18 +170,14 @@ struct AppUpdateRow: View {
 
 	var body: some View {
 		HStack(spacing: 2) {
-			if let app {
-				HStack(spacing: 18) {
-					FRAppIconView(app: app, size: 56)
-					NBTitleWithSubtitleView(title: update.name, subtitle: _subtitle, linelimit: 0)
-				}
-			} else {
-				FRIconCellView(title: update.name, subtitle: _subtitle, iconUrl: update.best.app.iconURL)
+			HStack(spacing: 18) {
+				UpdateIcon(update: update)
+				NBTitleWithSubtitleView(title: update.name, subtitle: _subtitle, linelimit: 0)
 			}
 
 			Spacer(minLength: 8)
 
-			if let download = update.candidates.lazy.compactMap({ _downloads.getDownload(by: $0.app.currentUniqueId) }).first {
+			if let download = _downloads.download(for: update) {
 				DownloadProgressButton(download: download)
 			} else {
 				UpdateCapsuleButton(action: onSelect)
@@ -125,6 +189,8 @@ struct AppUpdateRow: View {
 }
 
 struct UpdateCapsuleButton: View {
+	var title: String = .localized("Update")
+	var isProminent = true
 	var action: () -> Void
 
 	var body: some View {
@@ -132,13 +198,13 @@ struct UpdateCapsuleButton: View {
 			NBHaptic.tap()
 			action()
 		} label: {
-			Text(.localized("Update"))
+			Text(title)
 				.lineLimit(1)
 				.font(.headline.bold())
-				.foregroundStyle(.white)
+				.foregroundStyle(isProminent ? Color.white : Color.accentColor)
 				.padding(.horizontal, 20)
 				.padding(.vertical, 6)
-				.background(Color.accentColor)
+				.background(isProminent ? Color.accentColor : Color.accentColor.opacity(0.15))
 				.clipShape(Capsule())
 		}
 		.buttonStyle(.borderless)
@@ -173,6 +239,8 @@ struct UpdatePickerView: View {
 	@AppStorage(SourceAppsView.sortAscendingKey) private var _ascending = true
 
 	let route: UpdateRoute
+	var chosenID: String? = nil
+	var onChoose: ((AppUpdate.Candidate) -> Void)? = nil
 
 	private var _update: AppUpdate? {
 		let update = _checker.updates.first { $0.id == route.key }
@@ -194,7 +262,7 @@ struct UpdatePickerView: View {
 				) {}
 			}
 		}
-		.navigationTitle(.localized("Update"))
+		.navigationTitle(.localized(onChoose == nil ? "Update" : "Choose Source"))
 		.navigationBarTitleDisplayMode(.inline)
 		.toolbar {
 			ToolbarItem(placement: .primaryAction) {
@@ -271,9 +339,17 @@ struct UpdatePickerView: View {
 				iconUrl: candidate.app.iconURL
 			)
 			Spacer(minLength: 8)
-			UpdateCapsuleButton {
-				DownloadManager.shared.startDownload(for: candidate.app)
-				_dismiss()
+			if let onChoose {
+				let isChosen = candidate.id == chosenID
+				UpdateCapsuleButton(title: .localized(isChosen ? "Selected" : "Select"), isProminent: !isChosen) {
+					onChoose(candidate)
+					_dismiss()
+				}
+			} else {
+				UpdateCapsuleButton {
+					DownloadManager.shared.startDownload(for: candidate.app)
+					_dismiss()
+				}
 			}
 		}
 		.contentShape(Rectangle())
@@ -286,9 +362,11 @@ struct UpdatePickerView: View {
 		}
 		.contextMenu {
 			PinSourceButton(candidate: candidate, key: key)
-			Button(.localized("View in Sources"), systemImage: "globe.desk") {
-				_dismiss()
-				ViewInSources.open(candidate)
+			if !route.isInSources {
+				Button(.localized("View in Sources"), systemImage: "globe.desk") {
+					_dismiss()
+					ViewInSources.open(candidate)
+				}
 			}
 		}
 	}

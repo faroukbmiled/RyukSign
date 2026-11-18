@@ -65,6 +65,10 @@ extension Options {
 			return mapped
 		}
 
+		if let previous = Storage.shared.previousIdentifier(for: app) {
+			return previous
+		}
+
 		switch ppqProtection {
 		case .disabled: return nil
 		case .default: return "\(identifier).\(ppqString)"
