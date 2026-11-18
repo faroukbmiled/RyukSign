@@ -1,6 +1,7 @@
 [submodule "Zsign"]
 	path = Zsign
-	url = https://github.com/claration/Zsign-Package.git
+	url = https://github.com/faroukbmiled/zsign.git
+	branch = package
 [submodule "IDeviceKitten"]
 	path = IDeviceKitten
 	url = https://github.com/claration/IDeviceKit.git

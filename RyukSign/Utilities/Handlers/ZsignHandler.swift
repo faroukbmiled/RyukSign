@@ -55,7 +55,7 @@ final class ZsignHandler {
 			p12Path: Storage.shared.getFile(.certificate, from: cert)?.path ?? "",
 			p12Password: cert.password ?? "",
 			entitlementsPath: _options.appEntitlementsFile?.path ?? "",
-			removeProvision: !_options.removeProvisioning,
+			removeProvision: _options.removeProvisioning,
 			completion: { success in
 				if !success {
 					self.hadError = SigningFileHandlerError.signFailed
@@ -72,7 +72,7 @@ final class ZsignHandler {
 			appPath: _appUrl.relativePath,
 			entitlementsPath: _options.appEntitlementsFile?.path ?? "",
 			adhoc: true,
-			removeProvision: !_options.removeProvisioning,
+			removeProvision: _options.removeProvisioning,
 			completion: { success in
 				if !success {
 					self.hadError = SigningFileHandlerError.signFailed

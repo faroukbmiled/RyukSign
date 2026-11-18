@@ -60,7 +60,7 @@ The committed Xcode project carries the maintainer's signing identity. To build 
 
 ## Contributing to Zsign
 
-Zsign is maintained upstream at [claration/Zsign-Package](https://github.com/claration/Zsign-Package/tree/package). Make Zsign changes there.
+Zsign is maintained in our fork at [faroukbmiled/zsign](https://github.com/faroukbmiled/zsign/tree/package), based on [claration/zsign](https://github.com/claration/zsign). Make Zsign changes there.
 
 ## Upstream Feather
 
