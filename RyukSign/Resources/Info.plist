@@ -196,6 +196,7 @@
 	<array>
 		<string>_http._tcp</string>
 		<string>_webdav._tcp</string>
+		<string>_remotepairing-pairable-host._tcp</string>
 	</array>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>RyukSign will notify you when downloads complete and are ready to import.</string>

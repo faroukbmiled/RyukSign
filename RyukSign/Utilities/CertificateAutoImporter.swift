@@ -252,7 +252,7 @@ class CertificateAutoImporter {
 				await MainActor.run {
 					cert.password = password
 					cert.ppQCheck = certPair.PPQCheck ?? false
-					cert.expiration = certPair.ExpirationDate ?? Date()
+					cert.expiration = certPair.ExpirationDate
 					cert.revoked = false
 					cert.date = Date()
 

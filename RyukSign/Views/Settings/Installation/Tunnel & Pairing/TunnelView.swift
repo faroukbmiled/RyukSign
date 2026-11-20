@@ -32,6 +32,10 @@ struct TunnelView: View {
 				}
 			}
 			
+			if #available(iOS 27.0, *) {
+				OnDevicePairingSection(hasPairingFile: $doesHavePairingFile)
+			}
+
 			Section {
 				Button(.localized("Import Pairing File"), systemImage: "square.and.arrow.down") {
 					DocumentPicker.open([.xmlPropertyList, .plist, .mobiledevicepairing], folder: .pairing) { urls in

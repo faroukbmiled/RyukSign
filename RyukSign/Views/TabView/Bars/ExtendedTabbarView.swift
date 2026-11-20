@@ -6,6 +6,7 @@
 //  Copyright (c) 2024 Samara M (khcrysalis)
 //
 import SwiftUI
+import CoreData
 import NukeUI
 
 @available(iOS 18, *)

@@ -11,6 +11,8 @@ import Foundation
 import NIOSSL
 import NIOTLS
 import Vapor
+import X509
+import SwiftASN1
 import SystemConfiguration.CaptiveNetwork
 
 // MARK: - Class extension: TLS/Setup
@@ -71,18 +73,15 @@ extension ServerInstaller {
 			pem = LocalCertificate.keyURL
 			FileLogger.log("cert=on device", category: "install")
 		} else {
-			guard
-				let bundled = Self.getUrl("server", ext: "crt"),
-				let bundledKey = Self.getUrl("server", ext: "pem")
-			else {
+			guard let pair = Self.certificatePair() else {
 				FileLogger.error("server.crt or server.pem missing from both Documents and the bundle", category: "install")
 				return nil
 			}
-			crt = bundled
-			pem = bundledKey
+			crt = pair.crt
+			pem = pair.pem
 
-			let source = { (url: URL) in url.path.contains("/Documents/") ? "Documents" : "bundle" }
-			FileLogger.log("cert=\(source(crt)) key=\(source(pem))", category: "install")
+			let source = crt.path.contains("/Documents/") ? "Documents" : "bundle"
+			FileLogger.log("cert=\(source) expires=\(Self.certificateExpiry(crt))", category: "install")
 		}
 		
 		do {
@@ -90,7 +89,7 @@ extension ServerInstaller {
 			let key = try NIOSSLPrivateKey(file: pem.path, format: .pem)
 			FileLogger.log("loaded certificate chain of \(chain.count) (a leaf plus intermediates is expected)", category: "install")
 			
-			return try TLSConfiguration.makeServerConfiguration(
+			return TLSConfiguration.makeServerConfiguration(
 				certificateChain: chain.map { NIOSSLCertificateSource.certificate($0) },
 				privateKey: .privateKey(key)
 			)
@@ -116,6 +115,36 @@ extension ServerInstaller {
 }
 
 extension ServerInstaller {
+	// Newest expiry wins so a bundled cert can replace a stale download.
+	static func certificatePair() -> (crt: URL, pem: URL)? {
+		let documents = (
+			crt: URL.documentsDirectory.appendingPathComponent("server.crt"),
+			pem: URL.documentsDirectory.appendingPathComponent("server.pem")
+		)
+		let bundled = Bundle.main.url(forResource: "server", withExtension: "crt").flatMap { crt in
+			Bundle.main.url(forResource: "server", withExtension: "pem").map { (crt: crt, pem: $0) }
+		}
+
+		return [documents, bundled]
+			.compactMap { $0 }
+			.filter { FileManager.default.fileExists(atPath: $0.crt.path) && FileManager.default.fileExists(atPath: $0.pem.path) }
+			.max { certificateExpiry($0.crt) < certificateExpiry($1.crt) }
+	}
+
+	static func certificateExpiry(_ url: URL) -> Date {
+		(try? String(contentsOf: url, encoding: .utf8)).map { certificateExpiry(pem: $0) } ?? .distantPast
+	}
+
+	static func certificateExpiry(pem: String) -> Date {
+		guard
+			let leaf = try? PEMDocument.parseMultiple(pemString: pem).first,
+			let certificate = try? X509.Certificate(pemDocument: leaf)
+		else {
+			return .distantPast
+		}
+		return certificate.notValidAfter
+	}
+
 	static func getUrl(_ name: String, ext: String) -> URL? {
 		let fileManager = FileManager.default
 

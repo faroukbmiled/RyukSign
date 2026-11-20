@@ -331,7 +331,7 @@ final class SelfUpdateManager: NSObject, ObservableObject {
 		var started = false
 		var ticks = 0
 		while ticks < 2400 && !Task.isCancelled {
-			let raw = await UIApplication.installProgress(for: bundleId) ?? 0
+			let raw = UIApplication.installProgress(for: bundleId) ?? 0
 			if raw > 0 { started = true }
 			_setInstallProgress(started ? min(1, max(0, (raw - 0.6) / 0.3)) : 0)
 			if started && raw == 0 {

@@ -195,11 +195,7 @@ class DownloadManager: NSObject, ObservableObject {
 	}
 
 	private func requestNotificationPermissions() {
-		UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .providesAppNotificationSettings]) { granted, error in
-			if granted {
-			} else if let error = error {
-			}
-		}
+		UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .providesAppNotificationSettings]) { _, _ in }
 		
 		UNUserNotificationCenter.current().delegate = self
 	}
@@ -568,6 +564,7 @@ class DownloadManager: NSObject, ObservableObject {
 		return download
 	}
 	
+	@discardableResult
 	func startArchive(from url: URL, id: String = UUID().uuidString, appName: String? = nil, completion: ((Error?) -> Void)? = nil) -> Download {
 		let download = Download(id: id, url: url, onlyArchiving: true, appName: appName)
 		download.isActive = true

@@ -168,7 +168,8 @@ final class WebManagerServer {
 	private var _pendingRoutes: [String: DispatchWorkItem] = [:]
 
 	func scheduleDebouncedRoute(forPath path: String, url: URL) {
-		_debounceQueue.async {
+		_debounceQueue.async { [weak self] in
+			guard let self else { return }
 			self._pendingRoutes[path]?.cancel()
 
 			let work = DispatchWorkItem { [weak self] in

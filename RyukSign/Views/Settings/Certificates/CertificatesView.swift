@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreData
 import NimbleViews
 
 // MARK: - View
@@ -17,11 +18,14 @@ struct CertificatesView: View {
 	@State private var _isSelectedInfoPresenting: CertificatePair?
 	@State private var _certToRename: CertificatePair?
 	@State private var _newNickname: String = ""
+	@State private var _searchText = ""
+	@State private var _searchNames: [String: String] = [:]
+	@State private var _isReordering = false
 
 	// MARK: Fetch
 	@FetchRequest(
 		entity: CertificatePair.entity(),
-		sortDescriptors: [NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)],
+		sortDescriptors: CertificatePair.sortDescriptors,
 		animation: .snappy
 	) private var _certificates: FetchedResults<CertificatePair>
 
@@ -33,15 +37,46 @@ struct CertificatesView: View {
 	init(selectedCert: Binding<Int>? = nil) {
 		self._bindingSelectedCert = selectedCert
 	}
+
+	private var _isSearchable: Bool { _certificates.count > 5 }
+
+	private var _filteredCertificates: [CertificatePair] {
+		let query = _searchText.trimmingCharacters(in: .whitespaces)
+		guard !query.isEmpty else { return Array(_certificates) }
+		return _certificates.filter { cert in
+			[cert.nickname, cert.uuid.flatMap { _searchNames[$0] }]
+				.contains { $0?.localizedCaseInsensitiveContains(query) == true }
+		}
+	}
 	
 	// MARK: Body
 	var body: some View {
-		NBGrid {
-			ForEach(Array(_certificates.enumerated()), id: \.element.uuid) { index, cert in
-				_cellButton(for: cert, at: index)
+		Group {
+			if _isReordering {
+				List {
+					ForEach(_certificates, id: \.uuid) { cert in
+						CertificatesCellView(cert: cert)
+							.contextMenu { _moveToTopButton(for: cert) }
+					}
+					.onMove(perform: _move)
+				}
+				.environment(\.editMode, .constant(.active))
+			} else {
+				NBGrid {
+					ForEach(_filteredCertificates, id: \.uuid) { cert in
+						_cellButton(for: cert, at: _certificates.firstIndex(of: cert) ?? -1)
+					}
+				}
 			}
 		}
 		.navigationTitle(.localized("Certificates"))
+		.if(_isSearchable && !_isReordering) {
+			$0.searchable(text: $_searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.localized("Search certificates")))
+		}
+		.task(id: _certificates.count) {
+			guard _isSearchable else { return }
+			_searchNames = await _loadSearchNames()
+		}
 		.overlay {
 			if _certificates.isEmpty {
 				NBContentUnavailable(
@@ -58,7 +93,17 @@ struct CertificatesView: View {
 			}
 		}
 		.toolbar {
-			if _bindingSelectedCert == nil {
+			if _certificates.count > 1 {
+				NBToolbarButton(
+					systemImage: _isReordering ? "checkmark" : "line.3.horizontal",
+					style: .icon,
+					placement: .topBarTrailing
+				) {
+					_searchText = ""
+					withAnimation(.snappy) { _isReordering.toggle() }
+				}
+			}
+			if _bindingSelectedCert == nil && !_isReordering {
 				NBToolbarButton(
 					systemImage: "plus",
 					style: .icon,
@@ -121,7 +166,39 @@ extension CertificatesView {
 		}
 		.buttonStyle(.plain)
 	}
+
+	private func _move(from source: IndexSet, to destination: Int) {
+		let binding = _selectedCertBinding
+		let selected = _certificates.indices.contains(binding.wrappedValue) ? _certificates[binding.wrappedValue] : nil
+		let ordered = Storage.shared.moveCertificates(fromOffsets: source, toOffset: destination)
+		if let selected, let index = ordered.firstIndex(of: selected) {
+			binding.wrappedValue = index
+		}
+	}
+
+	private func _loadSearchNames() async -> [String: String] {
+		let certs = _certificates.compactMap { cert in
+			cert.uuid.flatMap { uuid in Storage.shared.getFile(.provision, from: cert).map { (uuid, $0) } }
+		}
+		return await Task.detached(priority: .utility) {
+			var names: [String: String] = [:]
+			for (uuid, url) in certs {
+				guard let decoded = CertificateReader(url).decoded else { continue }
+				names[uuid] = [decoded.Name, decoded.TeamName, decoded.AppIDName].joined(separator: " ")
+			}
+			return names
+		}.value
+	}
 	
+	@ViewBuilder
+	private func _moveToTopButton(for cert: CertificatePair) -> some View {
+		if let index = _certificates.firstIndex(of: cert), index > 0 {
+			Button(.localized("Move to Top"), systemImage: "arrow.up.to.line") {
+				withAnimation(.snappy) { _move(from: IndexSet(integer: index), to: 0) }
+			}
+		}
+	}
+
 	@ViewBuilder
 	private func _actions(for cert: CertificatePair) -> some View {
 		Button(.localized("Delete"), systemImage: "trash", role: .destructive) {

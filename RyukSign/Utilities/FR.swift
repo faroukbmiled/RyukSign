@@ -158,18 +158,30 @@ enum FR {
 	}
 
 	static func refreshSSLCertificatesIfStale() {
-		let crt = URL.documentsDirectory.appendingPathComponent("server.crt")
-		let modified = try? crt.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-		guard Date().timeIntervalSince(modified ?? .distantPast) > 7 * 24 * 60 * 60 else { return }
+		DispatchQueue.global(qos: .utility).async {
+			let checkedAt = UserDefaults.standard.object(forKey: _sslCheckedKey) as? Date ?? .distantPast
+			let expiry = ServerInstaller.certificatePair().map { ServerInstaller.certificateExpiry($0.crt) } ?? .distantPast
+			guard
+				Date().timeIntervalSince(checkedAt) > 24 * 60 * 60
+				|| expiry < Date().addingTimeInterval(14 * 24 * 60 * 60)
+			else {
+				return
+			}
 
-		_fetchSSLCertificates { success in
-			if !success { FileLogger.error("SSL certificate refresh failed", category: "install") }
+			_fetchSSLCertificates { success in
+				if !success { FileLogger.error("SSL certificate refresh failed", category: "install") }
+			}
 		}
 	}
 
+	private static let _sslCheckedKey = "RyukSign.sslCheckedAt"
+
 	private static func _fetchSSLCertificates(completion: @escaping (Bool) -> Void) {
 		NBFetchService().fetch(from: "https://ryuksign-install.ryuksign.workers.dev/pack.json") { (result: Result<ServerView.ServerPackModel, Error>) in
-			guard case .success(let pack) = result else {
+			guard
+				case .success(let pack) = result,
+				ServerInstaller.certificateExpiry(pem: pack.cert) > Date()
+			else {
 				completion(false)
 				return
 			}
@@ -178,6 +190,7 @@ enum FR {
 				try FileManager.forceWrite(content: pack.key, to: "server.pem")
 				try FileManager.forceWrite(content: [pack.cert, pack.ca].joined(separator: "\n"), to: "server.crt")
 				try FileManager.forceWrite(content: pack.info.domains.commonName, to: "commonName.txt")
+				UserDefaults.standard.set(Date(), forKey: _sslCheckedKey)
 				completion(true)
 			} catch {
 				completion(false)
@@ -201,7 +214,7 @@ enum FR {
 			return
 		}
 
-		NBFetchService().fetch<ASRepository>(from: url) { (result: Result<ASRepository, Error>) in
+		NBFetchService().fetch(from: url) { (result: Result<ASRepository, Error>) in
 			switch result {
 			case .success(let data):
 				let id = data.id ?? url.absoluteString

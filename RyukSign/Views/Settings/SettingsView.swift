@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreData
 import NimbleViews
 import UIKit
 import Darwin
@@ -20,7 +21,7 @@ struct SettingsView: View {
     // MARK: Fetch
     @FetchRequest(
         entity: CertificatePair.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)],
+        sortDescriptors: CertificatePair.sortDescriptors,
         animation: .snappy
     ) private var _certificates: FetchedResults<CertificatePair>
 

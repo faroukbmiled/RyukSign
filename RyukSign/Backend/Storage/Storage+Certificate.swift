@@ -30,6 +30,7 @@ extension Storage {
 		new.expiration = expiration
 		new.nickname = nickname
 		new.isDefault = isDefault
+		new.sortIndex = _nextCertificateSortIndex()
 		Storage.shared.revokagedCertificate(for: new)
 		saveContext()
 		generator.impactOccurred()
@@ -46,7 +47,7 @@ extension Storage {
 	
 	func getCertificate(for index: Int) -> CertificatePair? {
 		let fetchRequest: NSFetchRequest<CertificatePair> = CertificatePair.fetchRequest()
-		fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)]
+		fetchRequest.sortDescriptors = CertificatePair.sortDescriptors
 
 		guard
 			let results = try? context.fetch(fetchRequest),
@@ -107,7 +108,40 @@ extension Storage {
 	
 	func getAllCertificates() -> [CertificatePair] {
 		let fetchRequest: NSFetchRequest<CertificatePair> = CertificatePair.fetchRequest()
-		fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)]
+		fetchRequest.sortDescriptors = CertificatePair.sortDescriptors
 		return (try? context.fetch(fetchRequest)) ?? []
 	}
+
+	@discardableResult
+	func moveCertificates(fromOffsets source: IndexSet, toOffset destination: Int) -> [CertificatePair] {
+		let selectedKey = "feather.selectedCert"
+		var certs = getAllCertificates()
+		let selectedIndex = UserDefaults.standard.integer(forKey: selectedKey)
+		let selected = certs.indices.contains(selectedIndex) ? certs[selectedIndex] : nil
+
+		certs.move(fromOffsets: source, toOffset: destination)
+		for (index, cert) in certs.enumerated() {
+			cert.sortIndex = Int32(index)
+		}
+		saveContext()
+
+		if let selected, let index = certs.firstIndex(of: selected) {
+			UserDefaults.standard.set(index, forKey: selectedKey)
+		}
+		return certs
+	}
+
+	private func _nextCertificateSortIndex() -> Int32 {
+		let request: NSFetchRequest<CertificatePair> = CertificatePair.fetchRequest()
+		request.sortDescriptors = CertificatePair.sortDescriptors
+		request.fetchLimit = 1
+		return ((try? context.fetch(request))?.first?.sortIndex ?? 1) - 1
+	}
+}
+
+extension CertificatePair {
+	static let sortDescriptors = [
+		NSSortDescriptor(keyPath: \CertificatePair.sortIndex, ascending: true),
+		NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)
+	]
 }

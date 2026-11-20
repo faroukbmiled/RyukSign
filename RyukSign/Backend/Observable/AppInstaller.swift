@@ -39,6 +39,7 @@ final class AppInstaller: ObservableObject {
 	private var _declineCheck: DispatchWorkItem?
 	private var _installedBefore: InstalledAppState?
 	private var _packageSize = 0
+	private var _payloadSentAt: Date?
 
 	init(app: AppInfoPresentable, isSharing: Bool = false) {
 		self.app = app
@@ -181,7 +182,9 @@ final class AppInstaller: ObservableObject {
 		case .sendingPayload:
 			fallbackPage = nil
 			_disarmDeclineWatch()
+			if _installationMethod == 0 { _startProgressPolling() }
 		case .installing where _installationMethod == 0:
+			_payloadSentAt = _payloadSentAt ?? Date()
 			_startProgressPolling()
 		case .completed(let result):
 			_progressTask?.cancel()
@@ -223,7 +226,7 @@ final class AppInstaller: ObservableObject {
 			object: nil,
 			queue: .main
 		) { [weak self] _ in
-			self?._scheduleDeclineCheck(after: 3)
+			MainActor.assumeIsolated { self?._scheduleDeclineCheck(after: 3) }
 		}
 
 		_scheduleDeclineCheck(after: 60)
@@ -246,7 +249,7 @@ final class AppInstaller: ObservableObject {
 
 	// Slow manifest fetch can mimic a decline.
 	private func _cancelIfIdle() async {
-		if let id = app.identifier, (await UIApplication.installProgress(for: id) ?? 0) > 0 { return }
+		if let id = app.identifier, (UIApplication.installProgress(for: id) ?? 0) > 0 { return }
 		switch viewModel.status {
 		case .ready, .sendingManifest: _finish(.success(.cancelled))
 		default: break
@@ -299,7 +302,6 @@ final class AppInstaller: ObservableObject {
 		let stallLimit = 60 + 60 * Double(_packageSize) / 1_000_000_000
 
 		_progressTask = Task.detached(priority: .utility) { [weak self, viewModel] in
-			let pollingStarted = Date()
 			var startedAt: Date?
 			var peak = 0.0
 			var logged = -1.0
@@ -311,8 +313,13 @@ final class AppInstaller: ObservableObject {
 			while !Task.isCancelled {
 				let raw = await UIApplication.installProgress(for: bundleID) ?? 0.0
 				let now = Date()
+				let payloadSentAt = await self?._payloadSentAt
 
-				if raw > 0, startedAt == nil { startedAt = now }
+				// Until the payload is sent, only a finished install ends the watch.
+				if startedAt == nil, raw > 0, payloadSentAt != nil || raw > 0.6 {
+					startedAt = now
+					lastChange = now
+				}
 				let hasStarted = startedAt != nil
 				peak = max(peak, raw)
 				if raw != last {
@@ -339,7 +346,7 @@ final class AppInstaller: ObservableObject {
 				var endReason: String?
 				if hasStarted, let zeroSince, now.timeIntervalSince(zeroSince) > 2 {
 					endReason = "progress ended"
-				} else if !hasStarted, now.timeIntervalSince(pollingStarted) > 120 {
+				} else if !hasStarted, let payloadSentAt, now.timeIntervalSince(payloadSentAt) > 120 {
 					endReason = "never started"
 				} else if hasStarted, now.timeIntervalSince(lastChange) > stallLimit {
 					endReason = "progress stuck at \(raw) for \(Int(stallLimit))s"
