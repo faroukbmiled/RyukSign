@@ -17,18 +17,18 @@
       "iconURL": "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/repo-icon.png",
       "tintColor": "C96FAD",
       "category": "utilities",
-      "version": "4.1.0",
-      "versionDate": "2026-11-18T16:37:57Z",
+      "version": "4.2.0",
+      "versionDate": "2026-11-25T22:41:34Z",
       "versionDescription": "See the GitHub release notes.",
-      "downloadURL": "https://github.com/faroukbmiled/RyukSign/releases/download/v4.1.0/RyukSign.ipa",
-      "size": 22041701,
+      "downloadURL": "https://github.com/faroukbmiled/RyukSign/releases/download/v4.2.0/RyukSign.ipa",
+      "size": 22247678,
       "screenshotURLs": [],
       "versions": [
         {
-          "version": "4.1.0",
-          "date": "2026-11-18T16:37:57Z",
-          "size": 22041701,
-          "downloadURL": "https://github.com/faroukbmiled/RyukSign/releases/download/v4.1.0/RyukSign.ipa"
+          "version": "4.2.0",
+          "date": "2026-11-25T22:41:34Z",
+          "size": 22247678,
+          "downloadURL": "https://github.com/faroukbmiled/RyukSign/releases/download/v4.2.0/RyukSign.ipa"
         }
       ],
       "appPermissions": {
