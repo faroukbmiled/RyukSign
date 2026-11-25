@@ -87,7 +87,6 @@ extension ServerInstaller {
 		do {
 			let chain = try NIOSSLCertificate.fromPEMFile(crt.path)
 			let key = try NIOSSLPrivateKey(file: pem.path, format: .pem)
-			FileLogger.log("loaded certificate chain of \(chain.count) (a leaf plus intermediates is expected)", category: "install")
 			
 			return TLSConfiguration.makeServerConfiguration(
 				certificateChain: chain.map { NIOSSLCertificateSource.certificate($0) },

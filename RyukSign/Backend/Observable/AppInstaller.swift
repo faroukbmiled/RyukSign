@@ -205,11 +205,7 @@ final class AppInstaller: ObservableObject {
 			return
 		}
 
-		FileLogger.log("opening \(link)", category: "install")
-
 		UIApplication.shared.open(url) { [weak self] opened in
-			FileLogger.log("itms-services accepted by iOS: \(opened)", category: "install")
-
 			if !opened {
 				FileLogger.error("iOS refused the scheme, falling back to the redirect page", category: "install")
 				self?.fallbackPage = self?._server?.pageEndpoint
@@ -304,16 +300,20 @@ final class AppInstaller: ObservableObject {
 		_progressTask = Task.detached(priority: .utility) { [weak self, viewModel] in
 			var startedAt: Date?
 			var peak = 0.0
-			var logged = -1.0
 			var last = 0.0
 			var lastChange = Date()
 			var zeroSince: Date?
 			var nextStateCheck = Date()
 
 			while !Task.isCancelled {
-				let raw = await UIApplication.installProgress(for: bundleID) ?? 0.0
+				let raw = UIApplication.installProgress(for: bundleID) ?? 0.0
 				let now = Date()
 				let payloadSentAt = await self?._payloadSentAt
+				let delivered = await MainActor.run {
+					let value = min(1.0, max(viewModel.uploadProgress * 0.6, raw) / 0.9)
+					if value > viewModel.installProgress { viewModel.installProgress = value }
+					return viewModel.uploadProgress >= 1
+				}
 
 				// Until the payload is sent, only a finished install ends the watch.
 				if startedAt == nil, raw > 0, payloadSentAt != nil || raw > 0.6 {
@@ -328,24 +328,11 @@ final class AppInstaller: ObservableObject {
 				}
 				zeroSince = raw == 0 ? zeroSince ?? now : nil
 
-				if abs(raw - logged) >= 0.1 || (raw == 0) != (logged == 0) {
-					FileLogger.log("progress \(bundleID): \(raw)", category: "install")
-					logged = raw
-				}
-
-				// The drop back to zero at the end is installd finishing, not progress going backwards.
-				if raw > 0 {
-					let value = min(1.0, max(0.0, (raw - 0.6) / 0.3))
-					await MainActor.run {
-						if viewModel.installProgress != value {
-							viewModel.installProgress = value
-						}
-					}
-				}
-
 				var endReason: String?
 				if hasStarted, let zeroSince, now.timeIntervalSince(zeroSince) > 2 {
 					endReason = "progress ended"
+				} else if !hasStarted, delivered, let payloadSentAt, now.timeIntervalSince(payloadSentAt) > 20 {
+					endReason = "progress hidden"
 				} else if !hasStarted, let payloadSentAt, now.timeIntervalSince(payloadSentAt) > 120 {
 					endReason = "never started"
 				} else if hasStarted, now.timeIntervalSince(lastChange) > stallLimit {
@@ -359,12 +346,10 @@ final class AppInstaller: ObservableObject {
 				}
 
 				if let endReason {
-					FileLogger.log("install watch ended: \(endReason)", category: "install")
-					await self?._verifyInstall(started: hasStarted, peak: peak, before: before)
+					await self?._verifyInstall(reason: endReason, started: hasStarted, delivered: delivered, peak: peak, before: before)
 					break
 				}
 
-				// Small apps finish within seconds and need dense samples; long installs don't.
 				let isLongInstall = startedAt.map { now.timeIntervalSince($0) > 5 } ?? false
 				try? await Task.sleep(nanoseconds: isLongInstall ? 250_000_000 : 50_000_000)
 			}
@@ -372,12 +357,12 @@ final class AppInstaller: ObservableObject {
 	}
 
 	// installd only reaches 0.88 once it accepts the app.
-	private func _verifyInstall(started: Bool, peak: Double, before: InstalledAppState?) {
+	private func _verifyInstall(reason: String, started: Bool, delivered: Bool, peak: Double, before: InstalledAppState?) {
 		let after = app.identifier.flatMap(InstalledAppState.current(for:))
 		let replaced = after != nil && after != before
-		FileLogger.log("install ended, started=\(started), peak=\(peak), installed: \(after?.description ?? "none"), replaced=\(replaced)", category: "install")
+		FileLogger.log("install ended (\(reason)), started=\(started), delivered=\(delivered), peak=\(peak), installed: \(after?.description ?? "none"), replaced=\(replaced)", category: "install")
 
-		if peak < 0.85, !replaced, Self.detectsRejection {
+		if peak < 0.85, !replaced, started || !delivered, Self.detectsRejection {
 			FileLogger.error("iOS rejected \(app.identifier ?? "?") \(app.version ?? "?")", category: "install")
 			let message: String = started || after != nil
 				? .localized("iOS couldn't install the app. If a copy is already installed, delete it and try again.")

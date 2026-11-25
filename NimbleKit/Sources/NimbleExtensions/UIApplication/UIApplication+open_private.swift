@@ -41,7 +41,7 @@ extension UIApplication {
 	///   - identifier: Bundle identifier
 	///   - synchronous: Whether the call should block
 	/// - Returns: Progress value if available
-	static public func installProgress(
+	nonisolated static public func installProgress(
 		for identifier: String,
 		makeSynchronous synchronous: Bool = true
 	) -> Double? {
@@ -55,19 +55,14 @@ extension UIApplication {
 			let defaultSelector = String(data: Data(base64Encoded: defaultSelectorBase64)!, encoding: .utf8),
 			let progressSelector = String(data: Data(base64Encoded: progressSelectorBase64)!, encoding: .utf8),
 			let workspaceClass = NSClassFromString(className) as? NSObject.Type,
-			let workspace = workspaceClass.perform(NSSelectorFromString(defaultSelector))?.takeUnretainedValue()
+			let workspace = workspaceClass.perform(NSSelectorFromString(defaultSelector))?.takeUnretainedValue() as? NSObject
 		else { return nil }
 
-		let result = workspace.perform(
-			NSSelectorFromString(progressSelector),
-			with: identifier,
-			with: synchronous
-		)?.takeUnretainedValue()
+		let selector = NSSelectorFromString(progressSelector)
+		guard workspace.responds(to: selector) else { return nil }
 
-		if let number = result as? Progress {
-			return number.fractionCompleted
-		}
-
-		return nil
+		typealias Function = @convention(c) (AnyObject, Selector, NSString, Bool) -> Unmanaged<AnyObject>?
+		let function = unsafeBitCast(workspace.method(for: selector), to: Function.self)
+		return (function(workspace, selector, identifier as NSString, synchronous)?.takeUnretainedValue() as? Progress)?.fractionCompleted
 	}
 }
